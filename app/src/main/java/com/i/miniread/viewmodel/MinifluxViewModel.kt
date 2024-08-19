@@ -18,6 +18,7 @@ class MinifluxViewModel : ViewModel() {
 
     private val _feeds = MutableLiveData<List<Entry>>()
     val feeds: LiveData<List<Entry>> get() = _feeds
+
     private val _entries = MutableLiveData<List<Entry>>()
     val entries: LiveData<List<Entry>> get() = _entries
 
@@ -70,15 +71,18 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch categories")
     }
 
-    fun fetchEntries(status: String? = null, categoryId: Int? = null) {
+    fun fetchEntries(status: String? = "unread", categoryId: Int? = null) {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching entries with token: $token, status: $status, categoryId: $categoryId")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getEntries(token, status, categoryId)
-                    Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.size} items")
-                    _entries.postValue(response)
+                    Log.d("MinifluxViewModel", "Response: $response")
+                    Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.entries.size} items")
+                    _entries.value=response.entries
+                    _entries.postValue(response.entries)
                 } catch (e: Exception) {
+                    Log.d("MinifluxViewModel", "Response: ")
                     Log.e("MinifluxViewModel", "Error fetching entries", e)
                     _entries.postValue(emptyList())
                 }

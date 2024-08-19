@@ -61,7 +61,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
+sealed class Screen(val route: String) {
+    data object Feeds : Screen("feeds")
+    data object Categories : Screen("categories")
+    data object ArticleDetail : Screen("articleDetail")
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
@@ -69,13 +73,12 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val screens = listOf("Feeds", "Categories", "Articles")
-    var selectedScreen by remember { mutableStateOf("feeds") }
+    val screens = listOf(Screen.Feeds, Screen.Categories, Screen.ArticleDetail)
+    var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
     if (authToken == null) {
         LoginScreen(viewModel) { token ->
             try {
-                Log.d("MainContent", "Saving token: $token")
                 sharedPreferences.edit().putString("auth_token", token).apply()
                 viewModel.setAuthToken(token)
             } catch (e: Exception) {
@@ -89,11 +92,12 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
                 ModalDrawerSheet {
                     screens.forEach { screen ->
                         Text(
-                            text = screen,
+                            text = screen.route.capitalize(),
                             modifier = Modifier
                                 .clickable {
-                                    selectedScreen = screen.lowercase()
+                                    selectedScreen = screen.route
                                     scope.launch { drawerState.close() }
+                                    navController.navigate(screen.route)
                                 }
                                 .padding(16.dp)
                         )
@@ -116,11 +120,14 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
                 },
                 content = { innerPadding ->
                     Surface(modifier = Modifier.padding(innerPadding)) {
-                        NavHost(navController = navController, startDestination = selectedScreen) {
-                            composable("feeds") { FeedListScreen(viewModel, navController) }
-                            composable("categories") { CategoryListScreen(viewModel) }
-                            composable("articles") { ArticleDetailScreen(viewModel,viewModel.selectedEntry) }
-                            // Add more composable routes as needed
+                        NavHost(navController = navController, startDestination = Screen.Feeds.route) {
+                            composable(Screen.Feeds.route) { FeedListScreen(viewModel, navController) }
+                            composable(Screen.Categories.route) { CategoryListScreen(viewModel) }
+                            composable(Screen.ArticleDetail.route) {
+                                viewModel.selectedEntry?.let { entryId ->
+                                    ArticleDetailScreen(viewModel, entryId)
+                                }
+                            }
                         }
                     }
                 }

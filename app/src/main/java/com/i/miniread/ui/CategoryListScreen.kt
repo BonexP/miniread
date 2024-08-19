@@ -32,7 +32,7 @@ fun CategoryListScreen(viewModel: MinifluxViewModel) {
         LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(categories) { category ->
                 CategoryItem(category, onClick = {
-                    viewModel.fetchEntries(categoryId = category.id)
+                    viewModel.fetchEntries(categoryId = category.id, status = "unread")
                 })
             }
         }
