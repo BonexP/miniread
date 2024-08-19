@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.Composable
+import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
 
@@ -13,10 +15,18 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            LoginScreen(viewModel) { authToken ->
-                viewModel.fetchFeeds(authToken)
-                // 继续执行其他操作，例如导航到下一个屏幕
-            }
+            MainContent(viewModel)
         }
+    }
+}
+
+@Composable
+fun MainContent(viewModel: MinifluxViewModel) {
+    if (viewModel.authToken.value == null) {
+        LoginScreen(viewModel) {
+            // 登录成功后的操作
+        }
+    } else {
+        FeedListScreen(viewModel)
     }
 }
