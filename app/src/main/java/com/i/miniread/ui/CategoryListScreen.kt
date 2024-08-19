@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,13 +20,23 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 @Composable
 fun CategoryListScreen(viewModel: MinifluxViewModel) {
     val categories by viewModel.categories.observeAsState(emptyList())
-
+//    viewModel.fetchCategories()
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(categories) { category ->
             CategoryItem(category, onClick = {
                 viewModel.fetchEntries(categoryId = category.id)
             })
         }
+    }
+    if (categories.isEmpty()) {
+        // If no categories, show a placeholder
+        Text(
+            text = "No categories available",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(16.dp)
+        )
+    } else {
+       Log.d("CategoryListScreen","there are some categories")
     }
 }
 
@@ -37,6 +48,6 @@ fun CategoryItem(category: Category, onClick: () -> Unit) {
             .padding(8.dp)
             .clickable { onClick() }
     ) {
-        Text(text = category.title, style = MaterialTheme.typography.headlineLarge)
+        Text(text = category.title, style = MaterialTheme.typography.titleLarge)
     }
 }
