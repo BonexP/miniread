@@ -1,5 +1,6 @@
 package com.i.miniread.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -16,19 +17,23 @@ class MinifluxViewModel : ViewModel() {
     val feeds: LiveData<List<Entry>> get() = _feeds
 
     fun setAuthToken(token: String) {
+        Log.d("MinifluxViewModel", "Auth token set: $token")
         _authToken.value = token
     }
 
     fun fetchFeeds() {
         _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching feeds with token: $token")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getFeeds(token)
+                    Log.d("MinifluxViewModel", "Feeds fetched successfully")
                     _feeds.postValue(response)
                 } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching feeds", e)
                     _feeds.postValue(emptyList())
                 }
             }
-        }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch feeds")
     }
 }

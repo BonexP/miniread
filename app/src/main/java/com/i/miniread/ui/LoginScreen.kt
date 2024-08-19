@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) {
     var authToken by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -20,15 +21,19 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
     ) {
         TextField(
             value = authToken,
-            onValueChange = { authToken = it },
+            onValueChange = {
+                authToken = it
+                Log.d("LoginScreen", "API Token input: $authToken")
+            },
             label = { Text("API Token") }
         )
         Button(onClick = {
             if (authToken.isNotEmpty()) {
+                Log.d("LoginScreen", "Login button clicked, token: $authToken")
                 viewModel.setAuthToken(authToken)
-                viewModel.fetchFeeds()
-                onLoginSuccess()
+                onLoginSuccess(authToken)
             } else {
+                Log.d("LoginScreen", "Login button clicked with empty token")
                 errorMessage = "Please enter a valid API token."
             }
         }) {
@@ -36,6 +41,7 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
+            Log.d("LoginScreen", "Error message displayed: $errorMessage")
         }
     }
 }

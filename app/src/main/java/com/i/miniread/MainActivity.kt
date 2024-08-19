@@ -1,6 +1,8 @@
 package com.i.miniread
 
+import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -14,19 +16,37 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        Log.d("MainActivity", "onCreate: Activity started")
+
+        // Load saved auth token
+        val sharedPreferences = getSharedPreferences("miniread_prefs", Context.MODE_PRIVATE)
+        val savedToken = sharedPreferences.getString("auth_token", null)
+        if (savedToken != null) {
+            Log.d("MainActivity", "onCreate: Found saved token")
+            viewModel.setAuthToken(savedToken)
+            viewModel.fetchFeeds()
+        } else {
+            Log.d("MainActivity", "onCreate: No saved token found")
+        }
+
         setContent {
-            MainContent(viewModel)
+            MainContent(viewModel, sharedPreferences)
         }
     }
 }
 
 @Composable
-fun MainContent(viewModel: MinifluxViewModel) {
+fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
     if (viewModel.authToken.value == null) {
-        LoginScreen(viewModel) {
+        Log.d("MainContent", "Displaying LoginScreen")
+        LoginScreen(viewModel) { token ->
+            Log.d("MainContent", "Login successful, token saved")
+            sharedPreferences.edit().putString("auth_token", token).apply()
             viewModel.fetchFeeds()
         }
     } else {
+        Log.d("MainContent", "Displaying FeedListScreen")
         FeedListScreen(viewModel)
     }
 }
