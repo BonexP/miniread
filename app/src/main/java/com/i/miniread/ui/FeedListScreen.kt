@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,10 +18,12 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 fun FeedListScreen(viewModel: MinifluxViewModel) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
 
+    Log.d("FeedListScreen", "Number of feeds: ${feeds.size}")
+
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(feeds) { feed ->
             FeedItem(feed, onClick = {
-                // 处理点击事件，跳转到文章详情界面
+                // Handle click event, navigate to article detail screen
             })
         }
     }

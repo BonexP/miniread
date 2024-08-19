@@ -27,7 +27,7 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getFeeds(token)
-                    Log.d("MinifluxViewModel", "Feeds fetched successfully")
+                    Log.d("MinifluxViewModel", "Feeds fetched successfully: ${response.size} items")
                     _feeds.postValue(response)
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching feeds", e)
