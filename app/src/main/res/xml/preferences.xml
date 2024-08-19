@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <SwitchPreferenceCompat
+        android:key="enable_notifications"
+        android:title="Enable Notifications"
+        android:defaultValue="true" />
+
+    <ListPreference
+        android:key="sync_frequency"
+        android:title="Sync Frequency"
+        android:entries="@array/sync_frequency_entries"
+        android:entryValues="@array/sync_frequency_values"
+        android:defaultValue="60" />
+</PreferenceScreen>
