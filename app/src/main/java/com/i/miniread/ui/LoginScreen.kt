@@ -4,17 +4,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.i.miniread.viewmodel.MinifluxViewModel
-import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess:  () -> Unit) {
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
+    var authToken by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -23,29 +19,20 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess:  () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         TextField(
-            value = username,
-            onValueChange = { username = it },
-            label = { Text("用户名") }
-        )
-        TextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("密码") },
-            visualTransformation = PasswordVisualTransformation()
+            value = authToken,
+            onValueChange = { authToken = it },
+            label = { Text("API Token") }
         )
         Button(onClick = {
-            coroutineScope.launch {
-                viewModel.login(username, password) { error ->
-                    if (error != null) {
-                        errorMessage = error
-                    } else {
-                        viewModel.fetchFeeds()
-                        onLoginSuccess()
-                    }
-                }
+            if (authToken.isNotEmpty()) {
+                viewModel.setAuthToken(authToken)
+                viewModel.fetchFeeds()
+                onLoginSuccess()
+            } else {
+                errorMessage = "Please enter a valid API token."
             }
         }) {
-            Text("登录")
+            Text("Login")
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
