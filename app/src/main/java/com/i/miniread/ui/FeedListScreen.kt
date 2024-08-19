@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 
+
 @Composable
 fun FeedListScreen(viewModel: MinifluxViewModel) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
@@ -25,6 +26,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel) {
         }
     }
 }
+
 
 @Composable
 fun FeedItem(feed: Entry, onClick: () -> Unit) {

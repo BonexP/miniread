@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
 fun MainContent(viewModel: MinifluxViewModel) {
     if (viewModel.authToken.value == null) {
         LoginScreen(viewModel) {
-            // 登录成功后的操作
+            viewModel.fetchFeeds()
         }
     } else {
         FeedListScreen(viewModel)
