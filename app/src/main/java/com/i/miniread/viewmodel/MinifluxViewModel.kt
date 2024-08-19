@@ -5,7 +5,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.i.miniread.network.*
+import com.i.miniread.network.Category
+import com.i.miniread.network.Entry
+import com.i.miniread.network.FeedCreationRequest
+import com.i.miniread.network.RetrofitInstance
+import com.i.miniread.network.UserInfo
 import kotlinx.coroutines.launch
 
 class MinifluxViewModel : ViewModel() {
@@ -125,5 +129,10 @@ class MinifluxViewModel : ViewModel() {
                 }
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch user info")
+    }
+
+    // Implementation of setSelectedEntry method
+    fun setSelectedEntry(entry: Entry) {
+        _selectedEntry.value = entry
     }
 }

@@ -6,17 +6,28 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import com.i.miniread.ui.FeedListScreen
-import com.i.miniread.ui.LoginScreen
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
+import com.i.miniread.ui.FeedListScreen
+import com.i.miniread.ui.LoginScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 class MainActivity : ComponentActivity() {
@@ -25,17 +36,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        Log.d("MainActivity", "onCreate: Activity started")
-
-        // Load saved auth token
         val sharedPreferences = getSharedPreferences("miniread_prefs", Context.MODE_PRIVATE)
         val savedToken = sharedPreferences.getString("auth_token", null)
         if (savedToken != null) {
-            Log.d("MainActivity", "onCreate: Found saved token")
             viewModel.setAuthToken(savedToken)
             viewModel.fetchFeeds()
-        } else {
-            Log.d("MainActivity", "onCreate: No saved token found")
         }
 
         setContent {
@@ -48,8 +53,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
     val authToken by viewModel.authToken.observeAsState()
-    val scaffoldState = rememberScaffoldState()
-    var selectedScreen by remember { mutableStateOf("feeds") }
+    val navController = rememberNavController()
     val screens = listOf("Feeds", "Categories", "Account")
 
     if (authToken == null) {
@@ -64,36 +68,28 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
         }
     } else {
         Scaffold(
-            scaffoldState = scaffoldState,
             topBar = {
-                TopAppBar(
+                CenterAlignedTopAppBar(
                     title = { Text(stringResource(id = R.string.app_name)) },
                     navigationIcon = {
                         IconButton(onClick = {
-                            scaffoldState.drawerState.open()
+                            // Handle menu click (e.g., open a drawer if needed)
                         }) {
                             Icon(imageVector = Icons.Default.Menu, contentDescription = null)
                         }
                     }
                 )
             },
-            drawerContent = {
-                screens.forEach { screen ->
-                    ListItem(
-                        text = { Text(screen) },
-                        modifier = Modifier.clickable {
-                            selectedScreen = screen.lowercase()
-                            scaffoldState.drawerState.close()
-                        }
-                    )
+            content = { innerPadding ->
+                Surface(modifier = Modifier.padding(innerPadding)) {
+                    NavHost(navController = navController, startDestination = "feeds") {
+                        composable("feeds") { FeedListScreen(viewModel, navController) }
+                        composable("categories") { CategoryListScreen(viewModel) }
+                        composable("articleDetail") { ArticleDetailScreen(viewModel) }
+                        // Add more composable routes as needed
+                    }
                 }
             }
-        ) {
-            when (selectedScreen) {
-                "feeds" -> FeedListScreen(viewModel)
-                "categories" -> CategoryListScreen(viewModel)
-                "account" -> AccountScreen(viewModel)
-            }
-        }
+        )
     }
 }
