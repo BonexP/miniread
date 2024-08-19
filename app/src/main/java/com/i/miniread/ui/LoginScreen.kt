@@ -10,7 +10,7 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) {
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -35,12 +35,11 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) 
         )
         Button(onClick = {
             coroutineScope.launch {
-                try {
-                    // 假设这里使用了 Miniflux API 进行身份验证并获得 authToken
-                    val authToken = viewModel.login(username, password) // 这个方法需要在 ViewModel 中实现
-                    onLoginSuccess(authToken)
-                } catch (e: Exception) {
-                    errorMessage = "Login failed: ${e.message}"
+                viewModel.login(username, password)
+                if (viewModel.authToken.value != null) {
+                    onLoginSuccess()
+                } else {
+                    errorMessage = "Login failed. Please check your credentials."
                 }
             }
         }) {

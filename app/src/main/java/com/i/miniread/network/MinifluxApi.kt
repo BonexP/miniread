@@ -26,7 +26,7 @@ data class Category(val id: Int, val title: String)
 object RetrofitInstance {
     val api: MinifluxApi by lazy {
         Retrofit.Builder()
-            .baseUrl("https://your-miniflux-url.com/api/")  // 将其替换为您实际的 Miniflux API URL
+            .baseUrl("https://lifeo3.icu:4081/api/")  // 将其替换为您实际的 Miniflux API URL
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(MinifluxApi::class.java)
