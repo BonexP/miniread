@@ -12,6 +12,9 @@ class MinifluxViewModel : ViewModel() {
     private val _feeds = MutableLiveData<List<Entry>>()
     val feeds: LiveData<List<Entry>> get() = _feeds
 
+    private val _authToken = MutableLiveData<String?>()
+    val authToken: LiveData<String?> get() = _authToken
+
     fun fetchFeeds(authToken: String) {
         viewModelScope.launch {
             try {
@@ -19,6 +22,16 @@ class MinifluxViewModel : ViewModel() {
                 _feeds.postValue(response)
             } catch (e: Exception) {
                 _feeds.postValue(emptyList())
+            }
+        }
+    }
+    fun login(username: String, password: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitInstance.api.login(username, password)
+                _authToken.value = response.token
+            } catch (e: Exception) {
+                _authToken.value = null
             }
         }
     }

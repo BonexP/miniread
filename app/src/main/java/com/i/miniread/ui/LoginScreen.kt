@@ -10,8 +10,9 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) {
-    var authToken by remember { mutableStateOf("") }
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
 
@@ -22,15 +23,29 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) 
         verticalArrangement = Arrangement.Center
     ) {
         TextField(
-            value = authToken,
-            onValueChange = { authToken = it },
-            label = { Text("API Token") }
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") }
+        )
+        TextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Password") },
+            visualTransformation = PasswordVisualTransformation()
         )
         Button(onClick = {
-            if (authToken.isNotEmpty()) {
-                onLoginSuccess(authToken)
-            } else {
-                errorMessage = "Please enter a valid API token."
+            coroutineScope.launch {
+                try {
+                    viewModel.login(username, password)
+                    val token = viewModel.authToken.value
+                    if (token != null) {
+                        onLoginSuccess()
+                    } else {
+                        errorMessage = "Login failed. Please check your credentials."
+                    }
+                } catch (e: Exception) {
+                    errorMessage = "An error occurred: ${e.message}"
+                }
             }
         }) {
             Text("Login")
