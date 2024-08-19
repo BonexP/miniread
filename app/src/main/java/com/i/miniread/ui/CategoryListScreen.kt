@@ -20,23 +20,31 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 @Composable
 fun CategoryListScreen(viewModel: MinifluxViewModel) {
     val categories by viewModel.categories.observeAsState(emptyList())
-//    viewModel.fetchCategories()
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
-        items(categories) { category ->
-            CategoryItem(category, onClick = {
-                viewModel.fetchEntries(categoryId = category.id)
-            })
-        }
-    }
-    if (categories.isEmpty()) {
-        // If no categories, show a placeholder
+    val error by viewModel.error.observeAsState()
+
+    if (error != null) {
         Text(
-            text = "No categories available",
-            style = MaterialTheme.typography.bodyLarge,
+            text = error ?: "Unknown error occurred",
+            color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(16.dp)
         )
     } else {
-       Log.d("CategoryListScreen","there are some categories")
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
+            items(categories) { category ->
+                CategoryItem(category, onClick = {
+                    viewModel.fetchEntries(categoryId = category.id)
+                })
+            }
+        }
+        if (categories.isEmpty()) {
+            Text(
+                text = "No categories available",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            Log.d("CategoryListScreen", "there are some categories")
+        }
     }
 }
 

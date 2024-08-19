@@ -18,12 +18,14 @@ class MinifluxViewModel : ViewModel() {
 
     private val _feeds = MutableLiveData<List<Entry>>()
     val feeds: LiveData<List<Entry>> get() = _feeds
+    private val _entries = MutableLiveData<List<Entry>>()
+    val entries: LiveData<List<Entry>> get() = _entries
 
     private val _categories = MutableLiveData<List<Category>>()
     val categories: LiveData<List<Category>> get() = _categories
 
-    private val _entries = MutableLiveData<List<Entry>>()
-    val entries: LiveData<List<Entry>> get() = _entries
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> get() = _error
 
     private val _selectedEntry = MutableLiveData<Entry?>()
     val selectedEntry: LiveData<Entry?> get() = _selectedEntry
@@ -112,7 +114,7 @@ class MinifluxViewModel : ViewModel() {
                     Log.e("MinifluxViewModel", "Error deleting feed", e)
                 }
             }
-        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot delete feed")
+        }
     }
 
     fun fetchUserInfo() {
@@ -131,8 +133,11 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch user info")
     }
 
-    // Implementation of setSelectedEntry method
-    fun setSelectedEntry(entry: Entry) {
-        _selectedEntry.value = entry
+    fun clearError() {
+        _error.value = null
+    }
+
+    fun setSelectedEntry(feed: Entry) {
+
     }
 }
