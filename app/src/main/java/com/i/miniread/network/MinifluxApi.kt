@@ -5,6 +5,13 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 
 interface MinifluxApi {
+    @POST("v1/authentication")
+    @FormUrlEncoded
+    suspend fun login(
+        @Field("username") username: String,
+        @Field("password") password: String
+    ): AuthResponse
+
     @GET("v1/feeds")
     suspend fun getFeeds(@Header("X-Auth-Token") authToken: String): List<Entry>
 
@@ -12,6 +19,7 @@ interface MinifluxApi {
     suspend fun getCategories(@Header("X-Auth-Token") authToken: String): List<Category>
 }
 
+data class AuthResponse(val token: String)
 data class Entry(val id: Int, val title: String, val url: String, val content: String, val published_at: String)
 data class Category(val id: Int, val title: String)
 

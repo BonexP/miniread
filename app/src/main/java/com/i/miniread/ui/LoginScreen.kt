@@ -10,7 +10,7 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess:  () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -25,30 +25,27 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: () -> Unit) {
         TextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") }
+            label = { Text("用户名") }
         )
         TextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text("密码") },
             visualTransformation = PasswordVisualTransformation()
         )
         Button(onClick = {
             coroutineScope.launch {
-                try {
-                    viewModel.login(username, password)
-                    val token = viewModel.authToken.value
-                    if (token != null) {
-                        onLoginSuccess()
+                viewModel.login(username, password) { error ->
+                    if (error != null) {
+                        errorMessage = error
                     } else {
-                        errorMessage = "Login failed. Please check your credentials."
+                        viewModel.fetchFeeds()
+                        onLoginSuccess()
                     }
-                } catch (e: Exception) {
-                    errorMessage = "An error occurred: ${e.message}"
                 }
             }
         }) {
-            Text("Login")
+            Text("登录")
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
