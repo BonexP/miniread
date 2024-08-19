@@ -20,6 +20,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.i.miniread.Screen
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 
@@ -37,7 +38,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel, navController: NavController) {
         items(feeds) { feed ->
             FeedItem(feed, onClick = {
                 viewModel.setSelectedEntry(feed)
-                navController.navigate("articleDetail")
+                navController.navigate(Screen.ArticleDetail.route)
             })
         }
     }
