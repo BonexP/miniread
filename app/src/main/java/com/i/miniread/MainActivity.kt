@@ -6,12 +6,17 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.ArticleDetailScreen
+import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 class MainActivity : ComponentActivity() {
@@ -39,19 +44,13 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
     val authToken by viewModel.authToken.observeAsState()
-
-    // React to authToken changes and update UI
-    LaunchedEffect(authToken) {
-        if (authToken != null) {
-            Log.d("MainContent", "Auth token is not null, fetching feeds")
-            viewModel.fetchFeeds()
-        } else {
-            Log.d("MainContent", "Auth token is null")
-        }
-    }
+    val scaffoldState = rememberScaffoldState()
+    var selectedScreen by remember { mutableStateOf("feeds") }
+    val screens = listOf("Feeds", "Categories", "Account")
 
     if (authToken == null) {
         LoginScreen(viewModel) { token ->
@@ -64,6 +63,37 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
             }
         }
     } else {
-        FeedListScreen(viewModel)
+        Scaffold(
+            scaffoldState = scaffoldState,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(id = R.string.app_name)) },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            scaffoldState.drawerState.open()
+                        }) {
+                            Icon(imageVector = Icons.Default.Menu, contentDescription = null)
+                        }
+                    }
+                )
+            },
+            drawerContent = {
+                screens.forEach { screen ->
+                    ListItem(
+                        text = { Text(screen) },
+                        modifier = Modifier.clickable {
+                            selectedScreen = screen.lowercase()
+                            scaffoldState.drawerState.close()
+                        }
+                    )
+                }
+            }
+        ) {
+            when (selectedScreen) {
+                "feeds" -> FeedListScreen(viewModel)
+                "categories" -> CategoryListScreen(viewModel)
+                "account" -> AccountScreen(viewModel)
+            }
+        }
     }
 }

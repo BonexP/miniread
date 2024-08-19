@@ -21,6 +21,9 @@ class MinifluxViewModel : ViewModel() {
     private val _entries = MutableLiveData<List<Entry>>()
     val entries: LiveData<List<Entry>> get() = _entries
 
+    private val _selectedEntry = MutableLiveData<Entry?>()
+    val selectedEntry: LiveData<Entry?> get() = _selectedEntry
+
     private val _userInfo = MutableLiveData<UserInfo?>()
     val userInfo: LiveData<UserInfo?> get() = _userInfo
 
