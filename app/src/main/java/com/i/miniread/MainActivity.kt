@@ -119,7 +119,7 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
                         NavHost(navController = navController, startDestination = selectedScreen) {
                             composable("feeds") { FeedListScreen(viewModel, navController) }
                             composable("categories") { CategoryListScreen(viewModel) }
-                            composable("articles") { ArticleDetailScreen(viewModel) }
+                            composable("articles") { ArticleDetailScreen(viewModel,viewModel.selectedEntry) }
                             // Add more composable routes as needed
                         }
                     }
