@@ -13,9 +13,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            LoginScreen(viewModel = viewModel) {
-                // Handle successful login, such as navigating to another screen
-                // You can use viewModel.fetchFeeds(viewModel.authToken.value) to fetch feeds after successful login
+            LoginScreen(viewModel) { authToken ->
+                viewModel.fetchFeeds(authToken)
+                // 继续执行其他操作，例如导航到下一个屏幕
             }
         }
     }
