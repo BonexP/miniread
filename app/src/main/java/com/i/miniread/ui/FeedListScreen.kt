@@ -24,6 +24,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel) {
         items(feeds) { feed ->
             FeedItem(feed, onClick = {
                 // 处理点击事件，跳转到文章详情界面
+                Log.d("FeedListScreen","${feed.title}clicked!")
             })
         }
     }

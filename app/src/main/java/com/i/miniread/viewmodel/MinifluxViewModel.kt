@@ -5,8 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.i.miniread.network.Entry
-import com.i.miniread.network.RetrofitInstance
+import com.i.miniread.network.*
 import kotlinx.coroutines.launch
 
 class MinifluxViewModel : ViewModel() {
@@ -15,6 +14,15 @@ class MinifluxViewModel : ViewModel() {
 
     private val _feeds = MutableLiveData<List<Entry>>()
     val feeds: LiveData<List<Entry>> get() = _feeds
+
+    private val _categories = MutableLiveData<List<Category>>()
+    val categories: LiveData<List<Category>> get() = _categories
+
+    private val _entries = MutableLiveData<List<Entry>>()
+    val entries: LiveData<List<Entry>> get() = _entries
+
+    private val _userInfo = MutableLiveData<UserInfo?>()
+    val userInfo: LiveData<UserInfo?> get() = _userInfo
 
     fun setAuthToken(token: String) {
         Log.d("MinifluxViewModel", "Auth token set: $token")
@@ -35,5 +43,84 @@ class MinifluxViewModel : ViewModel() {
                 }
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch feeds")
+    }
+
+    fun fetchCategories() {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching categories with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getCategories(token)
+                    Log.d("MinifluxViewModel", "Categories fetched successfully: ${response.size} items")
+                    _categories.postValue(response)
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching categories", e)
+                    _categories.postValue(emptyList())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch categories")
+    }
+
+    fun fetchEntries(status: String? = null, categoryId: Int? = null) {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching entries with token: $token, status: $status, categoryId: $categoryId")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getEntries(token, status, categoryId)
+                    Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.size} items")
+                    _entries.postValue(response)
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching entries", e)
+                    _entries.postValue(emptyList())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
+    }
+
+    fun createFeed(feedUrl: String, categoryId: Int? = null) {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Creating feed with token: $token, feedUrl: $feedUrl, categoryId: $categoryId")
+            viewModelScope.launch {
+                try {
+                    val feedRequest = FeedCreationRequest(feed_url = feedUrl, category_id = categoryId)
+                    val response = RetrofitInstance.api.createFeed(token, feedRequest)
+                    Log.d("MinifluxViewModel", "Feed created successfully: ${response.title}")
+                    fetchFeeds() // Refresh the feed list after creation
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error creating feed", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot create feed")
+    }
+
+    fun deleteFeed(feedId: Int) {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Deleting feed with token: $token, feedId: $feedId")
+            viewModelScope.launch {
+                try {
+                    RetrofitInstance.api.deleteFeed(token, feedId)
+                    Log.d("MinifluxViewModel", "Feed deleted successfully: feedId $feedId")
+                    fetchFeeds() // Refresh the feed list after deletion
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error deleting feed", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot delete feed")
+    }
+
+    fun fetchUserInfo() {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching user info with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getUserInfo(token)
+                    Log.d("MinifluxViewModel", "User info fetched successfully: ${response.username}")
+                    _userInfo.postValue(response)
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching user info", e)
+                    _userInfo.postValue(null)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch user info")
     }
 }
