@@ -7,6 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -38,15 +41,29 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
-    if (viewModel.authToken.value == null) {
-        Log.d("MainContent", "Displaying LoginScreen")
-        LoginScreen(viewModel) { token ->
-            Log.d("MainContent", "Login successful, token saved")
-            sharedPreferences.edit().putString("auth_token", token).apply()
+    val authToken by viewModel.authToken.observeAsState()
+
+    // React to authToken changes and update UI
+    LaunchedEffect(authToken) {
+        if (authToken != null) {
+            Log.d("MainContent", "Auth token is not null, fetching feeds")
             viewModel.fetchFeeds()
+        } else {
+            Log.d("MainContent", "Auth token is null")
+        }
+    }
+
+    if (authToken == null) {
+        LoginScreen(viewModel) { token ->
+            try {
+                Log.d("MainContent", "Saving token: $token")
+                sharedPreferences.edit().putString("auth_token", token).apply()
+                viewModel.setAuthToken(token)
+            } catch (e: Exception) {
+                Log.e("MainContent", "Error saving token", e)
+            }
         }
     } else {
-        Log.d("MainContent", "Displaying FeedListScreen")
         FeedListScreen(viewModel)
     }
 }

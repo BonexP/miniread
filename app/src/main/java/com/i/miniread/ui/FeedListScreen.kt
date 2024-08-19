@@ -23,7 +23,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel) {
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(feeds) { feed ->
             FeedItem(feed, onClick = {
-                // Handle click event, navigate to article detail screen
+                // 处理点击事件，跳转到文章详情界面
             })
         }
     }
@@ -31,13 +31,16 @@ fun FeedListScreen(viewModel: MinifluxViewModel) {
 
 @Composable
 fun FeedItem(feed: Entry, onClick: () -> Unit) {
+    val title = feed.title ?: "Untitled"
+    val publishedAt = feed.published_at ?: "Unknown Date"
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
             .clickable { onClick() }
     ) {
-        Text(text = feed.title, style = MaterialTheme.typography.headlineLarge)
-        Text(text = feed.published_at, style = MaterialTheme.typography.bodyLarge)
+        Text(text = title, style = MaterialTheme.typography.headlineLarge)
+        Text(text = publishedAt, style = MaterialTheme.typography.bodyLarge)
     }
 }

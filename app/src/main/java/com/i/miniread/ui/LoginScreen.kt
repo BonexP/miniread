@@ -28,12 +28,16 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) 
             label = { Text("API Token") }
         )
         Button(onClick = {
+            Log.d("LoginScreen", "Login button clicked")
             if (authToken.isNotEmpty()) {
-                Log.d("LoginScreen", "Login button clicked, token: $authToken")
-                viewModel.setAuthToken(authToken)
-                onLoginSuccess(authToken)
+                try {
+                    Log.d("LoginScreen", "Valid token: $authToken")
+                    onLoginSuccess(authToken)
+                } catch (e: Exception) {
+                    Log.e("LoginScreen", "Error during login success handling", e)
+                }
             } else {
-                Log.d("LoginScreen", "Login button clicked with empty token")
+                Log.d("LoginScreen", "Empty token input")
                 errorMessage = "Please enter a valid API token."
             }
         }) {
