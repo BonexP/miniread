@@ -27,13 +27,11 @@ fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController) 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(entries) { entry ->
             EntryItem(entry, onClick = {
-                viewModel.loadEntryById(entry.id)
                 navController.navigate("articleDetail?entryId=${entry.id}")
             })
         }
     }
 }
-
 @Composable
 fun EntryItem(entry: Entry, onClick: () -> Unit) {
     Card(
