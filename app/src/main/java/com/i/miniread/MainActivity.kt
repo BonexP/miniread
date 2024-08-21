@@ -130,7 +130,7 @@ fun MainContent(
                     Surface(modifier = Modifier.padding(innerPadding)) {
                         NavHost(
                             navController = navController,
-                            startDestination = Screen.Feeds.route
+                            startDestination = Screen.Categories.route
                         ) {
                             composable(Screen.Feeds.route) {
                                 FeedListScreen(

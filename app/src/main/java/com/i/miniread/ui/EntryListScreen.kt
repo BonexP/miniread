@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
 fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController) {
+    Log.d("EntryListScreen", "EntryListScreen: EnterEntryScreen!")
     val entries by viewModel.entries.observeAsState(emptyList())
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {

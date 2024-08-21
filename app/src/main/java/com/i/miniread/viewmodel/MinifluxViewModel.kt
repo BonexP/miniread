@@ -39,6 +39,7 @@ class MinifluxViewModel : ViewModel() {
             try {
                 val entry = RetrofitInstance.api.getEntry(_authToken.value ?: "", entryId)
                 _selectedEntry.postValue(entry)
+
             } catch (e: Exception) {
                 _error.postValue("Failed to load entry: ${e.message}")
             }
