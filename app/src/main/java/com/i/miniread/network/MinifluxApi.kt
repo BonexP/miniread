@@ -141,7 +141,7 @@ object RetrofitInstance {
     private const val TAG = "MinifluxApi"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Logs request and response lines and their respective headers and bodies (if present)
+        level = HttpLoggingInterceptor.Level.HEADERS // Logs request and response lines and their respective headers and bodies (if present)
     }
 
 
