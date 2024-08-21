@@ -14,19 +14,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun EntryListScreen(viewModel: MinifluxViewModel = viewModel()) {
+fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController) {
     val entries by viewModel.entries.observeAsState(emptyList())
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(entries) { entry ->
             EntryItem(entry, onClick = {
-                // Navigate to ArticleDetailScreen here
                 viewModel.loadEntryById(entry.id)
+                navController.navigate("articleDetail?entryId=${entry.id}")
             })
         }
     }
@@ -38,16 +38,14 @@ fun EntryItem(entry: Entry, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onClick() },
+            .clickable { onClick() }
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            entry.title?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+            Text(
+                text = entry.title ?: "Untitled",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
