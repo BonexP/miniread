@@ -20,6 +20,7 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
 fun CategoryListScreen(viewModel: MinifluxViewModel, onCategoryClick: () -> Unit) {
+    Log.d("CategoryListScreen", "CategoryListScreen: Enter CategoryListScreen")
     val categories by viewModel.categories.observeAsState(emptyList())
     val error by viewModel.error.observeAsState()
 
