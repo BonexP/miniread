@@ -36,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
+import com.i.miniread.ui.EntryListScreen  // Import the new screen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -61,11 +62,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
 sealed class Screen(val route: String) {
     data object Feeds : Screen("feeds")
     data object Categories : Screen("categories")
     data object ArticleDetail : Screen("articleDetail")
+    data object EntryList : Screen("entryList")  // New screen for entries
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
@@ -73,7 +77,7 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val screens = listOf(Screen.Feeds, Screen.Categories, Screen.ArticleDetail)
+    val screens = listOf(Screen.Feeds, Screen.Categories, Screen.ArticleDetail, Screen.EntryList)  // Include the new screen
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
     if (authToken == null) {
@@ -122,10 +126,17 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
                     Surface(modifier = Modifier.padding(innerPadding)) {
                         NavHost(navController = navController, startDestination = Screen.Feeds.route) {
                             composable(Screen.Feeds.route) { FeedListScreen(viewModel, navController) }
-                            composable(Screen.Categories.route) { CategoryListScreen(viewModel) }
+                            composable(Screen.Categories.route) {
+                                CategoryListScreen(viewModel) {
+                                    navController.navigate(Screen.EntryList.route)  // Navigate to EntryListScreen
+                                }
+                            }
+                            composable(Screen.EntryList.route) { EntryListScreen(viewModel) }  // New EntryListScreen route
                             composable(Screen.ArticleDetail.route) {
-                                viewModel.selectedEntry?.let { entryId ->
-                                    ArticleDetailScreen(viewModel, entryId)
+                                viewModel.selectedEntry.value?.id.let { entryId ->
+                                    if (entryId != null) {
+                                        ArticleDetailScreen(viewModel, entryId)
+                                    }
                                 }
                             }
                         }

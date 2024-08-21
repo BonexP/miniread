@@ -7,29 +7,37 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.LiveData
-import com.i.miniread.network.Entry
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: LiveData<Entry?>) {
-    val entries = viewModel.entries.observeAsState().value
-    val entry = entries?.find { it.id.equals(entryId)  }
+fun ArticleDetailScreen(viewModel: MinifluxViewModel = viewModel(), entryId: Int) {
+    // Load the entry when the screen is composed
+    LaunchedEffect(entryId) {
+        viewModel.loadEntryById(entryId)
+    }
+
+    // Observe the selected entry
+    val entry = viewModel.selectedEntry.observeAsState().value
 
     if (entry == null) {
+        // Display a loading message or an error if the entry is not available
         Text(
-            text = "Article not found",
-            color = MaterialTheme.colorScheme.error,
+            text = "Loading...",
             modifier = Modifier.padding(16.dp)
         )
     } else {
+        // Display the article content
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = entry.title ?: "No title", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = entry.content ?: "No content available", style = MaterialTheme.typography.bodyLarge)
+            entry.title?.let {
+                Text(text = it, style = MaterialTheme.typography.headlineMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                entry.content?.let { Text(text = it, style = MaterialTheme.typography.bodyLarge) }
+            }
         }
     }
 }

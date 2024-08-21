@@ -18,7 +18,7 @@ import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun CategoryListScreen(viewModel: MinifluxViewModel) {
+fun CategoryListScreen(viewModel: MinifluxViewModel, onCategoryClick: () -> Unit) {
     val categories by viewModel.categories.observeAsState(emptyList())
     val error by viewModel.error.observeAsState()
 
@@ -33,6 +33,7 @@ fun CategoryListScreen(viewModel: MinifluxViewModel) {
             items(categories) { category ->
                 CategoryItem(category, onClick = {
                     viewModel.fetchEntries(categoryId = category.id, status = "unread")
+                    onCategoryClick() // Navigate to EntryListScreen
                 })
             }
         }
