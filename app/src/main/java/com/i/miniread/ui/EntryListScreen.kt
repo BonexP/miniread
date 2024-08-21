@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,13 +34,20 @@ fun EntryListScreen(viewModel: MinifluxViewModel = viewModel()) {
 
 @Composable
 fun EntryItem(entry: Entry, onClick: () -> Unit) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
     ) {
-        entry.title?.let { Text(text = it, style = MaterialTheme.typography.titleLarge) }
-        Text(text = (entry.content?.take(100) ?: "" ) + "...", style = MaterialTheme.typography.bodyMedium)
+        Column(modifier = Modifier.padding(16.dp)) {
+            entry.title?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
     }
 }
