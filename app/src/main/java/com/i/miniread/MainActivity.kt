@@ -69,7 +69,6 @@ sealed class Screen(val route: String) {
     data object EntryList : Screen("entryList")
     data object ArticleDetail : Screen("articleDetail")
 }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
@@ -80,8 +79,8 @@ fun MainContent(
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Removed ArticleDetail from the drawer menu
-    val screens = listOf(Screen.Feeds, Screen.Categories, Screen.EntryList)
+    // Removed EntryList from the drawer menu
+    val screens = listOf(Screen.Feeds, Screen.Categories)
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
     if (authToken == null) {
@@ -105,7 +104,14 @@ fun MainContent(
                                 .clickable {
                                     selectedScreen = screen.route
                                     scope.launch { drawerState.close() }
-                                    navController.navigate(screen.route)
+                                    // Navigate and clear the back stack up to the current route
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
                                 }
                                 .padding(16.dp)
                         )
@@ -133,10 +139,7 @@ fun MainContent(
                             startDestination = Screen.Categories.route
                         ) {
                             composable(Screen.Feeds.route) {
-                                FeedListScreen(
-                                    viewModel,
-                                    navController
-                                )
+                                FeedListScreen(viewModel, navController)
                             }
                             composable(Screen.Categories.route) {
                                 CategoryListScreen(viewModel) {
@@ -144,20 +147,14 @@ fun MainContent(
                                 }
                             }
                             composable(Screen.EntryList.route) {
-                                EntryListScreen(
-                                    viewModel,
-                                    navController
-                                )
+                                EntryListScreen(viewModel, navController)
                             }
                             composable(Screen.ArticleDetail.route) {
                                 viewModel.selectedEntry.value?.id.let { entryId ->
                                     if (entryId != null) {
                                         ArticleDetailScreen(viewModel, entryId)
                                     } else {
-                                        Log.d(
-                                            "MainActivity",
-                                            "MainContent: Error while get EntryID"
-                                        )
+                                        Log.d("MainActivity", "MainContent: Error while get EntryID")
                                     }
                                 }
                             }
