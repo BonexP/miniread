@@ -88,7 +88,7 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getEntries(token, status, categoryId)
-                    Log.d("MinifluxViewModel", "Response: $response")
+//                    Log.d("MinifluxViewModel", "Response: $response")
                     Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.entries.size} items")
                     _entries.value=response.entries
                     _entries.postValue(response.entries)
