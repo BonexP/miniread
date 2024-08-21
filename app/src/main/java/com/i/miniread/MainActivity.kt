@@ -31,9 +31,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
@@ -149,13 +151,15 @@ fun MainContent(
                             composable(Screen.EntryList.route) {
                                 EntryListScreen(viewModel, navController)
                             }
-                            composable(Screen.ArticleDetail.route) {
-                                viewModel.selectedEntry.value?.id.let { entryId ->
-                                    if (entryId != null) {
-                                        ArticleDetailScreen(viewModel, entryId)
-                                    } else {
-                                        Log.d("MainActivity", "MainContent: Error while get EntryID")
-                                    }
+                            composable( route = Screen.ArticleDetail.route + "?entryId={entryId}",
+                                arguments = listOf(navArgument("entryId") { type = NavType.IntType })
+                            ) {
+                                    backStackEntry ->
+                                val entryId = backStackEntry.arguments?.getInt("entryId")
+                                if (entryId != null) {
+                                    ArticleDetailScreen(viewModel, entryId)
+                                } else {
+                                    Log.d("MainActivity", "MainContent: Error while getting entryId")
                                 }
                             }
                         }
