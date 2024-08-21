@@ -19,9 +19,8 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
 
-
-    // 仅在需要时加载数据
-    LaunchedEffect(entryId) {
+    // 仅在需要时加载数据，并确保LaunchedEffect不会在每次Recomposition时重复执行
+    LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
             viewModel.loadEntryById(entryId)
         }
