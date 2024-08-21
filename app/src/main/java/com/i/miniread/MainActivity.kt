@@ -72,7 +72,10 @@ sealed class Screen(val route: String) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content.SharedPreferences) {
+fun MainContent(
+    viewModel: MinifluxViewModel,
+    sharedPreferences: android.content.SharedPreferences
+) {
     val authToken by viewModel.authToken.observeAsState()
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -125,20 +128,38 @@ fun MainContent(viewModel: MinifluxViewModel, sharedPreferences: android.content
                 },
                 content = { innerPadding ->
                     Surface(modifier = Modifier.padding(innerPadding)) {
-                        NavHost(navController = navController, startDestination = Screen.Feeds.route) {
-                            composable(Screen.Feeds.route) { FeedListScreen(viewModel, navController) }
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.Feeds.route
+                        ) {
+                            composable(Screen.Feeds.route) {
+                                FeedListScreen(
+                                    viewModel,
+                                    navController
+                                )
+                            }
                             composable(Screen.Categories.route) {
                                 CategoryListScreen(viewModel) {
                                     navController.navigate(Screen.EntryList.route)
                                 }
                             }
-                            composable(Screen.EntryList.route) { EntryListScreen(viewModel, navController) }
+                            composable(Screen.EntryList.route) {
+                                EntryListScreen(
+                                    viewModel,
+                                    navController
+                                )
+                            }
                             composable(Screen.ArticleDetail.route) {
                                 viewModel.selectedEntry.value?.id.let { entryId ->
-                                if (entryId != null) {
-                                    ArticleDetailScreen(viewModel, entryId)
+                                    if (entryId != null) {
+                                        ArticleDetailScreen(viewModel, entryId)
+                                    } else {
+                                        Log.d(
+                                            "MainActivity",
+                                            "MainContent: Error while get EntryID"
+                                        )
+                                    }
                                 }
-                             }
                             }
                         }
                     }
