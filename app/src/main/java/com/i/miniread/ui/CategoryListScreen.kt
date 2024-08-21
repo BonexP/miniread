@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,12 +52,24 @@ fun CategoryListScreen(viewModel: MinifluxViewModel, onCategoryClick: () -> Unit
 
 @Composable
 fun CategoryItem(category: Category, onClick: () -> Unit) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable { onClick() }
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
     ) {
-        Text(text = category.title, style = MaterialTheme.typography.titleLarge)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = category.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = "${category.title} articles",  // Show the number of articles in the category
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
     }
 }
+
