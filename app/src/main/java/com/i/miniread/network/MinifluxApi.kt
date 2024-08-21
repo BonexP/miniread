@@ -90,6 +90,14 @@ interface MinifluxApi {
     suspend fun getUserInfo(
         @Header("X-Auth-Token") authToken: String
     ): UserInfo
+
+
+    @DELETE("v1/feeds/{feedId}")
+    suspend fun deleteFeed(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("feedId") feedId: Long
+    )
+
 }
 
 data class AuthResponse(val token: String)

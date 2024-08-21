@@ -34,6 +34,16 @@ class MinifluxViewModel : ViewModel() {
     private val _userInfo = MutableLiveData<UserInfo?>()
     val userInfo: LiveData<UserInfo?> get() = _userInfo
 
+    fun loadEntryById(entryId: Int) {
+        viewModelScope.launch {
+            try {
+                val entry = RetrofitInstance.api.getEntry(_authToken.value ?: "", entryId)
+                _selectedEntry.postValue(entry)
+            } catch (e: Exception) {
+                _error.postValue("Failed to load entry: ${e.message}")
+            }
+        }
+    }
     fun setAuthToken(token: String) {
         Log.d("MinifluxViewModel", "Auth token set: $token")
         _authToken.value = token
