@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -21,8 +22,11 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel = viewModel(), entryId: Int
         viewModel.loadEntryById(entryId)
     }
 
+    val tag = "ArticleDetailScreen"
+    Log.d(tag,"Now viewing entryId=${entryId}")
     // Observe the selected entry
     val entry = viewModel.selectedEntry.observeAsState().value
+    Log.d(tag, "ArticleDetailScreen: entry value :${entry} ")
 
     if (entry == null) {
         // Display a loading message or an error if the entry is not available
