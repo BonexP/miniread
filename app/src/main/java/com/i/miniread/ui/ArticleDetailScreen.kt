@@ -1,23 +1,29 @@
 package com.i.miniread.ui
 
 import android.util.Log
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
+    val context = LocalContext.current
 
     // 仅在需要时加载数据，并确保LaunchedEffect不会在每次Recomposition时重复执行
     LaunchedEffect(entryId, selectedEntry?.id) {
@@ -29,13 +35,30 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     Log.d(tag, "Now viewing entryId=$entryId")
     Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
 
-    if (selectedEntry == null || selectedEntry?.id != entryId) {
-        Text(text = "Loading...", modifier = Modifier.padding(16.dp))
-    } else {
-        Column(modifier = Modifier.padding(16.dp)) {
-            selectedEntry!!.title?.let { Text(text = it, style = MaterialTheme.typography.headlineMedium) }
-            Spacer(modifier = Modifier.height(8.dp))
-            selectedEntry!!.content?.let { Text(text = it, style = MaterialTheme.typography.bodyLarge) }
+    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        when {
+            selectedEntry == null || selectedEntry?.id != entryId -> {
+                Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
+            }
+            else -> {
+                val webView = remember {
+                    WebView(context).apply {
+                        webViewClient = WebViewClient()
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            cacheMode = WebSettings.LOAD_NO_CACHE
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                        }
+                        selectedEntry!!.content?.let {
+                            loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
+                        }
+                    }
+                }
+
+                AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }
