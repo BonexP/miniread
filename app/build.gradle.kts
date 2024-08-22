@@ -26,12 +26,24 @@ android {
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled =  false
+            proguardFiles (getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 确保启用了调试标志
+            isDebuggable = true
+            isDefault=true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        getByName("debug") {
+            isDebuggable = true
+            isJniDebuggable = true
+            isRenderscriptDebuggable = true
         }
     }
     compileOptions {
