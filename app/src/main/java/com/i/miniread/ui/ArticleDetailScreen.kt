@@ -10,6 +10,11 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +48,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     Log.d(tag, "Now viewing entryId=$entryId")
     Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
     Log.d(tag, "ArticleDetailScreen: entry feedid: ${selectedEntry?.feed_id}")
+
 
     Box(modifier = Modifier
         .fillMaxSize()
@@ -129,7 +135,23 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
             }
         }
     }
-}
+    BottomAppBar {
+        IconButton(onClick = {
+            Log.d("MainActivity", "MainContent: Mark Entry as  read")
+            viewModel.markEntryAsRead(entryId)
+        } ) {
+            Icon(
+                imageVector = Icons.Default.CheckCircle,
+                contentDescription = "Mark As read",
+            )
+
+
+
+        }
+
+    }
+    }
+
 
 // 动态生成HTML内容的方法
 fun buildHtmlContent(content: String): String {
