@@ -25,12 +25,13 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
 
-    // 仅在需要时加载数据，并确保LaunchedEffect不会在每次Recomposition时重复执行
+    // 仅在需要时加载数据
     LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
             viewModel.loadEntryById(entryId)
         }
     }
+
     val tag = "ArticleDetailScreen"
     Log.d(tag, "Now viewing entryId=$entryId")
     Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
@@ -41,6 +42,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
             }
             else -> {
+                // 使用 remember 对 WebView 进行缓存
                 val webView = remember {
                     WebView(context).apply {
                         webViewClient = WebViewClient()
@@ -50,14 +52,29 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                             cacheMode = WebSettings.LOAD_NO_CACHE
                             useWideViewPort = true
                             loadWithOverviewMode = true
+                            // 禁用不必要的功能以优化性能
+                            setSupportZoom(false)
+                            builtInZoomControls = false
+                            displayZoomControls = false
+                            loadsImagesAutomatically = true
                         }
-                        selectedEntry!!.content?.let {
-                            loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
-                        }
+                        setBackgroundColor(0x00000000)  // 透明背景，避免不必要的重绘
                     }
                 }
 
-                AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+                // 仅在 selectedEntry 内容变化时加载数据
+                LaunchedEffect(selectedEntry?.content) {
+                    selectedEntry?.content?.let {
+                        webView.loadDataWithBaseURL(null,
+                            it, "text/html", "UTF-8", null)
+                    }
+
+                }
+
+                AndroidView(
+                    factory = { webView },
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }
