@@ -52,23 +52,34 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                             cacheMode = WebSettings.LOAD_NO_CACHE
                             useWideViewPort = true
                             loadWithOverviewMode = true
-                            // 禁用不必要的功能以优化性能
                             setSupportZoom(false)
                             builtInZoomControls = false
                             displayZoomControls = false
                             loadsImagesAutomatically = true
+                            textZoom = 125  // 增大文字大小，提升可读性
                         }
                         setBackgroundColor(0x00000000)  // 透明背景，避免不必要的重绘
                     }
                 }
 
+                // 定义适合移动设备的HTML样式
+                val htmlContent = """
+                    <html>
+                    <head>
+                        <style>
+                            body { font-size: 18px; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
+                            img { max-width: 100%; height: auto; }
+                        </style>
+                    </head>
+                    <body>
+                        ${selectedEntry!!.content}
+                    </body>
+                    </html>
+                """.trimIndent()
+
                 // 仅在 selectedEntry 内容变化时加载数据
                 LaunchedEffect(selectedEntry?.content) {
-                    selectedEntry?.content?.let {
-                        webView.loadDataWithBaseURL(null,
-                            it, "text/html", "UTF-8", null)
-                    }
-
+                    webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
                 }
 
                 AndroidView(
