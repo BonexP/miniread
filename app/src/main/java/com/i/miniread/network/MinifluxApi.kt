@@ -83,7 +83,8 @@ interface MinifluxApi {
     suspend fun getEntries(
         @Header("X-Auth-Token") authToken: String,
         @Query("status") status: String? = "unread",
-        @Query("category_id") categoryId: Int? = null
+        @Query("category_id") categoryId: Int? = null,
+        @Query("direction") direction:  String? = "desc",
     ): EntriesResponse
 
     @GET("v1/me")
