@@ -3,6 +3,7 @@ package com.i.miniread.network
 import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
@@ -73,11 +74,11 @@ interface MinifluxApi {
         @Path("entryId") entryId: Int
     ): Void
 
-    @POST("v1/entries/{entryId}/unread")
+    @PUT("v1/entries")
     suspend fun markEntryAsUnread(
         @Header("X-Auth-Token") authToken: String,
-        @Path("entryId") entryId: Int
-    ): Void
+        @Body body: EntryAndStatus,
+    ): Response<Void?>
 
     @GET("v1/entries")
     suspend fun getEntries(
@@ -100,6 +101,13 @@ interface MinifluxApi {
     )
 
 }
+
+
+data class EntryAndStatus
+    ( val entry_ids:   List<Int>,
+      val status : String="unread")
+
+
 
 data class AuthResponse(val token: String)
 // 创建 EntriesResponse 数据类以匹配新的 API 响应结构
@@ -143,7 +151,7 @@ object RetrofitInstance {
     private const val TAG = "MinifluxApi"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.HEADERS // Logs request and response lines and their respective headers and bodies (if present)
+        level = HttpLoggingInterceptor.Level.BODY // Logs request and response lines and their respective headers and bodies (if present)
     }
 
 

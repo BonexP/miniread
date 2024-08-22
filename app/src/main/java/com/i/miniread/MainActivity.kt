@@ -71,6 +71,7 @@ sealed class Screen(val route: String) {
     data object EntryList : Screen("entryList")
     data object ArticleDetail : Screen("articleDetail")
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainContent(
@@ -154,14 +155,19 @@ fun MainContent(
                             }
                             composable(
                                 route = Screen.ArticleDetail.route + "?entryId={entryId}",
-                                arguments = listOf(navArgument("entryId") { type = NavType.IntType })
+                                arguments = listOf(navArgument("entryId") {
+                                    type = NavType.IntType
+                                })
                             ) { backStackEntry ->
                                 val entryId = backStackEntry.arguments?.getInt("entryId")
                                 if (entryId != null) {
                                     selectedScreen = Screen.ArticleDetail.route
                                     ArticleDetailScreen(viewModel, entryId)
                                 } else {
-                                    Log.d("MainActivity", "MainContent: Error while getting entryId")
+                                    Log.d(
+                                        "MainActivity",
+                                        "MainContent: Error while getting entryId"
+                                    )
                                 }
                             }
                         }
@@ -169,6 +175,8 @@ fun MainContent(
                 }
             )
         }
+
+
     }
 }
 
