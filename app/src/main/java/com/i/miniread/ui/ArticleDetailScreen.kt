@@ -1,6 +1,5 @@
 package com.i.miniread.ui
 
-import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -20,6 +19,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.i.miniread.viewmodel.MinifluxViewModel
 
+fun buildHtmlContent(content: String): String {
+    return """
+        <html>
+        <head>
+            <style>
+                body { font-size: 18px; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
+                img { max-width: 100%; height: auto; }
+            </style>
+        </head>
+        <body>
+            $content
+        </body>
+        </html>
+    """.trimIndent()
+}
+
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
@@ -32,17 +47,12 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
         }
     }
 
-    val tag = "ArticleDetailScreen"
-    Log.d(tag, "Now viewing entryId=$entryId")
-    Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
-
     Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         when {
             selectedEntry == null || selectedEntry?.id != entryId -> {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
             }
             else -> {
-                // 使用 remember 对 WebView 进行缓存
                 val webView = remember {
                     WebView(context).apply {
                         webViewClient = WebViewClient()
@@ -56,36 +66,22 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                             builtInZoomControls = false
                             displayZoomControls = false
                             loadsImagesAutomatically = true
-                            textZoom = 125  // 增大文字大小，提升可读性
+                            textZoom = 125  // 提高字体可读性
                         }
-                        setBackgroundColor(0x00000000)  // 透明背景，避免不必要的重绘
+                        setBackgroundColor(0x00000000)
                     }
                 }
 
-                // 定义适合移动设备的HTML样式
-                val htmlContent = """
-                    <html>
-                    <head>
-                        <style>
-                            body { font-size: 18px; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
-                            img { max-width: 100%; height: auto; }
-                        </style>
-                    </head>
-                    <body>
-                        ${selectedEntry!!.content}
-                    </body>
-                    </html>
-                """.trimIndent()
+                // 动态生成 HTML 内容
+                val htmlContent = selectedEntry!!.content?.let { buildHtmlContent(it) }
 
-                // 仅在 selectedEntry 内容变化时加载数据
                 LaunchedEffect(selectedEntry?.content) {
-                    webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+                    if (htmlContent != null) {
+                        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+                    }
                 }
 
-                AndroidView(
-                    factory = { webView },
-                    modifier = Modifier.fillMaxSize()
-                )
+                AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
             }
         }
     }
