@@ -4,8 +4,8 @@ plugins {
 
 }
 val versionname by extra("dev")
-val versioncode by extra("0.0.5")
-val versionnumber by extra(5)
+val versioncode by extra("0.0.6")
+val versionnumber by extra(6)
 
 android {
     namespace = "com.i.miniread"
@@ -39,6 +39,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            isDebuggable = false
+            isJniDebuggable = false
+            isRenderscriptDebuggable = false
+            versionNameSuffix = "alpha"
         }
         getByName("debug") {
             isDebuggable = true
