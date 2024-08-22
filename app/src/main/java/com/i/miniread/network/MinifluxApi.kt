@@ -112,7 +112,8 @@ data class Entry(
     val url: String?,
     val content: String?,
     val published_at: String?,
-    val status: String?
+    val status: String?,
+    val feed_id: Int
 )
 
 data class Category(

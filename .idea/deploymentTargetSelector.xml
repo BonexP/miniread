@@ -4,7 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-08-19T11:48:34.887386957Z">
+        <DropdownSelection timestamp="2024-08-22T06:28:00.884720921Z">
           <Target type="DEFAULT_BOOT">
             <handle>
               <DeviceId pluginId="LocalEmulator" identifier="path=/home/oem7020/.local/share/android/avd/SC801a_API_27_Next.avd" />
