@@ -57,8 +57,9 @@ class MinifluxViewModel : ViewModel() {
             Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
             viewModelScope.launch {
                 try {
-                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(entryId,"read"))
-                    Log.d("MinifluxViewModel", "Entry marked successfully: $response items")
+                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(
+                        listOf(entryId),"read"))
+                    Log.d("MinifluxViewModel", "Entry marked successfully: ${response.isSuccessful} ")
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error mark entry", e)
                 }
