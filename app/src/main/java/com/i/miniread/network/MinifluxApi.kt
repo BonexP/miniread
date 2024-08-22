@@ -73,10 +73,10 @@ interface MinifluxApi {
         @Path("entryId") entryId: Int
     ): Void
 
-    @POST("v1/entries/{entryId}/unread")
+    @PUT("v1/entries")
     suspend fun markEntryAsUnread(
         @Header("X-Auth-Token") authToken: String,
-        @Path("entryId") entryId: Int
+        @Body body: EntryAndStatus,
     ): Void
 
     @GET("v1/entries")
@@ -100,6 +100,12 @@ interface MinifluxApi {
     )
 
 }
+
+data class EntryAndStatus
+    ( val entry_ids:   Int,
+      val status : String="unread")
+
+
 
 data class AuthResponse(val token: String)
 // 创建 EntriesResponse 数据类以匹配新的 API 响应结构

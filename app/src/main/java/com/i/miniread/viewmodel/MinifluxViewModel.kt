@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.i.miniread.network.Category
 import com.i.miniread.network.Entry
+import com.i.miniread.network.EntryAndStatus
 import com.i.miniread.network.FeedCreationRequest
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
@@ -51,6 +52,19 @@ class MinifluxViewModel : ViewModel() {
         _authToken.value = token
     }
 
+    fun markEntryAsRead(entryId: Int){
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(entryId,"read"))
+                    Log.d("MinifluxViewModel", "Entry marked successfully: $response items")
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error mark entry", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
+    }
     fun fetchFeeds() {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching feeds with token: $token")
