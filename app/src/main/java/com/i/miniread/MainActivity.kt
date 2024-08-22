@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -132,6 +133,17 @@ fun MainContent(
                                 scope.launch { drawerState.open() }
                             }) {
                                 Icon(imageVector = Icons.Default.Menu, contentDescription = null)
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = {
+                                viewModel.fetchFeeds()
+                                viewModel.fetchCategories()}
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "refresh"
+                                )
                             }
                         }
                     )
