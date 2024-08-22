@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -24,7 +25,7 @@ fun buildHtmlContent(content: String): String {
         <html>
         <head>
             <style>
-                body { font-size: 18px; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
+                body { font-size: 18dp; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
                 img { max-width: 100%; height: auto; }
             </style>
         </head>
@@ -47,7 +48,14 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    val tag = "ArticleDetailScreen"
+    Log.d(tag, "Now viewing entryId=$entryId")
+    Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
+    Log.d(tag, "ArticleDetailScreen: entry feedid: ${selectedEntry?.feed_id}")
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         when {
             selectedEntry == null || selectedEntry?.id != entryId -> {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
