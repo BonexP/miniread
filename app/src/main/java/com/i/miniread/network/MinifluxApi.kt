@@ -53,7 +53,7 @@ interface MinifluxApi {
     suspend fun getFeedEntries(
         @Header("X-Auth-Token") authToken: String,
         @Path("feedId") feedId: Int
-    ): List<Entry>
+    ): EntriesResponse
 
     @GET("v1/feeds/{feedId}/icon")
     suspend fun getFeedIcon(
