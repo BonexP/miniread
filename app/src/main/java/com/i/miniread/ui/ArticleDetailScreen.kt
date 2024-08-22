@@ -48,6 +48,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
             }
             else -> {
+                val shouldInterceptRequests = selectedEntry?.feed_id==26
                 // 使用 remember 对 WebView 进行缓存
                 val webView = remember {
                     WebView(context).apply {
@@ -56,6 +57,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                                 view: WebView?,
                                 request: WebResourceRequest?
                             ): WebResourceResponse? {
+                                if(shouldInterceptRequests )
                                 request?.url?.let { url ->
                                     if (url.host?.contains("cdnfile.sspai.com") == true) {
                                         val modifiedRequest = Request.Builder()
