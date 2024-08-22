@@ -3,6 +3,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
 
 }
+val versionname by extra("dev")
+val versioncode by extra("0.0.5")
+val versionnumber by extra(5)
 
 android {
     namespace = "com.i.miniread"
@@ -12,13 +15,14 @@ android {
         applicationId = "com.i.miniread"
         minSdk = 25
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = versionnumber
+        versionName = versionname
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
+        versionNameSuffix = versionname
     }
 
     buildTypes {
