@@ -45,6 +45,7 @@ class MinifluxViewModel : ViewModel() {
             }
         }
     }
+
     fun setAuthToken(token: String) {
         Log.d("MinifluxViewModel", "Auth token set: $token")
         _authToken.value = token
@@ -72,7 +73,10 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getCategories(token)
-                    Log.d("MinifluxViewModel", "Categories fetched successfully: ${response.size} items")
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Categories fetched successfully: ${response.size} items"
+                    )
                     _categories.postValue(response)
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching categories", e)
@@ -84,13 +88,19 @@ class MinifluxViewModel : ViewModel() {
 
     fun fetchEntries(status: String? = "unread", categoryId: Int? = null) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching entries with token: $token, status: $status, categoryId: $categoryId")
+            Log.d(
+                "MinifluxViewModel",
+                "Fetching entries with token: $token, status: $status, categoryId: $categoryId"
+            )
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getEntries(token, status, categoryId)
 //                    Log.d("MinifluxViewModel", "Response: $response")
-                    Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.entries.size} items")
-                    _entries.value=response.entries
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Entries fetched successfully: ${response.entries.size} items"
+                    )
+                    _entries.value = response.entries
                     _entries.postValue(response.entries)
                 } catch (e: Exception) {
                     Log.d("MinifluxViewModel", "Response: ")
@@ -101,12 +111,42 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
     }
 
-    fun createFeed(feedUrl: String, categoryId: Int? = null) {
+    fun fetchEntries(feed: Entry ,status: String?=  "unread") {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Creating feed with token: $token, feedUrl: $feedUrl, categoryId: $categoryId")
+            Log.d(
+                "MinifluxViewModel",
+                "Fetching entries with token: $token, status: $status"
+            )
             viewModelScope.launch {
                 try {
-                    val feedRequest = FeedCreationRequest(feed_url = feedUrl, category_id = categoryId)
+                    val response = RetrofitInstance.api.getFeedEntries(token, feed.id)
+//                    Log.d("MinifluxViewModel", "Response: $response")
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Entries fetched successfully: ${response.entries.size} items"
+                    )
+                    _entries.value = response.entries
+                    _entries.postValue(response.entries)
+                } catch (e: Exception) {
+                    Log.d("MinifluxViewModel", "Response: ")
+                    Log.e("MinifluxViewModel", "Error fetching entries", e)
+                    _entries.postValue(emptyList())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
+    }
+
+
+    fun createFeed(feedUrl: String, categoryId: Int? = null) {
+        _authToken.value?.let { token ->
+            Log.d(
+                "MinifluxViewModel",
+                "Creating feed with token: $token, feedUrl: $feedUrl, categoryId: $categoryId"
+            )
+            viewModelScope.launch {
+                try {
+                    val feedRequest =
+                        FeedCreationRequest(feed_url = feedUrl, category_id = categoryId)
                     val response = RetrofitInstance.api.createFeed(token, feedRequest)
                     Log.d("MinifluxViewModel", "Feed created successfully: ${response.title}")
                     fetchFeeds() // Refresh the feed list after creation
@@ -138,7 +178,10 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getUserInfo(token)
-                    Log.d("MinifluxViewModel", "User info fetched successfully: ${response.username}")
+                    Log.d(
+                        "MinifluxViewModel",
+                        "User info fetched successfully: ${response.username}"
+                    )
                     _userInfo.postValue(response)
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching user info", e)
@@ -150,9 +193,5 @@ class MinifluxViewModel : ViewModel() {
 
     fun clearError() {
         _error.value = null
-    }
-
-    fun setSelectedEntry(feed: Entry) {
-
     }
 }

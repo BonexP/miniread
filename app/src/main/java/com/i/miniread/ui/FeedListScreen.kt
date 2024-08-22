@@ -19,16 +19,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.i.miniread.Screen
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun FeedListScreen(viewModel: MinifluxViewModel, navController: NavController) {
+fun FeedListScreen(viewModel: MinifluxViewModel, navHostController: NavHostController) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
 
     Log.d("FeedListScreen", "Number of feeds: ${feeds.size}")
+    Log.d("FeedListScreen","Feeds: $feeds")
 
     LazyColumn(
         modifier = Modifier
@@ -37,9 +38,9 @@ fun FeedListScreen(viewModel: MinifluxViewModel, navController: NavController) {
     ) {
         items(feeds) { feed ->
             FeedItem(feed, onClick = {
-                viewModel.setSelectedEntry(feed)
-                navController.navigate(Screen.ArticleDetail.route)
-            })
+                Log.d("FeedListScreen","Feed Using:  $feed")
+                viewModel.fetchEntries(feed)
+                navHostController.navigate(Screen.EntryList.route)            })
         }
     }
 }
