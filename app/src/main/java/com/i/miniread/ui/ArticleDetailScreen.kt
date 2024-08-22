@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -49,111 +53,135 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
     Log.d(tag, "ArticleDetailScreen: entry feedid: ${selectedEntry?.feed_id}")
 
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
-        when {
-            selectedEntry == null || selectedEntry?.id != entryId -> {
-                Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
+    Scaffold(
+        bottomBar = {
+            BottomAppBar {
+                IconButton(onClick = {
+                    Log.d("ArticleDetailScreen", "Mark Entry as read")
+                    viewModel.markEntryAsRead(entryId)
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Mark As Read"
+                    )
+                }
+                IconButton(onClick = {
+                    Log.d("ArticleDetailScreen", "Bookmark Entry")
+                    // Add bookmark logic here
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.ThumbUp,
+                        contentDescription = "Bookmark"
+                    )
+                }
+                IconButton(onClick = {
+                    Log.d("ArticleDetailScreen", "Favorite Entry")
+                    // Add favorite logic here
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Favorite"
+                    )
+                }
+                IconButton(onClick = {
+                    Log.d("ArticleDetailScreen", "Share Entry")
+                    // Add share logic here
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share"
+                    )
+                }
             }
-            else -> {
-                val shouldInterceptRequests = selectedEntry?.feed_id in listOf(26,38,52,51)
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .padding(16.dp)) {
+            when {
+                selectedEntry == null || selectedEntry?.id != entryId -> {
+                    Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
+                }
+                else -> {
+                    val shouldInterceptRequests = selectedEntry?.feed_id in listOf(26, 38, 52, 51)
 
-                // 使用 remember 对 WebView 进行缓存
-                val webView = remember {
-                    WebView(context).apply {
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldInterceptRequest(
-                                view: WebView?,
-                                request: WebResourceRequest?
-                            ): WebResourceResponse? {
-                                // 仅当 feed_id 为 26 时拦截请求
-                                if (shouldInterceptRequests) {
-                                    if (request?.url?.host?.contains("cdnfile.sspai.com") == true) {
-                                        Log.d(tag, "shouldInterceptRequest: intercept request work!")
-                                        val modifiedRequest = Request.Builder()
-                                            .url(request.url.toString())
-                                            .header("Referer", "https://sspai.com/")
-                                            .build()
+                    // 使用 remember 对 WebView 进行缓存
+                    val webView = remember {
+                        WebView(context).apply {
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldInterceptRequest(
+                                    view: WebView?,
+                                    request: WebResourceRequest?
+                                ): WebResourceResponse? {
+                                    if (shouldInterceptRequests) {
+                                        if (request?.url?.host?.contains("cdnfile.sspai.com") == true) {
+                                            Log.d(tag, "shouldInterceptRequest: intercept request work!")
+                                            val modifiedRequest = Request.Builder()
+                                                .url(request.url.toString())
+                                                .header("Referer", "https://sspai.com/")
+                                                .build()
 
-                                        val client = OkHttpClient()
-                                        val response: Response = client.newCall(modifiedRequest).execute()
+                                            val client = OkHttpClient()
+                                            val response: Response = client.newCall(modifiedRequest).execute()
 
-                                        return WebResourceResponse(
-                                            response.header("Content-Type", "text/html"),
-                                            response.header("Content-Encoding", "utf-8"),
-                                            response.body?.byteStream()
-                                        )
-                                    } else if (  request?.url?.host?.contains("sinaimg.cn")   ==true){
-                                        Log.d(tag, "shouldInterceptRequest: intercept  request  work! sinaimg.cn!")
-                                        val modifiedRequest = Request.Builder()
-                                            .url(request.url.toString())
-                                            .header("Referer", "https://weibo.com/")
-                                            .build()
+                                            return WebResourceResponse(
+                                                response.header("Content-Type", "text/html"),
+                                                response.header("Content-Encoding", "utf-8"),
+                                                response.body?.byteStream()
+                                            )
+                                        } else if (request?.url?.host?.contains("sinaimg.cn") == true) {
+                                            Log.d(tag, "shouldInterceptRequest: intercept request work! sinaimg.cn!")
+                                            val modifiedRequest = Request.Builder()
+                                                .url(request.url.toString())
+                                                .header("Referer", "https://weibo.com/")
+                                                .build()
 
-                                        val client = OkHttpClient()
-                                        val response: Response = client.newCall(modifiedRequest).execute()
+                                            val client = OkHttpClient()
+                                            val response: Response = client.newCall(modifiedRequest).execute()
 
-                                        return WebResourceResponse(
-                                            response.header("Content-Type", "text/html"),
-                                            response.header("Content-Encoding", "utf-8"),
-                                            response.body?.byteStream()
-                                        )
+                                            return WebResourceResponse(
+                                                response.header("Content-Type", "text/html"),
+                                                response.header("Content-Encoding", "utf-8"),
+                                                response.body?.byteStream()
+                                            )
+                                        }
                                     }
+                                    return super.shouldInterceptRequest(view, request)
                                 }
-                                return super.shouldInterceptRequest(view, request)
                             }
+
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                cacheMode = WebSettings.LOAD_NO_CACHE
+                                useWideViewPort = true
+                                loadWithOverviewMode = true
+                                setSupportZoom(false)
+                                builtInZoomControls = false
+                                displayZoomControls = false
+                                loadsImagesAutomatically = true
+                                textZoom = 125
+                            }
+                            setBackgroundColor(0x00000000)
                         }
+                    }
 
-                        settings.apply {
-                            javaScriptEnabled = true
-                            domStorageEnabled = true
-                            cacheMode = WebSettings.LOAD_NO_CACHE
-                            useWideViewPort = true
-                            loadWithOverviewMode = true
-                            setSupportZoom(false)
-                            builtInZoomControls = false
-                            displayZoomControls = false
-                            loadsImagesAutomatically = true
-                            textZoom = 125  // 提高字体可读性
+                    val htmlContent = selectedEntry!!.content?.let { buildHtmlContent(it) }
+
+                    LaunchedEffect(selectedEntry?.content) {
+                        if (htmlContent != null) {
+                            webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
                         }
-                        setBackgroundColor(0x00000000)
                     }
+
+                    AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
                 }
-
-                // 动态生成 HTML 内容
-                val htmlContent = selectedEntry!!.content?.let { buildHtmlContent(it) }
-
-                LaunchedEffect(selectedEntry?.content) {
-                    if (htmlContent != null) {
-                        webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
-                    }
-                }
-
-                AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
             }
         }
     }
-    BottomAppBar {
-        IconButton(onClick = {
-            Log.d("MainActivity", "MainContent: Mark Entry as  read")
-            viewModel.markEntryAsRead(entryId)
-        } ) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Mark As read",
-            )
+}
 
-
-
-        }
-
-    }
-    }
-
-
-// 动态生成HTML内容的方法
 fun buildHtmlContent(content: String): String {
     return """
         <html>
