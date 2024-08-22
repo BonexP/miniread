@@ -52,7 +52,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
             }
             else -> {
-                val shouldInterceptRequests = selectedEntry?.feed_id == 26
+                val shouldInterceptRequests = selectedEntry?.feed_id in listOf(26,38,52,51)
 
                 // 使用 remember 对 WebView 进行缓存
                 val webView = remember {
@@ -63,21 +63,38 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                                 request: WebResourceRequest?
                             ): WebResourceResponse? {
                                 // 仅当 feed_id 为 26 时拦截请求
-                                if (shouldInterceptRequests && request?.url?.host?.contains("cdnfile.sspai.com") == true) {
-                                    Log.d(tag, "shouldInterceptRequest: intercept request work!")
-                                    val modifiedRequest = Request.Builder()
-                                        .url(request.url.toString())
-                                        .header("Referer", "https://sspai.com/")
-                                        .build()
+                                if (shouldInterceptRequests) {
+                                    if (request?.url?.host?.contains("cdnfile.sspai.com") == true) {
+                                        Log.d(tag, "shouldInterceptRequest: intercept request work!")
+                                        val modifiedRequest = Request.Builder()
+                                            .url(request.url.toString())
+                                            .header("Referer", "https://sspai.com/")
+                                            .build()
 
-                                    val client = OkHttpClient()
-                                    val response: Response = client.newCall(modifiedRequest).execute()
+                                        val client = OkHttpClient()
+                                        val response: Response = client.newCall(modifiedRequest).execute()
 
-                                    return WebResourceResponse(
-                                        response.header("Content-Type", "text/html"),
-                                        response.header("Content-Encoding", "utf-8"),
-                                        response.body?.byteStream()
-                                    )
+                                        return WebResourceResponse(
+                                            response.header("Content-Type", "text/html"),
+                                            response.header("Content-Encoding", "utf-8"),
+                                            response.body?.byteStream()
+                                        )
+                                    } else if (  request?.url?.host?.contains("sinaimg.cn")   ==true){
+                                        Log.d(tag, "shouldInterceptRequest: intercept  request  work! sinaimg.cn!")
+                                        val modifiedRequest = Request.Builder()
+                                            .url(request.url.toString())
+                                            .header("Referer", "https://weibo.com/")
+                                            .build()
+
+                                        val client = OkHttpClient()
+                                        val response: Response = client.newCall(modifiedRequest).execute()
+
+                                        return WebResourceResponse(
+                                            response.header("Content-Type", "text/html"),
+                                            response.header("Content-Encoding", "utf-8"),
+                                            response.body?.byteStream()
+                                        )
+                                    }
                                 }
                                 return super.shouldInterceptRequest(view, request)
                             }
