@@ -81,7 +81,6 @@ fun MainContent(
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Removed EntryList from the drawer menu
     val screens = listOf(Screen.Feeds, Screen.Categories)
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
@@ -95,8 +94,11 @@ fun MainContent(
             }
         }
     } else {
+        val isArticleDetailScreen = selectedScreen == Screen.ArticleDetail.route
+
         ModalNavigationDrawer(
             drawerState = drawerState,
+            gesturesEnabled = !isArticleDetailScreen, // 禁用文章详情页的滑动手势
             drawerContent = {
                 ModalDrawerSheet {
                     screens.forEach { screen ->
@@ -106,7 +108,6 @@ fun MainContent(
                                 .clickable {
                                     selectedScreen = screen.route
                                     scope.launch { drawerState.close() }
-                                    // Navigate and clear the back stack up to the current route
                                     navController.navigate(screen.route) {
                                         popUpTo(navController.graph.startDestinationId) {
                                             saveState = true
@@ -151,12 +152,13 @@ fun MainContent(
                             composable(Screen.EntryList.route) {
                                 EntryListScreen(viewModel, navController)
                             }
-                            composable( route = Screen.ArticleDetail.route + "?entryId={entryId}",
+                            composable(
+                                route = Screen.ArticleDetail.route + "?entryId={entryId}",
                                 arguments = listOf(navArgument("entryId") { type = NavType.IntType })
-                            ) {
-                                    backStackEntry ->
+                            ) { backStackEntry ->
                                 val entryId = backStackEntry.arguments?.getInt("entryId")
                                 if (entryId != null) {
+                                    selectedScreen = Screen.ArticleDetail.route
                                     ArticleDetailScreen(viewModel, entryId)
                                 } else {
                                     Log.d("MainActivity", "MainContent: Error while getting entryId")
@@ -169,3 +171,4 @@ fun MainContent(
         }
     }
 }
+
