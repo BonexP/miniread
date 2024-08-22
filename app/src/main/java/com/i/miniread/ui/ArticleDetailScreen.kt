@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.annotation.SuppressLint
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -25,6 +26,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
@@ -42,7 +44,9 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
     Log.d(tag, "ArticleDetailScreen: entry feedid: ${selectedEntry?.feed_id}")
 
-    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         when {
             selectedEntry == null || selectedEntry?.id != entryId -> {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
@@ -60,6 +64,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                             ): WebResourceResponse? {
                                 // 仅当 feed_id 为 26 时拦截请求
                                 if (shouldInterceptRequests && request?.url?.host?.contains("cdnfile.sspai.com") == true) {
+                                    Log.d(tag, "shouldInterceptRequest: intercept request work!")
                                     val modifiedRequest = Request.Builder()
                                         .url(request.url.toString())
                                         .header("Referer", "https://sspai.com/")
@@ -115,7 +120,7 @@ fun buildHtmlContent(content: String): String {
         <html>
         <head>
             <style>
-                body { font-size: 18px; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
+                body { font-size: 3rem; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
                 img { max-width: 100%; height: auto; }
             </style>
         </head>
