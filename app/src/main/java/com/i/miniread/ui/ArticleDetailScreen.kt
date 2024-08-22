@@ -48,7 +48,8 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
             }
             else -> {
-                val shouldInterceptRequests = selectedEntry?.feed_id==26
+                val shouldInterceptRequests = selectedEntry?.feed_id == 26
+
                 // 使用 remember 对 WebView 进行缓存
                 val webView = remember {
                     WebView(context).apply {
@@ -57,23 +58,21 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                                 view: WebView?,
                                 request: WebResourceRequest?
                             ): WebResourceResponse? {
-                                if(shouldInterceptRequests )
-                                request?.url?.let { url ->
-                                    if (url.host?.contains("cdnfile.sspai.com") == true) {
-                                        val modifiedRequest = Request.Builder()
-                                            .url(url.toString())
-                                            .header("Referer", "https://sspai.com/")
-                                            .build()
+                                // 仅当 feed_id 为 26 时拦截请求
+                                if (shouldInterceptRequests && request?.url?.host?.contains("cdnfile.sspai.com") == true) {
+                                    val modifiedRequest = Request.Builder()
+                                        .url(request.url.toString())
+                                        .header("Referer", "https://sspai.com/")
+                                        .build()
 
-                                        val client = OkHttpClient()
-                                        val response: Response = client.newCall(modifiedRequest).execute()
+                                    val client = OkHttpClient()
+                                    val response: Response = client.newCall(modifiedRequest).execute()
 
-                                        return WebResourceResponse(
-                                            response.header("Content-Type", "text/html"),
-                                            response.header("Content-Encoding", "utf-8"),
-                                            response.body?.byteStream()
-                                        )
-                                    }
+                                    return WebResourceResponse(
+                                        response.header("Content-Type", "text/html"),
+                                        response.header("Content-Encoding", "utf-8"),
+                                        response.body?.byteStream()
+                                    )
                                 }
                                 return super.shouldInterceptRequest(view, request)
                             }
