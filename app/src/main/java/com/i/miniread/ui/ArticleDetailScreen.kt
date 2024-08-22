@@ -27,6 +27,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -41,144 +42,134 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
 
-    // 仅在需要时加载数据
     LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
             viewModel.loadEntryById(entryId)
         }
     }
 
-    val tag = "ArticleDetailScreen"
-    Log.d(tag, "Now viewing entryId=$entryId")
-    Log.d(tag, "ArticleDetailScreen: entry value: ${selectedEntry?.id}")
-    Log.d(tag, "ArticleDetailScreen: entry feedid: ${selectedEntry?.feed_id}")
-
     Scaffold(
-        bottomBar = {
-            BottomAppBar {
-                IconButton(onClick = {
-                    Log.d("ArticleDetailScreen", "Mark Entry as read")
-                    viewModel.markEntryAsRead(entryId)
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Mark As Read"
-                    )
-                }
-                IconButton(onClick = {
-                    Log.d("ArticleDetailScreen", "Bookmark Entry")
-                    // Add bookmark logic here
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.ThumbUp,
-                        contentDescription = "Bookmark"
-                    )
-                }
-                IconButton(onClick = {
-                    Log.d("ArticleDetailScreen", "Favorite Entry")
-                    // Add favorite logic here
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = "Favorite"
-                    )
-                }
-                IconButton(onClick = {
-                    Log.d("ArticleDetailScreen", "Share Entry")
-                    // Add share logic here
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share"
-                    )
-                }
-            }
-        }
+        bottomBar = { ArticleActionsBar(viewModel, entryId) }
     ) { innerPadding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(innerPadding)
-            .padding(16.dp)) {
-            when {
-                selectedEntry == null || selectedEntry?.id != entryId -> {
-                    Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
-                }
-                else -> {
-                    val shouldInterceptRequests = selectedEntry?.feed_id in listOf(26, 38, 52, 51)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp)
+        ) {
+            if (selectedEntry == null || selectedEntry?.id != entryId) {
+                Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
+            } else {
+                ArticleWebView(
+                    context = context,
+                    content = selectedEntry!!.content,
+                    feedId = selectedEntry!!.feed_id
+                )
+            }
+        }
+    }
+}
 
-                    // 使用 remember 对 WebView 进行缓存
-                    val webView = remember {
-                        WebView(context).apply {
-                            webViewClient = object : WebViewClient() {
-                                override fun shouldInterceptRequest(
-                                    view: WebView?,
-                                    request: WebResourceRequest?
-                                ): WebResourceResponse? {
-                                    if (shouldInterceptRequests) {
-                                        if (request?.url?.host?.contains("cdnfile.sspai.com") == true) {
-                                            Log.d(tag, "shouldInterceptRequest: intercept request work!")
-                                            val modifiedRequest = Request.Builder()
-                                                .url(request.url.toString())
-                                                .header("Referer", "https://sspai.com/")
-                                                .build()
+@Composable
+fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
+    BottomAppBar {
+        ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
+            Log.d("ArticleDetailScreen", "Mark Entry as Read")
+            viewModel.markEntryAsRead(entryId)
+        }
+        ActionButton(icon = Icons.Default.ThumbUp, description = "Bookmark") {
+            Log.d("ArticleDetailScreen", "Bookmark Entry")
+            // Add bookmark logic here
+        }
+        ActionButton(icon = Icons.Default.Favorite, description = "Favorite") {
+            Log.d("ArticleDetailScreen", "Favorite Entry")
+            // Add favorite logic here
+        }
+        ActionButton(icon = Icons.Default.Share, description = "Share") {
+            Log.d("ArticleDetailScreen", "Share Entry")
+            // Add share logic here
+        }
+    }
+}
 
-                                            val client = OkHttpClient()
-                                            val response: Response = client.newCall(modifiedRequest).execute()
+@Composable
+fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick) {
+        Icon(imageVector = icon, contentDescription = description)
+    }
+}
 
-                                            return WebResourceResponse(
-                                                response.header("Content-Type", "text/html"),
-                                                response.header("Content-Encoding", "utf-8"),
-                                                response.body?.byteStream()
-                                            )
-                                        } else if (request?.url?.host?.contains("sinaimg.cn") == true) {
-                                            Log.d(tag, "shouldInterceptRequest: intercept request work! sinaimg.cn!")
-                                            val modifiedRequest = Request.Builder()
-                                                .url(request.url.toString())
-                                                .header("Referer", "https://weibo.com/")
-                                                .build()
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun ArticleWebView(context: android.content.Context, content: String?, feedId: Int?) {
+    val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
 
-                                            val client = OkHttpClient()
-                                            val response: Response = client.newCall(modifiedRequest).execute()
+    val webView = remember {
+        WebView(context).apply {
+            settings.apply {
+                javaScriptEnabled = true
+                domStorageEnabled = true
+                cacheMode = WebSettings.LOAD_NO_CACHE
+                useWideViewPort = true
+                loadWithOverviewMode = true
+                setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+                loadsImagesAutomatically = true
+                textZoom = 125
+            }
+            setBackgroundColor(0x00000000)
 
-                                            return WebResourceResponse(
-                                                response.header("Content-Type", "text/html"),
-                                                response.header("Content-Encoding", "utf-8"),
-                                                response.body?.byteStream()
-                                            )
-                                        }
-                                    }
-                                    return super.shouldInterceptRequest(view, request)
-                                }
-                            }
-
-                            settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                                cacheMode = WebSettings.LOAD_NO_CACHE
-                                useWideViewPort = true
-                                loadWithOverviewMode = true
-                                setSupportZoom(false)
-                                builtInZoomControls = false
-                                displayZoomControls = false
-                                loadsImagesAutomatically = true
-                                textZoom = 125
-                            }
-                            setBackgroundColor(0x00000000)
-                        }
+            webViewClient = object : WebViewClient() {
+                override fun shouldInterceptRequest(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): WebResourceResponse? {
+                    return if (shouldInterceptRequests && request != null) {
+                        interceptWebRequest(request)
+                    } else {
+                        super.shouldInterceptRequest(view, request)
                     }
-
-                    val htmlContent = selectedEntry!!.content?.let { buildHtmlContent(it) }
-
-                    LaunchedEffect(selectedEntry?.content) {
-                        if (htmlContent != null) {
-                            webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
-                        }
-                    }
-
-                    AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
                 }
             }
         }
+    }
+
+    val htmlContent = content?.let { buildHtmlContent(it) }
+
+    LaunchedEffect(content) {
+        if (htmlContent != null) {
+            webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+        }
+    }
+
+    AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+}
+
+fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
+    val tag = "ArticleDetailScreen"
+    return try {
+        val modifiedRequest = Request.Builder()
+            .url(request.url.toString())
+            .header(
+                "Referer",
+                if (request.url.host?.contains("sspai.com") == true) "https://sspai.com/"
+                else if (request.url.host?.contains("sinaimg.cn") == true) "https://weibo.com/"
+                else ""
+            )
+            .build()
+
+        val client = OkHttpClient()
+        val response: Response = client.newCall(modifiedRequest).execute()
+
+        WebResourceResponse(
+            response.header("Content-Type", "text/html"),
+            response.header("Content-Encoding", "utf-8"),
+            response.body?.byteStream()
+        )
+    } catch (e: Exception) {
+        Log.e(tag, "Error intercepting web request: ${e.message}")
+        null
     }
 }
 
