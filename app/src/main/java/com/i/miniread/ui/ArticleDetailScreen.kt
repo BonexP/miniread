@@ -1,6 +1,7 @@
 package com.i.miniread.ui
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -27,6 +28,8 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.i.miniread.viewmodel.MinifluxViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -107,11 +111,10 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
         Icon(imageVector = icon, contentDescription = description)
     }
 }
-
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleWebView(
-    context: android.content.Context,
+    context: Context,
     content: String?,
     feedId: Int?,
     onScrollToBottom: () -> Unit
@@ -119,6 +122,8 @@ fun ArticleWebView(
     val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
+    var scrollDebounceJob by remember { mutableStateOf<Job?>(null) }
+    val updatedOnScrollToBottom by rememberUpdatedState(onScrollToBottom)
 
     val webView = remember {
         WebView(context).apply {
@@ -132,7 +137,7 @@ fun ArticleWebView(
                 builtInZoomControls = false
                 displayZoomControls = false
                 loadsImagesAutomatically = true
-//                textZoom = 125
+                textZoom = 125
             }
             setBackgroundColor(0x00000000)
 
@@ -152,20 +157,19 @@ fun ArticleWebView(
                     super.onPageFinished(view, url)
                     Log.d("ArticleWebView", "Page finished loading")
 
-                    // 设置滚动监听器
                     view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
-                        Log.d("ArticleWebView", "Scroll position: $scrollY")
-                        Log.d("ArticleWebView", "Content height: ${view.contentHeight * view.scale}, WebView height: ${view.height}")
+                        if (hasMarkedAsRead.value) return@setOnScrollChangeListener
 
                         val remainingScroll = view.contentHeight * view.scale - (scrollY + view.height)
-
-                        if (scrollY > oldScrollY && remainingScroll < 50 && !hasMarkedAsRead.value) {
-                            Log.d("ArticleWebView", "Reached bottom, triggering timeout to mark as read.")
-                            // 启动定时任务标记为已读
-                            coroutineScope.launch {
-                                delay(2000) // 2秒的延迟时间，用户停止滚动后的时间窗口
-                                onScrollToBottom()
-                                hasMarkedAsRead.value = true
+                        if (scrollY > oldScrollY && remainingScroll < 50) {
+                            scrollDebounceJob?.cancel()
+                            scrollDebounceJob = coroutineScope.launch {
+                                delay(500)
+                                if (remainingScroll < 50) {
+                                    Log.d("ArticleWebView", "Debounced bottom reached, marking as read.")
+                                    updatedOnScrollToBottom()
+                                    hasMarkedAsRead.value = true
+                                }
                             }
                         }
                     }
@@ -176,9 +180,9 @@ fun ArticleWebView(
 
     val htmlContent = content?.let { buildHtmlContent(it) }
 
-    LaunchedEffect(content) {
-        if (htmlContent != null) {
-            webView.loadDataWithBaseURL(null, htmlContent, "text/html", "UTF-8", null)
+    LaunchedEffect(htmlContent) {
+        htmlContent?.let {
+            webView.loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
         }
     }
 
