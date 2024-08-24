@@ -92,6 +92,10 @@ class MinifluxViewModel : ViewModel() {
                 try {
                     val response = RetrofitInstance.api.toggleEntryBookMark(token, entryId)
                     Log.d("MinifluxViewModel", "Toggle marked successfully: ${response.isSuccessful} ")
+                    if (response.isSuccessful) {
+                        // Trigger reloading the entry to reflect the new state
+                        loadEntryById(entryId)
+                    }
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error mark entry", e)
                 }

@@ -9,19 +9,22 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -79,6 +82,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                         Log.d("ArticleDetailScreen", "ArticleDetailScreen: Article scroll to end!")
                         // Mark the article as read when scrolled to the bottom
                         viewModel.markEntryAsRead(entryId)
+                        Toast.makeText(context,"Marked as read",Toast.LENGTH_SHORT).show()
                     }
                 )
             }
@@ -97,13 +101,10 @@ fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
         }
         ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
             viewModel.markEntryAsUnread(entryId)
+            Toast.makeText(context,"Marked as unread",Toast.LENGTH_SHORT).show()
+
         }
-        ActionButton(icon = if (selectedEntry?.starred == true) Icons.Default.Star else Icons.Outlined.Star, description = "Bookmark") {
-            Log.d("ArticleDetailScreen", "Bookmark Entry")
-            selectedEntry?.let {
-                viewModel.toggleStarred(it.id, !it.starred)
-            }
-        }
+
         ActionButton(icon = Icons.Default.Share, description = "Share") {
             Log.d("ArticleDetailScreen", "Share Entry")
             selectedEntry?.let {
@@ -117,6 +118,22 @@ fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
                 )
                 context.startActivity(shareIntent)
             }
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        // Replace the bookmark button with a switch
+        selectedEntry?.let { entry ->
+            val isBookmarked = entry.starred
+            Switch(
+                checked = isBookmarked,
+                onCheckedChange = { checked ->
+                    viewModel.toggleStarred(entry.id, checked)
+                    Toast.makeText(context, if (checked) "Bookmarked" else "Removed from bookmarks", Toast.LENGTH_SHORT).show()
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
         }
     }
 }
