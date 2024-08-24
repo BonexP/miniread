@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.i.miniread.Screen
-import com.i.miniread.network.Entry
+import com.i.miniread.network.Feed
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
@@ -45,9 +45,9 @@ fun FeedListScreen(viewModel: MinifluxViewModel, navHostController: NavHostContr
 }
 
 @Composable
-fun FeedItem(feed: Entry, onClick: () -> Unit) {
-    val title = feed.title ?: "Untitled"
-    val publishedAt = feed.published_at ?: "Unknown Date"
+fun FeedItem(feed: Feed, onClick: () -> Unit) {
+    val title = feed.title
+    val id = feed.id
 
     Card(
         modifier = Modifier
@@ -64,7 +64,7 @@ fun FeedItem(feed: Entry, onClick: () -> Unit) {
         ) {
             Text(text = title, style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = publishedAt, style = MaterialTheme.typography.bodyMedium)
+            Text(text = id.toString(), style = MaterialTheme.typography.bodyMedium)
 
         }
     }
