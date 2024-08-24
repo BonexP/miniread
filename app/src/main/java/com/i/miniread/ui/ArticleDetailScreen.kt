@@ -63,7 +63,12 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 ArticleWebView(
                     context = context,
                     content = selectedEntry!!.content,
-                    feedId = selectedEntry!!.feed_id
+                    feedId = selectedEntry!!.feed_id,
+                    onScrollToBottom = {
+                        Log.d("ArticleDetailScreen", "ArticleDetailScreen: Article scroll to end!")
+                        // Mark the article as read when scrolled to the bottom
+                        viewModel.markEntryAsRead(entryId)
+                    }
                 )
             }
         }
@@ -101,7 +106,12 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun ArticleWebView(context: android.content.Context, content: String?, feedId: Int?) {
+fun ArticleWebView(
+    context: android.content.Context,
+    content: String?,
+    feedId: Int?,
+    onScrollToBottom: () -> Unit
+) {
     val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
 
     val webView = remember {
@@ -131,7 +141,36 @@ fun ArticleWebView(context: android.content.Context, content: String?, feedId: I
                         super.shouldInterceptRequest(view, request)
                     }
                 }
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    Log.d("ArticleWebView", "Page finished loading")
+                    Log.d("ArticleWebview","Article id $feedId")
+
+                    // Set the scroll listener after the page has loaded
+                    view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+                        Log.d("ArticleWebView", "Scroll position: $scrollY")
+                        Log.d("ArticleWebView", "Content height: ${view.contentHeight * view.scale}, WebView height: ${view.height}")
+// 计算剩余滚动量
+                        val remainingScroll = view.contentHeight * view.scale - (scrollY + view.height)
+
+                        // 使用一个更大的偏差值判断是否到达底部
+                        if (scrollY > oldScrollY && remainingScroll < 50) {
+                            Log.d("ArticleWebView", "Reached bottom, calling onScrollToBottom()")
+                            onScrollToBottom()
+                        }
+                    }
+                }
             }
+
+            setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+                Log.d("ArticleWebView", "Scroll position: $scrollY")
+                Log.d("ArticleWebView", "Content height: ${contentHeight * scale}, WebView height: $height")
+                if (scrollY > oldScrollY && scrollY + height >= contentHeight * scale) {
+                    Log.d("ArticleWebView", "Reached bottom, calling onScrollToBottom()")
+                    onScrollToBottom()
+                }
+            }
+
         }
     }
 
