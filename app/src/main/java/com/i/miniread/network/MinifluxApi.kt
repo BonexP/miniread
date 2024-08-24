@@ -85,8 +85,14 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Query("status") status: String? = "unread",
         @Query("category_id") categoryId: Int? = null,
-        @Query("direction") direction:  String? = "desc",
+        @Query("direction") direction: String? = "desc",
     ): EntriesResponse
+
+    @PUT("/v1/entries/{entryId}/bookmark")
+    suspend fun toggleEntryBookMark(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("entryId") entryId: Int
+    ): Response<Void?>
 
     @GET("v1/me")
     suspend fun getUserInfo(
@@ -104,12 +110,14 @@ interface MinifluxApi {
 
 
 data class EntryAndStatus
-    ( val entry_ids:   List<Int>,
-      val status : String="unread")
-
+    (
+    val entry_ids: List<Int>,
+    val status: String = "unread"
+)
 
 
 data class AuthResponse(val token: String)
+
 // 创建 EntriesResponse 数据类以匹配新的 API 响应结构
 data class EntriesResponse(
     val total: Int,
@@ -132,7 +140,8 @@ data class Entry(
     val content: String?,
     val published_at: String?,
     val status: String?,
-    val feed_id: Int
+    val feed_id: Int,
+    val starred: Boolean
 )
 
 data class Category(
@@ -161,7 +170,8 @@ object RetrofitInstance {
     private const val TAG = "MinifluxApi"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Logs request and response lines and their respective headers and bodies (if present)
+        level =
+            HttpLoggingInterceptor.Level.BODY // Logs request and response lines and their respective headers and bodies (if present)
     }
 
 

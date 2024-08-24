@@ -67,6 +67,37 @@ class MinifluxViewModel : ViewModel() {
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
     }
+
+    fun markEntryAsUnread(entryId: Int){
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Mark Entry Unread with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(
+                        listOf(entryId)))
+                    Log.d("MinifluxViewModel", "Entry marked successfully: ${response.isSuccessful} ")
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error mark entry", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
+    }
+
+
+    fun toggleStarred(entryId: Int, b: Boolean) {
+
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Toggle entry mark with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.toggleEntryBookMark(token, entryId)
+                    Log.d("MinifluxViewModel", "Toggle marked successfully: ${response.isSuccessful} ")
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error mark entry", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
+    }
     fun fetchFeeds() {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching feeds with token: $token")
@@ -210,4 +241,7 @@ class MinifluxViewModel : ViewModel() {
     fun clearError() {
         _error.value = null
     }
+
+
+
 }
