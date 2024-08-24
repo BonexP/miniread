@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.i.miniread.network.Category
 import com.i.miniread.network.Entry
 import com.i.miniread.network.EntryAndStatus
+import com.i.miniread.network.Feed
 import com.i.miniread.network.FeedCreationRequest
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
@@ -17,8 +18,8 @@ class MinifluxViewModel : ViewModel() {
     private val _authToken = MutableLiveData<String?>()
     val authToken: LiveData<String?> get() = _authToken
 
-    private val _feeds = MutableLiveData<List<Entry>>()
-    val feeds: LiveData<List<Entry>> get() = _feeds
+    private val _feeds = MutableLiveData<List<Feed>>()
+    val feeds: LiveData<List<Feed>> get() = _feeds
 
     private val _entries = MutableLiveData<List<Entry>>()
     val entries: LiveData<List<Entry>> get() = _entries
@@ -126,7 +127,7 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
     }
 
-    fun fetchEntries(feed: Entry ,status: String?=  "unread") {
+    fun fetchEntries(feed: Feed ,status: String?=  "unread") {
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",

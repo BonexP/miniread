@@ -20,7 +20,7 @@ interface MinifluxApi {
     @GET("v1/feeds")
     suspend fun getFeeds(
         @Header("X-Auth-Token") authToken: String
-    ): List<Entry>
+    ): List<Feed>
 
     @GET("v1/categories")
     suspend fun getCategories(
@@ -31,7 +31,7 @@ interface MinifluxApi {
     suspend fun createFeed(
         @Header("X-Auth-Token") authToken: String,
         @Body feed: FeedCreationRequest
-    ): Entry
+    ): Feed
 
     @DELETE("v1/feeds/{feedId}")
     suspend fun deleteFeed(
@@ -115,6 +115,16 @@ data class EntriesResponse(
     val total: Int,
     val entries: List<Entry>
 )
+
+data class Feed(
+    val id: Int,
+    val title: String,
+    val site_url: String,
+    val feed_url: String,
+    val category: Category
+)
+
+
 data class Entry(
     val id: Int,
     val title: String?,
