@@ -24,7 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,6 +34,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.i.miniread.viewmodel.MinifluxViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -113,6 +117,8 @@ fun ArticleWebView(
     onScrollToBottom: () -> Unit
 ) {
     val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
+    val coroutineScope = rememberCoroutineScope()
+    val hasMarkedAsRead = remember { mutableStateOf(false) }
 
     val webView = remember {
         WebView(context).apply {
@@ -126,7 +132,7 @@ fun ArticleWebView(
                 builtInZoomControls = false
                 displayZoomControls = false
                 loadsImagesAutomatically = true
-                textZoom = 125
+//                textZoom = 125
             }
             setBackgroundColor(0x00000000)
 
@@ -141,36 +147,30 @@ fun ArticleWebView(
                         super.shouldInterceptRequest(view, request)
                     }
                 }
+
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     Log.d("ArticleWebView", "Page finished loading")
-                    Log.d("ArticleWebview","Article id $feedId")
 
-                    // Set the scroll listener after the page has loaded
+                    // 设置滚动监听器
                     view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                         Log.d("ArticleWebView", "Scroll position: $scrollY")
                         Log.d("ArticleWebView", "Content height: ${view.contentHeight * view.scale}, WebView height: ${view.height}")
-// 计算剩余滚动量
+
                         val remainingScroll = view.contentHeight * view.scale - (scrollY + view.height)
 
-                        // 使用一个更大的偏差值判断是否到达底部
-                        if (scrollY > oldScrollY && remainingScroll < 50) {
-                            Log.d("ArticleWebView", "Reached bottom, calling onScrollToBottom()")
-                            onScrollToBottom()
+                        if (scrollY > oldScrollY && remainingScroll < 50 && !hasMarkedAsRead.value) {
+                            Log.d("ArticleWebView", "Reached bottom, triggering timeout to mark as read.")
+                            // 启动定时任务标记为已读
+                            coroutineScope.launch {
+                                delay(2000) // 2秒的延迟时间，用户停止滚动后的时间窗口
+                                onScrollToBottom()
+                                hasMarkedAsRead.value = true
+                            }
                         }
                     }
                 }
             }
-
-            setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
-                Log.d("ArticleWebView", "Scroll position: $scrollY")
-                Log.d("ArticleWebView", "Content height: ${contentHeight * scale}, WebView height: $height")
-                if (scrollY > oldScrollY && scrollY + height >= contentHeight * scale) {
-                    Log.d("ArticleWebView", "Reached bottom, calling onScrollToBottom()")
-                    onScrollToBottom()
-                }
-            }
-
         }
     }
 
