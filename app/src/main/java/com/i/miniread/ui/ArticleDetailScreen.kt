@@ -2,6 +2,7 @@ package com.i.miniread.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -13,9 +14,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +45,7 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -85,22 +88,35 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
 
 @Composable
 fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
+    val selectedEntry by viewModel.selectedEntry.observeAsState()
+    val context = LocalContext.current
     BottomAppBar {
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
         }
-        ActionButton(icon = Icons.Default.ThumbUp, description = "Bookmark") {
-            Log.d("ArticleDetailScreen", "Bookmark Entry")
-            // Add bookmark logic here
+        ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
+            viewModel.markEntryAsUnread(entryId)
         }
-        ActionButton(icon = Icons.Default.Favorite, description = "Favorite") {
-            Log.d("ArticleDetailScreen", "Favorite Entry")
-            // Add favorite logic here
+        ActionButton(icon = if (selectedEntry?.starred == true) Icons.Default.Star else Icons.Outlined.Star, description = "Bookmark") {
+            Log.d("ArticleDetailScreen", "Bookmark Entry")
+            selectedEntry?.let {
+                viewModel.toggleStarred(it.id, !it.starred)
+            }
         }
         ActionButton(icon = Icons.Default.Share, description = "Share") {
             Log.d("ArticleDetailScreen", "Share Entry")
-            // Add share logic here
+            selectedEntry?.let {
+                val shareIntent = Intent.createChooser(
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, it.title)
+                        putExtra(Intent.EXTRA_TEXT, "${it.title}\n${it.url}")
+                    },
+                    null
+                )
+                context.startActivity(shareIntent)
+            }
         }
     }
 }
