@@ -128,12 +128,20 @@ data class EntriesResponse(
 )
 
 data class Feed(
-    val id: Int,
+    var id: Int,
     val title: String,
     val site_url: String,
     val feed_url: String,
     val category: Category
-)
+) {
+    constructor(id: Int) : this(
+        id=id,
+        title = "",
+        site_url = "",
+        feed_url = "",
+        category = Category() // Assuming Category has a default constructor
+    )
+}
 
 
 data class Entry(
@@ -150,7 +158,12 @@ data class Entry(
 data class Category(
     val id: Int,
     val title: String
-)
+){
+    constructor():this(
+        id=-1,
+        title=""
+    )
+}
 
 data class FeedCreationRequest(
     val feed_url: String,
@@ -174,7 +187,7 @@ object RetrofitInstance {
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level =
-            HttpLoggingInterceptor.Level.BODY // Logs request and response lines and their respective headers and bodies (if present)
+            HttpLoggingInterceptor.Level.BASIC // Logs request and response lines and their respective headers and bodies (if present)
     }
 
 

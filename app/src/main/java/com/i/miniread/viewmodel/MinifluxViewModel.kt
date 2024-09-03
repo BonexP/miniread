@@ -187,6 +187,33 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
     }
 
+    fun refreshEntries() {
+        Log.d("refreshEntries", "refreshEntries: Using Default refreshEntries()!")
+        fetchEntries()
+    }
+    fun refreshEntriesByFeed(feedId: Int) {
+        Log.d("refreshEntriesByFeed", "refreshEntriesByFeed: using feedID  $feedId")
+
+        viewModelScope.launch {
+            // Logic to fetch entries by feedId
+            fetchEntries(Feed(feedId)) // Replace with actual method
+        }
+    }
+    fun refreshEntriesByCategory(categoryId: Int) {
+        Log.d("refreshEntriesByCategory", "refreshEntriesByCategory: using categoryId $categoryId")
+        viewModelScope.launch {
+            // Logic to fetch entries by feedId
+            fetchEntries("",categoryId) // Replace with actual method
+        }
+    }
+    fun refreshFeeds() {
+        fetchFeeds()
+
+    }
+
+    fun refreshCategories(){
+        fetchCategories()
+    }
 
     fun createFeed(feedUrl: String, categoryId: Int? = null) {
         _authToken.value?.let { token ->
