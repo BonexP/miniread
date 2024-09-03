@@ -9,7 +9,6 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -49,12 +50,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 
-
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
@@ -63,7 +65,8 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     }
 
     Scaffold(
-        bottomBar = { ArticleActionsBar(viewModel, entryId) }
+        bottomBar = { ArticleActionsBar(viewModel, entryId, snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -72,17 +75,22 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 .padding(16.dp)
         ) {
             if (selectedEntry == null || selectedEntry?.id != entryId) {
-                Text(text = "Loading...", modifier = Modifier.align(Alignment.Center))
+                Text(
+                    text = "Loading...",
+                    modifier = Modifier.align(Alignment.Center),
+                    style = MaterialTheme.typography.bodyMedium
+                )
             } else {
                 ArticleWebView(
                     context = context,
                     content = selectedEntry!!.content,
                     feedId = selectedEntry!!.feed_id,
                     onScrollToBottom = {
-                        Log.d("ArticleDetailScreen", "ArticleDetailScreen: Article scroll to end!")
-                        // Mark the article as read when scrolled to the bottom
+                        Log.d("ArticleDetailScreen", "Article scrolled to end!")
                         viewModel.markEntryAsRead(entryId)
-                        Toast.makeText(context,"Marked as read",Toast.LENGTH_SHORT).show()
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Marked as read")
+                        }
                     }
                 )
             }
@@ -91,18 +99,27 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
 }
 
 @Composable
-fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
+fun ArticleActionsBar(
+    viewModel: MinifluxViewModel,
+    entryId: Int,
+    snackbarHostState: SnackbarHostState,
+) {
+    val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
-    val context = LocalContext.current
+    val context= LocalContext.current
     BottomAppBar {
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Marked as read")
+            }
         }
         ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
             viewModel.markEntryAsUnread(entryId)
-            Toast.makeText(context,"Marked as unread",Toast.LENGTH_SHORT).show()
-
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Marked as unread")
+            }
         }
 
         ActionButton(icon = Icons.Default.Share, description = "Share") {
@@ -120,14 +137,15 @@ fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        // Replace the bookmark button with a switch
         selectedEntry?.let { entry ->
             val isBookmarked = entry.starred
             Switch(
                 checked = isBookmarked,
                 onCheckedChange = { checked ->
                     viewModel.toggleStarred(entry.id, checked)
-                    Toast.makeText(context, if (checked) "Bookmarked" else "Removed from bookmarks", Toast.LENGTH_SHORT).show()
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(if (checked) "Bookmarked" else "Removed from bookmarks")
+                    }
                 },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
@@ -139,11 +157,12 @@ fun ArticleActionsBar(viewModel: MinifluxViewModel, entryId: Int) {
 }
 
 @Composable
-fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+fun ActionButton(icon: ImageVector, description: String, onClick:   () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(imageVector = icon, contentDescription = description)
     }
 }
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleWebView(
