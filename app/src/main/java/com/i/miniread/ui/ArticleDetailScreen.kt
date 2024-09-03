@@ -3,6 +3,7 @@ package com.i.miniread.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -336,9 +337,12 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
             .replace("\$content", content)
 //        Log.d("loadHtmlContentAsync", "loadHtmlContentAsync: htmlContent $htmlContent")
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val file = saveHtmlToFile(context, htmlContent)
-            Log.d("loadHtmlContentAsync", "HTML content saved to: ${file.absolutePath}")
+        if (Build.TYPE.equals("debug")) {
+            CoroutineScope(Dispatchers.IO).launch {
+
+                val file = saveHtmlToFile(context, htmlContent)
+                Log.d("loadHtmlContentAsync", "HTML content saved to: ${file.absolutePath}")
+            }
         }
         // 在主线程更新UI
         withContext(Dispatchers.Main) {
