@@ -42,6 +42,7 @@ import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
@@ -61,7 +62,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MainContent(viewModel, sharedPreferences)
+            MinireadTheme {
+                MainContent(viewModel, sharedPreferences)
+
+            }
         }
     }
 }
