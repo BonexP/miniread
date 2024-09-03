@@ -85,6 +85,8 @@ fun MainContent(
     val scope = rememberCoroutineScope()
     val screens = listOf(Screen.Feeds, Screen.Categories)
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
+    var currentFeedId by remember { mutableStateOf<Int?>(null) }
+    var currentCategoryId by remember { mutableStateOf<Int?>(null) }
 
     if (authToken == null) {
         LoginScreen(viewModel) { token ->
@@ -137,14 +139,24 @@ fun MainContent(
                         },
                         actions = {
                             IconButton(onClick = {
-                                viewModel.fetchFeeds()
-                                viewModel.fetchCategories()}
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "refresh"
-                                )
+                                Log.d("IconButton", "MainContent: ${navController.currentDestination?.route}")
+                                val currentRoute = navController.currentDestination?.route
+                                when {
+                                    currentRoute?.startsWith(Screen.EntryList.route) == true -> {
+                                        currentFeedId?.let { viewModel.refreshEntriesByFeed(it) }
+                                        currentCategoryId?.let {
+                                            Log.d("IconButton", "MainContent: refreshEntriesByCategory $it")
+                                            viewModel.refreshEntriesByCategory(it)
+                                        }
+                                    }
+                                    currentRoute == Screen.Feeds.route -> viewModel.refreshFeeds()
+                                    currentRoute == Screen.Categories.route -> viewModel.refreshCategories()
+                                    else -> {} // Handle other screens if needed
+                                }
+                            }) {
+                                Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                             }
+
                         }
                     )
                 },
@@ -155,16 +167,29 @@ fun MainContent(
                             startDestination = Screen.Categories.route
                         ) {
                             composable(Screen.Feeds.route) {
-                                FeedListScreen(viewModel, navController)
+                                FeedListScreen(viewModel) { feedId ->
+                                    currentFeedId = feedId
+                                    currentCategoryId = null
+                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                                }
                             }
                             composable(Screen.Categories.route) {
                                 CategoryListScreen(viewModel) {
-                                    navController.navigate(Screen.EntryList.route)
-                                }
+                                        categoryId ->
+                                    currentCategoryId = categoryId
+                                    currentFeedId = null
+                                    navController.navigate(Screen.EntryList.route+"?categoryId=$categoryId")                                }
                             }
-                            composable(Screen.EntryList.route) {
-                                EntryListScreen(viewModel, navController)
-                            }
+                            composable(Screen.EntryList.route+ "?feedId={feedId}&categoryId={categoryId}",
+                                arguments = listOf(
+                                    navArgument("feedId") { nullable = true; type = NavType.StringType },
+                                    navArgument("categoryId") { nullable = true; type = NavType.StringType }
+                                )
+                            ) {
+                                    backStackEntry ->
+                                val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
+                                val categoryId = backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                                EntryListScreen(viewModel, navController, feedId, categoryId)                            }
                             composable(
                                 route = Screen.ArticleDetail.route + "?entryId={entryId}",
                                 arguments = listOf(navArgument("entryId") {
@@ -191,4 +216,5 @@ fun MainContent(
 
     }
 }
+
 
