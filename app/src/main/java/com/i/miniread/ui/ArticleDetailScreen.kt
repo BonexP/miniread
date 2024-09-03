@@ -155,6 +155,7 @@ fun ArticleWebView(
     val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
+    val contentHeightState = remember { mutableStateOf<Float?>(null) }
     var scrollDebounceJob by remember { mutableStateOf<Job?>(null) }
     val updatedOnScrollToBottom by rememberUpdatedState(onScrollToBottom)
 
@@ -189,6 +190,27 @@ fun ArticleWebView(
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     Log.d("ArticleWebView", "Page finished loading")
+
+                    // 延迟执行，确保资源加载完毕
+                    view?.postDelayed({
+                        view.evaluateJavascript(
+                            "(function() { return document.body.scrollHeight; })();"
+                        ) { result ->
+                            val contentHeight = result?.toFloatOrNull()
+                            if (contentHeight != null) {
+                                contentHeightState.value = contentHeight
+                                val webViewHeight = view.height.toFloat()
+
+                                if (contentHeight <= webViewHeight) {
+                                    if (!hasMarkedAsRead.value) {
+                                        Log.d("ArticleWebView", "Content does not fill the screen, marking as read.")
+                                        updatedOnScrollToBottom()
+                                        hasMarkedAsRead.value = true
+                                    }
+                                }
+                            }
+                        }
+                    }, 500) // 延迟 500ms 执行
 
                     view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                         if (hasMarkedAsRead.value) return@setOnScrollChangeListener
