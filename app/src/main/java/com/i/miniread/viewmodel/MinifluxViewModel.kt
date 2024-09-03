@@ -203,7 +203,7 @@ class MinifluxViewModel : ViewModel() {
         Log.d("refreshEntriesByCategory", "refreshEntriesByCategory: using categoryId $categoryId")
         viewModelScope.launch {
             // Logic to fetch entries by feedId
-            fetchEntries("",categoryId) // Replace with actual method
+            fetchEntries("unread",categoryId) // Replace with actual method
         }
     }
     fun refreshFeeds() {
