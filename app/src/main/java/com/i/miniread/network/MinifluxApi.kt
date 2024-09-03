@@ -53,7 +53,10 @@ interface MinifluxApi {
     @GET("v1/feeds/{feedId}/entries")
     suspend fun getFeedEntries(
         @Header("X-Auth-Token") authToken: String,
-        @Path("feedId") feedId: Int
+        @Path("feedId") feedId: Int,
+        @Query("status") status: String?,
+        @Query("order") order: String,
+        @Query("direction") direction: String?
     ): EntriesResponse
 
     @GET("v1/feeds/{feedId}/icon")
