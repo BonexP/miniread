@@ -78,7 +78,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                 Text(
                     text = "Loading...",
                     modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.titleLarge
                 )
             } else {
                 ArticleWebView(
