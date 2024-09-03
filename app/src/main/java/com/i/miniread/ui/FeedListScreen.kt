@@ -59,9 +59,9 @@ fun FeedItem(feed: Feed, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
+            Text(text = title, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = id.toString(), style = MaterialTheme.typography.bodyMedium)
+            Text(text = id.toString(), color = MaterialTheme.colorScheme.onSurface,style = MaterialTheme.typography.bodyMedium)
 
         }
     }
