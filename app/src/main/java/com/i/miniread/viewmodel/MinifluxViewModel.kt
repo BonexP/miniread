@@ -162,7 +162,7 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
     }
 
-    fun fetchEntries(feed: Feed ,status: String?=  "unread") {
+    fun fetchEntries(feed: Feed ,status: String?="unread",order:String="id",direction:String="desc") {
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
@@ -170,7 +170,7 @@ class MinifluxViewModel : ViewModel() {
             )
             viewModelScope.launch {
                 try {
-                    val response = RetrofitInstance.api.getFeedEntries(token, feed.id)
+                    val response = RetrofitInstance.api.getFeedEntries(token, feed.id,status ,order,direction)
 //                    Log.d("MinifluxViewModel", "Response: $response")
                     Log.d(
                         "MinifluxViewModel",
