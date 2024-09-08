@@ -10,12 +10,12 @@
 /* 定义变量 */
 :root {
     --fg-light: #0e0e0e;
-    --bg-light: #fefefe;
+    --bg-light: #00000000;
     --link-light: #1a73e8;
     --highlight-light: #ffeb3b;
 
     --fg-dark: #d1d1d1;
-    --bg-dark: #1a1a1a;
+    --bg-dark: #00000000;
     --link-dark: #8ab4f8;
     --highlight-dark: #fbc02d;
 
@@ -26,7 +26,7 @@
 /* 明亮模式下的全局样式 */
 body {
     font-family: var(--font-sans);
-    font-size: 3rem;
+    font-size: 2.5rem;
     line-height: 1.6;
     color: var(--fg-dark);
     background-color: var(--bg-dark);
