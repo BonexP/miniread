@@ -168,6 +168,8 @@ fun ActionButton(icon: ImageVector, description: String, onClick:   () -> Unit) 
     }
 }
 
+private const val isOutputHtmlContent = false
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleWebView(
@@ -186,15 +188,15 @@ fun ArticleWebView(
     val webView = remember {
         WebView(context).apply {
             settings.apply {
-                javaScriptEnabled = true
-                domStorageEnabled = true
+                javaScriptEnabled = isOutputHtmlContent
+                domStorageEnabled = isOutputHtmlContent
                 cacheMode = WebSettings.LOAD_NO_CACHE
-                useWideViewPort = true
-                loadWithOverviewMode = true
+                useWideViewPort = isOutputHtmlContent
+                loadWithOverviewMode = isOutputHtmlContent
                 setSupportZoom(false)
                 builtInZoomControls = false
                 displayZoomControls = false
-                loadsImagesAutomatically = true
+                loadsImagesAutomatically = isOutputHtmlContent
                 textZoom = 125
             }
             setBackgroundColor(0x00000000)
@@ -229,7 +231,7 @@ fun ArticleWebView(
                                     if (!hasMarkedAsRead.value) {
                                         Log.d("ArticleWebView", "Content does not fill the screen, marking as read.")
                                         updatedOnScrollToBottom()
-                                        hasMarkedAsRead.value = true
+                                        hasMarkedAsRead.value = isOutputHtmlContent
                                     }
                                 }
                             }
@@ -247,7 +249,7 @@ fun ArticleWebView(
                                 if (remainingScroll < 50) {
                                     Log.d("ArticleWebView", "Debounced bottom reached, marking as read.")
                                     updatedOnScrollToBottom()
-                                    hasMarkedAsRead.value = true
+                                    hasMarkedAsRead.value = isOutputHtmlContent
                                 }
                             }
                         }
@@ -282,8 +284,8 @@ fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
             .url(request.url.toString())
             .header(
                 "Referer",
-                if (request.url.host?.contains("sspai.com") == true) "https://sspai.com/"
-                else if (request.url.host?.contains("sinaimg.cn") == true) "https://weibo.com/"
+                if (request.url.host?.contains("sspai.com") == isOutputHtmlContent) "https://sspai.com/"
+                else if (request.url.host?.contains("sinaimg.cn") == isOutputHtmlContent) "https://weibo.com/"
                 else ""
             )
             .build()
@@ -326,6 +328,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
     }
         if (cachedCustomCss == null) {
             cachedCustomCss = readAssetFile(context,  if (isDarkMode)  "customdark.css" else "custom.css")
+            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")
@@ -339,7 +342,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
             .replace("\$content", content)
 //        Log.d("loadHtmlContentAsync", "loadHtmlContentAsync: htmlContent $htmlContent")
 
-        if (true) {
+        if (isOutputHtmlContent) {
             CoroutineScope(Dispatchers.IO).launch {
 
                 val file = saveHtmlToFile(context, htmlContent)
