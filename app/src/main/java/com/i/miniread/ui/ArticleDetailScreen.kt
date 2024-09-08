@@ -3,7 +3,7 @@ package com.i.miniread.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import android.content.res.Configuration
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -315,6 +315,8 @@ private var cachedHtmlTemplate: String? = null
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
+    val isDarkMode = (context.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
@@ -323,7 +325,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         cachedMagickCss = readAssetFile(context, "magick.css")
     }
         if (cachedCustomCss == null) {
-            cachedCustomCss = readAssetFile(context, "custom.css")
+            cachedCustomCss = readAssetFile(context,  if (isDarkMode)  "customdark.css" else "custom.css")
         }
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")
@@ -332,12 +334,12 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         // 构建HTML内容
         val htmlContent = cachedHtmlTemplate!!
             .replace("\$normalize_css", cachedNormalizeCss!!)
-            .replace("\$magick_css", cachedMagickCss!!)
+//            .replace("\$magick_css", cachedMagickCss!!)
             .replace("\$custom_css", cachedCustomCss!!)
             .replace("\$content", content)
 //        Log.d("loadHtmlContentAsync", "loadHtmlContentAsync: htmlContent $htmlContent")
 
-        if (Build.TYPE.equals("debug")) {
+        if (true) {
             CoroutineScope(Dispatchers.IO).launch {
 
                 val file = saveHtmlToFile(context, htmlContent)

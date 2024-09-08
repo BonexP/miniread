@@ -187,7 +187,7 @@ font-style: normal;
 }
 :root {
     /* Theme colors */
-    --fg: hsla(0, 0%, 100%, 0);
+    --fg: hsl(0, 0%, 0%);
     --bg: hsla(0, 0%, 100%, 0);
     --form-bg: #fff0;
     --form-fg: #fff0;
@@ -195,11 +195,11 @@ font-style: normal;
 }
 @media (prefers-color-scheme: dark) {
     :root {
-        --fg: #fefefe;
-        --bg: #0e0e0e;
-        --form-bg: #1a1a1a;
-        --form-fg: #fefefe;
-        --form-fg-placeholder: #fefefe9a;
+         --fg: white; /* 柔和的浅灰色，适合夜间阅读 */
+         --bg: #1a1a1a; /* 深色背景 */
+         --form-bg: #fff0;
+         --form-fg: #fff0;
+         --form-fg-placeholder: #fff0;
     }
 }
 

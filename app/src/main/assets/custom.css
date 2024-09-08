@@ -1,2 +1,228 @@
-body { font-size: 4rem; line-height: 1.6; margin: 0; padding: 16px; color: #333333; }
-img { max-width: 100%; height: auto; }
+/* 基础样式重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* 定义变量 */
+:root {
+    --fg-light: #0e0e0e;
+    --bg-light: #fefefe;
+    --link-light: #1a73e8;
+    --highlight-light: #ffeb3b;
+
+    --fg-dark: #d1d1d1;
+    --bg-dark: #1a1a1a;
+    --link-dark: #8ab4f8;
+    --highlight-dark: #fbc02d;
+
+    --font-sans: 'Helvetica Neue', Arial, sans-serif;
+    --font-serif: 'Georgia', 'Times New Roman', serif;
+}
+
+/* 明亮模式下的全局样式 */
+body {
+    font-family: var(--font-sans);
+    font-size: 3rem;
+    line-height: 1.6;
+    color: var(--fg-light);
+    background-color: var(--bg-light);
+    padding: 16px;
+    word-wrap: break-word;
+}
+body.dark-mode {
+    background-color: var(--bg-dark);
+    color: var(--fg-dark);
+}
+/* 夜间模式下的全局样式 */
+@media (prefers-color-scheme: dark) {
+    body {
+        color: var(--fg-dark);
+        background-color: var(--bg-dark);
+    }
+}
+
+/* 段落 */
+p {
+    margin-bottom: 1rem;
+}
+
+/* 标题样式 */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-family: var(--font-serif);
+    font-weight: bold;
+    line-height: 1.2;
+}
+
+h1 {
+    font-size: 2rem;
+}
+
+h2 {
+    font-size: 1.75rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+/* 链接样式 */
+a {
+    color: var(--link-light);
+    text-decoration: none;
+    border-bottom: 1px solid var(--link-light);
+}
+
+a:hover {
+    color: var(--highlight-light);
+    border-bottom: 1px solid var(--highlight-light);
+}
+
+/* 夜间模式下的链接样式 */
+@media (prefers-color-scheme: dark) {
+    a {
+        color: var(--link-dark);
+        border-bottom: 1px solid var(--link-dark);
+    }
+
+    a:hover {
+        color: var(--highlight-dark);
+        border-bottom: 1px solid var(--highlight-dark);
+    }
+}
+
+/* 图片样式 */
+img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+/* 列表样式 */
+ul, ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* 引用样式 */
+blockquote {
+    margin: 1.5rem 0;
+    padding: 0.75rem 1.5rem;
+    background-color: #f0f0f0;
+    border-left: 4px solid #ccc;
+    font-style: italic;
+}
+
+@media (prefers-color-scheme: dark) {
+    blockquote {
+        background-color: #333;
+        border-left: 4px solid #555;
+    }
+}
+
+/* 代码块样式 */
+pre, code {
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #f5f5f5;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+pre {
+    margin-bottom: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+    pre, code {
+        background-color: #2d2d2d;
+    }
+}
+
+/* 表格样式 */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+}
+
+th, td {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+}
+
+th {
+    background-color: #f0f0f0;
+    text-align: left;
+}
+
+@media (prefers-color-scheme: dark) {
+    th {
+        background-color: #333;
+    }
+
+    td {
+        border-color: #555;
+    }
+}
+
+/* 表单样式 */
+input, select, textarea {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: var(--link-light);
+    outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    input, select, textarea {
+        background-color: #333;
+        color: #ccc;
+        border-color: #555;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--link-dark);
+    }
+}
+
+/* 按钮样式 */
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--link-light);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: var(--highlight-light);
+}
+
+@media (prefers-color-scheme: dark) {
+    button {
+        background-color: var(--link-dark);
+    }
+
+    button:hover {
+        background-color: var(--highlight-dark);
+    }
+}

@@ -12,6 +12,21 @@
 
 
     <title></title>
+    <script>
+        const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+                            if (prefersDarkScheme.matches) {
+                                document.documentElement.classList.add("dark-mode");
+                            } else {
+                                document.documentElement.classList.remove("dark-mode");
+                            }
+                            prefersDarkScheme.addEventListener("change", event => {
+                                if (event.matches) {
+                                    document.documentElement.classList.add("dark-mode");
+                                } else {
+                                    document.documentElement.classList.remove("dark-mode");
+                                }
+                            });
+    </script>
 </head>
 <body>
     $content
