@@ -132,14 +132,16 @@ data class Feed(
     val title: String,
     val site_url: String,
     val feed_url: String,
-    val category: Category
+    val category: Category,
+    val disabled: Boolean
 ) {
     constructor(id: Int) : this(
         id=id,
         title = "",
         site_url = "",
         feed_url = "",
-        category = Category() // Assuming Category has a default constructor
+        category = Category() ,// Assuming Category has a default constructor
+        disabled = false
     )
 }
 
@@ -152,7 +154,8 @@ data class Entry(
     val published_at: String?,
     val status: String?,
     val feed_id: Int,
-    val starred: Boolean
+    val starred: Boolean,
+    val feed: Feed
 )
 
 data class Category(
