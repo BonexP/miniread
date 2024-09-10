@@ -56,6 +56,11 @@ fun EntryItem(entry: Entry, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
+            Text(
+                text= entry.feed.title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
         }
     }
 }
