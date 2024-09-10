@@ -1,6 +1,8 @@
 package com.i.miniread.ui
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +21,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
+import java.time.OffsetDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController, feedId: Int? = null, categoryId: Int? = null) {
     Log.d("EntryListScreen", "EntryListScreen: EnterEntryScreen!")
@@ -42,6 +48,7 @@ fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController, 
         }
     }
 }
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EntryItem(entry: Entry, onClick: () -> Unit) {
     Card(
@@ -61,6 +68,27 @@ fun EntryItem(entry: Entry, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
+            entry.published_at?.let {
+                Text(
+                    text = localizePublishTime(it),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
+}
+@RequiresApi(Build.VERSION_CODES.O)
+fun localizePublishTime(publishedAt: String): String {
+    // 解析文章发布时间
+    val utcTime = OffsetDateTime.parse(publishedAt)
+
+    // 将时间转换为本地时区
+    val localTime = utcTime.atZoneSameInstant(ZoneId.systemDefault())
+
+    // 定义你想要的日期格式，这里以 "yyyy-MM-dd HH:mm" 为例
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+    // 返回格式化后的本地化时间字符串
+    return localTime.format(formatter)
 }
