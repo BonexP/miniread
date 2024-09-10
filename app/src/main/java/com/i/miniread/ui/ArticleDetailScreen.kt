@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.net.Uri
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.BottomAppBar
@@ -54,6 +56,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
+import java.net.URL
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -141,6 +144,14 @@ fun ArticleActionsBar(
                 context.startActivity(shareIntent)
             }
         }
+        ActionButton(icon=Icons.Default.ExitToApp, description = "Open External"){
+            Log.d("ArticleDetailScreen", "Open Entry External")
+            selectedEntry?.let {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url) )
+                context.startActivity(intent)
+
+            }
+        }
         Spacer(modifier = Modifier.weight(1f))
         selectedEntry?.let { entry ->
             val isBookmarked = entry.starred
@@ -202,6 +213,16 @@ fun ArticleWebView(
             setBackgroundColor(0x00000000)
 
             webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                    val url = request?.url.toString()
+                    // 检查是否是外部链接，如果是则使用外部浏览器打开
+                    if (url.startsWith("http") || url.startsWith("https")) {
+                        val intent = Intent(Intent.ACTION_VIEW, request?.url)
+                        context.startActivity(intent)
+                        return true // 返回 true 表示我们处理了该链接
+                    }
+                    return false
+                }
                 override fun shouldInterceptRequest(
                     view: WebView?,
                     request: WebResourceRequest?
@@ -314,6 +335,7 @@ private var cachedNormalizeCss: String? = null
 private var cachedMagickCss: String? =null
 private var cachedCustomCss: String? = null
 private var cachedHtmlTemplate: String? = null
+private const val isInjectMagickCSS = false
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
@@ -323,7 +345,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
         }
-        if (cachedMagickCss == null) {
+        if (cachedMagickCss == null && isInjectMagickCSS) {
         cachedMagickCss = readAssetFile(context, "magick.css")
     }
         if (cachedCustomCss == null) {
