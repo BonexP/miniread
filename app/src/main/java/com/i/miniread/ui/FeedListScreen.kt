@@ -25,7 +25,10 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit){
     val feeds by viewModel.feeds.observeAsState(emptyList())
 
+    val feedsWithOutDisabled = feeds.filter { !it.disabled }.sortedBy { it.title }
     Log.d("FeedListScreen", "Number of feeds: ${feeds.size}")
+    Log.d("FeedListScreen", "Number of Enabled feeds: ${feedsWithOutDisabled.size}")
+
 //    Log.d("FeedListScreen","Feeds: $feeds")
 
     LazyColumn(
@@ -33,7 +36,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit){
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(feeds) { feed ->
+        items(feedsWithOutDisabled) { feed ->
             FeedItem(feed, onClick = {
                 Log.d("FeedListScreen","Feed Using:  $feed")
             onFeedSelected(feed.id)})
@@ -62,7 +65,7 @@ fun FeedItem(feed: Feed, onClick: () -> Unit) {
             Text(text = title, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = id.toString(), color = MaterialTheme.colorScheme.onSurface,style = MaterialTheme.typography.bodyMedium)
-
+            Text(text=feed.disabled.toString(), color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
