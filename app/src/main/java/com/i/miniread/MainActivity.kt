@@ -38,6 +38,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.i.miniread.ui.ArticleDetailScreen
+import com.i.miniread.ui.ArticleWebView
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen

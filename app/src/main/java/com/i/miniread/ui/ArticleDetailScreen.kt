@@ -184,7 +184,7 @@ fun ActionButton(icon: ImageVector, description: String, onClick:   () -> Unit) 
     }
 }
 
-private const val isOutputHtmlContent = true
+private const val isOutputHtmlContent = false
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
