@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.datatransport.runtime.firebase.transport.LogEventDropped
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -151,6 +152,11 @@ fun ArticleActionsBar(
 
             }
         }
+//        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
+//            Log.d("ArticleDetailScreen", "refresh webview")
+//
+//
+//        }
         Spacer(modifier = Modifier.weight(1f))
         selectedEntry?.let { entry ->
             val isBookmarked = entry.starred
@@ -178,7 +184,7 @@ fun ActionButton(icon: ImageVector, description: String, onClick:   () -> Unit) 
     }
 }
 
-private const val isOutputHtmlContent = false
+private const val isOutputHtmlContent = true
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -198,15 +204,15 @@ fun ArticleWebView(
     val webView = remember {
         WebView(context).apply {
             settings.apply {
-                javaScriptEnabled = isOutputHtmlContent
-                domStorageEnabled = isOutputHtmlContent
+                javaScriptEnabled = true
+                domStorageEnabled = true
                 cacheMode = WebSettings.LOAD_NO_CACHE
-                useWideViewPort = isOutputHtmlContent
-                loadWithOverviewMode = isOutputHtmlContent
+                useWideViewPort = true
+                loadWithOverviewMode = true
                 setSupportZoom(false)
                 builtInZoomControls = false
                 displayZoomControls = false
-                loadsImagesAutomatically = isOutputHtmlContent
+                loadsImagesAutomatically = true
                 textZoom = 125
             }
             setBackgroundColor(0x00000000)
@@ -251,7 +257,7 @@ fun ArticleWebView(
                                     if (!hasMarkedAsRead.value) {
                                         Log.d("ArticleWebView", "Content does not fill the screen, marking as read.")
                                         updatedOnScrollToBottom()
-                                        hasMarkedAsRead.value = isOutputHtmlContent
+                                        hasMarkedAsRead.value = true
                                     }
                                 }
                             }
@@ -269,7 +275,7 @@ fun ArticleWebView(
                                 if (remainingScroll < 50) {
                                     Log.d("ArticleWebView", "Debounced bottom reached, marking as read.")
                                     updatedOnScrollToBottom()
-                                    hasMarkedAsRead.value = isOutputHtmlContent
+                                    hasMarkedAsRead.value = true
                                 }
                             }
                         }
@@ -304,8 +310,8 @@ fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
             .url(request.url.toString())
             .header(
                 "Referer",
-                if (request.url.host?.contains("sspai.com") == isOutputHtmlContent) "https://sspai.com/"
-                else if (request.url.host?.contains("sinaimg.cn") == isOutputHtmlContent) "https://weibo.com/"
+                if (request.url.host?.contains("sspai.com") == true) "https://sspai.com/"
+                else if (request.url.host?.contains("sinaimg.cn") == true) "https://weibo.com/"
                 else ""
             )
             .build()
