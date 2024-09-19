@@ -56,7 +56,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
-import java.net.URL
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -332,10 +331,8 @@ fun readAssetFile(context: Context, fileName: String): String {
 
 
 private var cachedNormalizeCss: String? = null
-private var cachedMagickCss: String? =null
 private var cachedCustomCss: String? = null
 private var cachedHtmlTemplate: String? = null
-private const val isInjectMagickCSS = false
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
@@ -345,9 +342,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
         }
-        if (cachedMagickCss == null && isInjectMagickCSS) {
-        cachedMagickCss = readAssetFile(context, "magick.css")
-    }
+
         if (cachedCustomCss == null) {
             cachedCustomCss = readAssetFile(context,  if (isDarkMode)  "customdark.css" else "custom.css")
             Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
@@ -359,7 +354,6 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         // 构建HTML内容
         val htmlContent = cachedHtmlTemplate!!
             .replace("\$normalize_css", cachedNormalizeCss!!)
-//            .replace("\$magick_css", cachedMagickCss!!)
             .replace("\$custom_css", cachedCustomCss!!)
             .replace("\$content", content)
 //        Log.d("loadHtmlContentAsync", "loadHtmlContentAsync: htmlContent $htmlContent")
