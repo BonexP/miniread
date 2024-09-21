@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -102,7 +103,7 @@ fun MainContent(
         val currentRoute = navBackStackEntry?.destination?.route
 
         // 判断是否是 ArticleDetailScreen 的路由
-        val shouldShowBottomBar = currentRoute != Screen.ArticleDetail.route
+        val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
 
         Scaffold(
             topBar = {
@@ -143,7 +144,8 @@ fun MainContent(
                             navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
                         }
                     }
-                    composable(Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
+                    composable(
+                        route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
                         arguments = listOf(
                             navArgument("feedId") { nullable = true; type = NavType.StringType },
                             navArgument("categoryId") { nullable = true; type = NavType.StringType }
@@ -153,19 +155,13 @@ fun MainContent(
                         val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
                         val categoryId =
                             backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-                        EntryListScreen(viewModel, navController, feedId, categoryId)
+                        EntryListScreen(viewModel,navController,feedId,categoryId)
                     }
-
                     composable(
                         route = Screen.ArticleDetail.route + "?entryId={entryId}",
-                        arguments = listOf(navArgument("entryId") {
-                            type = NavType.IntType
-                        }),
-
+                        arguments = listOf(navArgument("entryId") { type = NavType.IntType })
                     ) { backStackEntry ->
                         val entryId = backStackEntry.arguments?.getInt("entryId")
-
-
                         if (entryId != null) {
                             selectedScreen = Screen.ArticleDetail.route
                             ArticleDetailScreen(viewModel, entryId)
@@ -175,32 +171,24 @@ fun MainContent(
                                 "MainContent: Error while getting entryId"
                             )
                         }
-
                     }
                 }
             }
         }
     }
 }
-
 @Composable
-fun BottomNavigationBar(navController: androidx.navigation.NavHostController) {
-    val items = listOf(
-        Screen.Feeds,
-        Screen.Categories
-    )
-
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
+fun BottomNavigationBar(navController: NavController) {
     NavigationBar {
+        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+        val items = listOf(Screen.Feeds, Screen.Categories)
+
         items.forEach { screen ->
             NavigationBarItem(
                 label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
-                        // 防止重复导航到相同目的地
                         popUpTo(navController.graph.startDestinationId) {
                             saveState = true
                         }
@@ -208,14 +196,13 @@ fun BottomNavigationBar(navController: androidx.navigation.NavHostController) {
                         restoreState = true
                     }
                 },
+
                 icon = { Icon(imageVector = Icons.Default.Menu, "somthing") }
+
             )
         }
     }
 }
-
-
-
 
 
 
