@@ -273,6 +273,34 @@ class MinifluxViewModel : ViewModel() {
         _error.value = null
     }
 
+    fun fetchTodayEntries() {
+        val status="unread"
+        _authToken.value?.let { token ->
+            Log.d(
+                "MinifluxViewModel",
+                "Fetching entries with token: $token, status: $status"
+            )
+            viewModelScope.launch {
+                try {
+                    val unixTime = System.currentTimeMillis() / 1000
+                    val befeore24h = unixTime - 86400
+                    Log.d("Time", "unixtimestamp before 24h is $befeore24h")
+                    val response = RetrofitInstance.api.getTodayEntries(token, published_after = befeore24h)
+//                    Log.d("MinifluxViewModel", "Response: $response")
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Entries fetched successfully: ${response.entries.size} items"
+                    )
+                    _entries.value = response.entries
+                    _entries.postValue(response.entries)
+                } catch (e: Exception) {
+                    Log.d("MinifluxViewModel", "Response: ")
+                    Log.e("MinifluxViewModel", "Error fetching entries", e)
+                    _entries.postValue(emptyList())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
+    }
 
 
 }

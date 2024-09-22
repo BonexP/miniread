@@ -91,6 +91,15 @@ interface MinifluxApi {
         @Query("direction") direction: String? = "desc",
     ): EntriesResponse
 
+
+    @GET("v1/entries")
+    suspend fun getTodayEntries(
+        @Header("X-Auth-Token") authToken: String,
+        @Query("status") status: String? = "unread",
+        @Query("direction") direction: String? = "desc",
+        @Query("published_after") published_after: Long? =  System.currentTimeMillis()/1000 - 86400,
+    ): EntriesResponse
+
     @PUT("/v1/entries/{entryId}/bookmark")
     suspend fun toggleEntryBookMark(
         @Header("X-Auth-Token") authToken: String,
