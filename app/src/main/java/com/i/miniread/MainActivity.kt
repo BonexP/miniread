@@ -41,6 +41,7 @@ import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.viewmodel.MinifluxViewModel
 
@@ -73,6 +74,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Categories : Screen("categories", "Categories")
     data object EntryList : Screen("entryList", "Entry List")
     data object ArticleDetail : Screen("articleDetail", "Article Detail")
+    data object TodayEntryList: Screen("todayEntryList", "Today")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -129,7 +131,7 @@ fun MainContent(
             }
         ) { innerPadding ->
             Surface(modifier = Modifier.padding(innerPadding)) {
-                NavHost(navController = navController, startDestination = Screen.Feeds.route) {
+                NavHost(navController = navController, startDestination = Screen.TodayEntryList.route) {
                     composable(Screen.Feeds.route) {
                         FeedListScreen(viewModel) { feedId ->
                             currentFeedId = feedId
@@ -172,6 +174,10 @@ fun MainContent(
                             )
                         }
                     }
+                    composable(Screen.TodayEntryList.route) {
+                        TodayEntryListScreen(viewModel, navController)
+                    }
+
                 }
             }
         }
@@ -181,7 +187,7 @@ fun MainContent(
 fun BottomNavigationBar(navController: NavController) {
     NavigationBar {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-        val items = listOf(Screen.Feeds, Screen.Categories)
+        val items = listOf(Screen.Feeds,Screen.TodayEntryList, Screen.Categories)
 
         items.forEach { screen ->
             NavigationBarItem(
