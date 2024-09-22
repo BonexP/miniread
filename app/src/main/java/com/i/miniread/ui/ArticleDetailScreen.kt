@@ -80,7 +80,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(10.dp)
         ) {
             if (selectedEntry == null || selectedEntry?.id != entryId) {
                 Text(
