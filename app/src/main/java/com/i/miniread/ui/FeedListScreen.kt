@@ -22,7 +22,7 @@ import com.i.miniread.network.Feed
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit){
+fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
 
     val feedsWithOutDisabled = feeds.filter { !it.disabled }.sortedBy { it.title }
@@ -38,8 +38,9 @@ fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit){
     ) {
         items(feedsWithOutDisabled) { feed ->
             FeedItem(feed, onClick = {
-                Log.d("FeedListScreen","Feed Using:  $feed")
-            onFeedSelected(feed.id)})
+                Log.d("FeedListScreen", "Feed Using:  $feed")
+                onFeedSelected(feed.id)
+            })
         }
     }
 }
@@ -62,10 +63,22 @@ fun FeedItem(feed: Feed, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(text = title, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.titleLarge
+            )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = id.toString(), color = MaterialTheme.colorScheme.onSurface,style = MaterialTheme.typography.bodyMedium)
-            Text(text=feed.disabled.toString(), color = MaterialTheme.colorScheme.onSecondary, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = id.toString(),
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = feed.disabled.toString(),
+                color = MaterialTheme.colorScheme.onSecondary,
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

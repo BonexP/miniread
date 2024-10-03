@@ -1,6 +1,7 @@
 package com.i.miniread.ui
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,8 +13,6 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.i.miniread.Screen
-import  com.i.miniread.ui.EntryListScreen
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -31,7 +30,12 @@ fun TodayEntryListScreen(viewModel: MinifluxViewModel, navController: NavControl
         items(todayEntries) { entry ->
             EntryItem(entry, onClick = {
                 navController.navigate("articleDetail?entryId=${entry.id}")
-            })
+            },
+
+                onLongClick = {
+                    viewModel.markEntryAsRead(entryId = entry.id)
+                    Log.d("Long press mark ", "EntryListScreen: mark ${entry.id} as read")
+                })
         }
     }
 }
