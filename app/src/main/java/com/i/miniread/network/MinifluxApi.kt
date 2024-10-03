@@ -97,7 +97,7 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Query("status") status: String? = "unread",
         @Query("direction") direction: String? = "desc",
-        @Query("published_after") published_after: Long? =  System.currentTimeMillis()/1000 - 86400,
+        @Query("published_after") published_after: Long? = System.currentTimeMillis() / 1000 - 86400,
     ): EntriesResponse
 
     @PUT("/v1/entries/{entryId}/bookmark")
@@ -145,11 +145,11 @@ data class Feed(
     val disabled: Boolean
 ) {
     constructor(id: Int) : this(
-        id=id,
+        id = id,
         title = "",
         site_url = "",
         feed_url = "",
-        category = Category() ,// Assuming Category has a default constructor
+        category = Category(),// Assuming Category has a default constructor
         disabled = false
     )
 }
@@ -170,10 +170,10 @@ data class Entry(
 data class Category(
     val id: Int,
     val title: String
-){
-    constructor():this(
-        id=-1,
-        title=""
+) {
+    constructor() : this(
+        id = -1,
+        title = ""
     )
 }
 

@@ -3,7 +3,8 @@ package com.i.miniread.ui
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -27,7 +28,12 @@ import java.time.format.DateTimeFormatter
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController, feedId: Int? = null, categoryId: Int? = null) {
+fun EntryListScreen(
+    viewModel: MinifluxViewModel,
+    navController: NavController,
+    feedId: Int? = null,
+    categoryId: Int? = null
+) {
     Log.d("EntryListScreen", "EntryListScreen: EnterEntryScreen!")
     Log.d("EntryListScreen", "EntryListScreen: feedId $feedId categoryId $categoryId")
     val entries by viewModel.entries.observeAsState(emptyList())
@@ -44,18 +50,23 @@ fun EntryListScreen(viewModel: MinifluxViewModel, navController: NavController, 
         items(entries) { entry ->
             EntryItem(entry, onClick = {
                 navController.navigate("articleDetail?entryId=${entry.id}")
+            }, onLongClick = {
+                viewModel.markEntryAsRead(entryId = entry.id)
+                Log.d("Long press mark ", "EntryListScreen: mark ${entry.id} as read")
             })
         }
     }
 }
+
+@OptIn(ExperimentalFoundationApi::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EntryItem(entry: Entry, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable { onClick() }
+fun EntryItem(entry: Entry, onClick: () -> Unit, onLongClick: () -> Unit) {
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 8.dp)
+//            .clickable { onClick() }
+        .combinedClickable(onClick = { onClick() }, onLongClick = { onLongClick() })
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -64,7 +75,7 @@ fun EntryItem(entry: Entry, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text= entry.feed.title,
+                text = entry.feed.title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.secondary
             )
@@ -78,6 +89,7 @@ fun EntryItem(entry: Entry, onClick: () -> Unit) {
         }
     }
 }
+
 @RequiresApi(Build.VERSION_CODES.O)
 fun localizePublishTime(publishedAt: String): String {
     // 解析文章发布时间

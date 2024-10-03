@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.datatransport.runtime.firebase.transport.LogEventDropped
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -114,7 +113,7 @@ fun ArticleActionsBar(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
-    val context= LocalContext.current
+    val context = LocalContext.current
     BottomAppBar {
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
@@ -144,10 +143,10 @@ fun ArticleActionsBar(
                 context.startActivity(shareIntent)
             }
         }
-        ActionButton(icon=Icons.Default.ExitToApp, description = "Open External"){
+        ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url) )
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
                 context.startActivity(intent)
 
             }
@@ -178,7 +177,7 @@ fun ArticleActionsBar(
 }
 
 @Composable
-fun ActionButton(icon: ImageVector, description: String, onClick:   () -> Unit) {
+fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(imageVector = icon, contentDescription = description)
     }
@@ -218,7 +217,10 @@ fun ArticleWebView(
             setBackgroundColor(0x00000000)
 
             webViewClient = object : WebViewClient() {
-                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
                     val url = request?.url.toString()
                     // 检查是否是外部链接，如果是则使用外部浏览器打开
                     if (url.startsWith("http") || url.startsWith("https")) {
@@ -228,6 +230,7 @@ fun ArticleWebView(
                     }
                     return false
                 }
+
                 override fun shouldInterceptRequest(
                     view: WebView?,
                     request: WebResourceRequest?
@@ -255,7 +258,10 @@ fun ArticleWebView(
 
                                 if (contentHeight <= webViewHeight) {
                                     if (!hasMarkedAsRead.value) {
-                                        Log.d("ArticleWebView", "Content does not fill the screen, marking as read.")
+                                        Log.d(
+                                            "ArticleWebView",
+                                            "Content does not fill the screen, marking as read."
+                                        )
                                         updatedOnScrollToBottom()
                                         hasMarkedAsRead.value = true
                                     }
@@ -267,13 +273,17 @@ fun ArticleWebView(
                     view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
                         if (hasMarkedAsRead.value) return@setOnScrollChangeListener
 
-                        val remainingScroll = view.contentHeight * view.scale - (scrollY + view.height)
+                        val remainingScroll =
+                            view.contentHeight * view.scale - (scrollY + view.height)
                         if (scrollY > oldScrollY && remainingScroll < 50) {
                             scrollDebounceJob?.cancel()
                             scrollDebounceJob = coroutineScope.launch {
                                 delay(500)
                                 if (remainingScroll < 50) {
-                                    Log.d("ArticleWebView", "Debounced bottom reached, marking as read.")
+                                    Log.d(
+                                        "ArticleWebView",
+                                        "Debounced bottom reached, marking as read."
+                                    )
                                     updatedOnScrollToBottom()
                                     hasMarkedAsRead.value = true
                                 }
@@ -350,7 +360,8 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         }
 
         if (cachedCustomCss == null) {
-            cachedCustomCss = readAssetFile(context,  if (isDarkMode)  "customdark.css" else "custom.css")
+            cachedCustomCss =
+                readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
             Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
         if (cachedHtmlTemplate == null) {
