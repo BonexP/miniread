@@ -57,6 +57,7 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isRenderscriptDebuggable = true
+            versionNameSuffix = "ink"
         }
         getByName("release") {
             isMinifyEnabled = false
