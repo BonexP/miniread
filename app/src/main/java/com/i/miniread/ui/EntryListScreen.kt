@@ -90,18 +90,20 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Background to indicate swipe action
-            Card(
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 8.dp)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .padding(16.dp),
-//                color = MaterialTheme.colorScheme.secondaryContainer
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.medium
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     contentAlignment = Alignment.CenterEnd
-                ) {
+                )  {
                     Icon(
                         imageVector = Icons.Default.Done,
                         contentDescription = "Mark as Read",
@@ -111,6 +113,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                 }
             }
             Card(
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(offsetX.roundToInt(), 0) }
@@ -136,6 +139,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                             }
                         )
                     }
+
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
