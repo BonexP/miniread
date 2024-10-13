@@ -29,7 +29,7 @@ fun TodayEntryListScreen(viewModel: MinifluxViewModel, navController: NavControl
 
     LazyColumn(modifier = Modifier.padding(16.dp)) {
         items(todayEntries) { entry ->
-            EntryItem(entry, onClick = {
+            EntryItem(viewModel, entry, onClick = {
                 navController.navigate("articleDetail?entryId=${entry.id}")
             })
         }
