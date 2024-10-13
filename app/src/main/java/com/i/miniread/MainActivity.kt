@@ -7,7 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
@@ -15,6 +17,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -30,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -144,7 +148,12 @@ fun MainContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text(stringResource(id = R.string.app_name)) },
+                    title = {
+                        Text(
+                            text = stringResource(id = R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium // Use a smaller style
+                        )
+                    },
                     actions = {
                         IconButton(onClick = {
                             Log.d("IconButton", "Refresh button clicked, current route: $currentRoute")
@@ -223,10 +232,16 @@ fun MainContent(
                                 }
                             }
                         }) {
-                            Icon(imageVector = Icons.Default.Refresh, contentDescription = "刷新")
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-                    }
-                )
+                    },
+                    modifier = Modifier.height(40.dp),
+
+                    )
             },
             bottomBar = {
                 if (shouldShowBottomBar) {
@@ -319,13 +334,24 @@ fun MainContent(
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
-    NavigationBar {
+    NavigationBar(
+        modifier = Modifier.height(48.dp), // 使导航栏高度更扁
+        containerColor = MaterialTheme.colorScheme.surface
+
+    ) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
 
         items.forEach { screen ->
             NavigationBarItem(
-                label = { Text(screen.label) },
+//                label = {
+//                    Text(
+//                        text = screen.label,
+//                        fontSize = 10.sp, // 调整字体大小，确保不会与图标重叠
+//                        style = MaterialTheme.typography.labelSmall, // 使用较小字体
+//
+//                    )
+//                },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
@@ -336,9 +362,15 @@ fun BottomNavigationBar(navController: NavController) {
                         restoreState = true
                     }
                 },
+                icon = {
 
-                icon = { Icon(imageVector = Icons.Default.Menu, "somthing") }
-
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = screen.label, // 有意义的描述
+                        modifier = Modifier.size(20.dp), // 调整图标大小，使其更小
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             )
         }
     }

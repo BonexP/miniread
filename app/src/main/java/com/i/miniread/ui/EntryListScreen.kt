@@ -4,7 +4,6 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,11 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -110,8 +107,6 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
 
     AnimatedVisibility(
         visible = isVisible.value,
-        enter = androidx.compose.animation.fadeIn(animationSpec = tween(300)),
-        exit = androidx.compose.animation.fadeOut(animationSpec = tween(300))
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Background to indicate swipe action
@@ -146,21 +141,30 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                     .padding(vertical = 8.dp)
                     .clickable { onClick() }
                     .border(BorderStroke(0.5.dp, Color.Black), shape = RoundedCornerShape(8.dp))
-                .pointerInput(Unit) {
+                    .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
                                 offsetX = (offsetX + dragAmount).coerceIn(-swipeThreshold * 2, 0f)
-                                Log.d("EntryItem", "EntryItem: Dragging entry with id ${entry.id}, offsetX: $offsetX")
+                                Log.d(
+                                    "EntryItem",
+                                    "EntryItem: Dragging entry with id ${entry.id}, offsetX: $offsetX"
+                                )
                             },
                             onDragEnd = {
                                 if (offsetX < -swipeThreshold) {
-                                    Log.d("EntryItem", "EntryItem: Swiped sufficiently on entry with id ${entry.id}, marking as read")
+                                    Log.d(
+                                        "EntryItem",
+                                        "EntryItem: Swiped sufficiently on entry with id ${entry.id}, marking as read"
+                                    )
                                     // Mark entry as read when swiped sufficiently
                                     viewModel.markEntryAsRead(entry.id)
                                     isVisible.value = false
                                 } else {
-                                    Log.d("EntryItem", "EntryItem: Swipe not sufficient for entry with id ${entry.id}, resetting")
+                                    Log.d(
+                                        "EntryItem",
+                                        "EntryItem: Swipe not sufficient for entry with id ${entry.id}, resetting"
+                                    )
                                     offsetX = 0f
                                 }
                             }

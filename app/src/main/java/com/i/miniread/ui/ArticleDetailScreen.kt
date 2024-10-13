@@ -153,7 +153,6 @@ fun ArticleActionsBar(
                 context.startActivity(shareIntent)
             }
         }
-        //外部打开按钮
         ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
