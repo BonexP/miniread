@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.ui.unit.dp
@@ -336,7 +337,7 @@ fun MainContent(
 fun BottomNavigationBar(navController: NavController) {
     NavigationBar(
         modifier = Modifier.height(48.dp), // 使导航栏高度更扁
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = Color.White,
 
     ) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -368,7 +369,7 @@ fun BottomNavigationBar(navController: NavController) {
                         imageVector = Icons.Default.Menu,
                         contentDescription = screen.label, // 有意义的描述
                         modifier = Modifier.size(20.dp), // 调整图标大小，使其更小
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = if (currentRoute == screen.route) Color.White else Color.Black // 根据选中状态设置图标为黑色或灰色
                     )
                 }
             )

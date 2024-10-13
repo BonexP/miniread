@@ -122,8 +122,9 @@ fun ArticleActionsBar(
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
-    BottomAppBar {
-        // 标记为已读按钮
+
+    BottomAppBar(containerColor = MaterialTheme.colorScheme.primary) {
+
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
@@ -418,8 +419,6 @@ private var cachedHtmlTemplate: String? = null
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
-    val isDarkMode = (context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
@@ -427,7 +426,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
 
         if (cachedCustomCss == null) {
             cachedCustomCss =
-                readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
+                readAssetFile(context, "custom.css")
             Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
         if (cachedHtmlTemplate == null) {
