@@ -7,7 +7,7 @@
 
 /* 定义变量 */
 :root {
-    --fg-light: #0e0e0e;
+    --fg-light: #000000;
     --bg-light: #00000000;
     --link-light: #1a73e8;
     --highlight-light: #ffeb3b;
