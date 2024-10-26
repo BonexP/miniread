@@ -41,6 +41,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -114,7 +115,7 @@ fun ArticleActionsBar(
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
-    BottomAppBar(containerColor = MaterialTheme.colorScheme.primary) {
+    BottomAppBar(containerColor = Color.White) {
 
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
