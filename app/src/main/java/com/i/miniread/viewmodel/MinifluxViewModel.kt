@@ -53,14 +53,20 @@ class MinifluxViewModel : ViewModel() {
         _authToken.value = token
     }
 
-    fun markEntryAsRead(entryId: Int){
+    fun markEntryAsRead(entryId: Int) {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
             viewModelScope.launch {
                 try {
-                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(
-                        listOf(entryId),"read"))
-                    Log.d("MinifluxViewModel", "Entry marked successfully: ${response.isSuccessful} ")
+                    val response = RetrofitInstance.api.markEntryAsUnread(
+                        token, EntryAndStatus(
+                            listOf(entryId), "read"
+                        )
+                    )
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Entry marked successfully: ${response.isSuccessful} "
+                    )
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error mark entry", e)
                 }
@@ -68,14 +74,20 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
     }
 
-    fun markEntryAsUnread(entryId: Int){
+    fun markEntryAsUnread(entryId: Int) {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Mark Entry Unread with token: $token")
             viewModelScope.launch {
                 try {
-                    val response = RetrofitInstance.api.markEntryAsUnread(token, EntryAndStatus(
-                        listOf(entryId)))
-                    Log.d("MinifluxViewModel", "Entry marked successfully: ${response.isSuccessful} ")
+                    val response = RetrofitInstance.api.markEntryAsUnread(
+                        token, EntryAndStatus(
+                            listOf(entryId)
+                        )
+                    )
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Entry marked successfully: ${response.isSuccessful} "
+                    )
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error mark entry", e)
                 }
@@ -91,7 +103,10 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.toggleEntryBookMark(token, entryId)
-                    Log.d("MinifluxViewModel", "Toggle marked successfully: ${response.isSuccessful} ")
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Toggle marked successfully: ${response.isSuccessful} "
+                    )
                     if (response.isSuccessful) {
                         // Trigger reloading the entry to reflect the new state
                         loadEntryById(entryId)
@@ -102,6 +117,7 @@ class MinifluxViewModel : ViewModel() {
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
     }
+
     fun fetchFeeds() {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching feeds with token: $token")
@@ -162,7 +178,12 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
     }
 
-    fun fetchEntries(feed: Feed ,status: String?="unread",order:String="id",direction:String="desc") {
+    fun fetchEntries(
+        feed: Feed,
+        status: String? = "unread",
+        order: String = "id",
+        direction: String = "desc"
+    ) {
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
@@ -170,7 +191,13 @@ class MinifluxViewModel : ViewModel() {
             )
             viewModelScope.launch {
                 try {
-                    val response = RetrofitInstance.api.getFeedEntries(token, feed.id,status ,order,direction)
+                    val response = RetrofitInstance.api.getFeedEntries(
+                        token,
+                        feed.id,
+                        status,
+                        order,
+                        direction
+                    )
 //                    Log.d("MinifluxViewModel", "Response: $response")
                     Log.d(
                         "MinifluxViewModel",
@@ -191,6 +218,7 @@ class MinifluxViewModel : ViewModel() {
         Log.d("refreshEntries", "refreshEntries: Using Default refreshEntries()!")
         fetchEntries()
     }
+
     fun refreshEntriesByFeed(feedId: Int) {
         Log.d("refreshEntriesByFeed", "refreshEntriesByFeed: using feedID  $feedId")
 
@@ -199,19 +227,21 @@ class MinifluxViewModel : ViewModel() {
             fetchEntries(Feed(feedId)) // Replace with actual method
         }
     }
+
     fun refreshEntriesByCategory(categoryId: Int) {
         Log.d("refreshEntriesByCategory", "refreshEntriesByCategory: using categoryId $categoryId")
         viewModelScope.launch {
             // Logic to fetch entries by feedId
-            fetchEntries("unread",categoryId) // Replace with actual method
+            fetchEntries("unread", categoryId) // Replace with actual method
         }
     }
+
     fun refreshFeeds() {
         fetchFeeds()
 
     }
 
-    fun refreshCategories(){
+    fun refreshCategories() {
         fetchCategories()
     }
 
@@ -274,7 +304,7 @@ class MinifluxViewModel : ViewModel() {
     }
 
     fun fetchTodayEntries() {
-        val status="unread"
+        val status = "unread"
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
@@ -285,7 +315,8 @@ class MinifluxViewModel : ViewModel() {
                     val unixTime = System.currentTimeMillis() / 1000
                     val befeore24h = unixTime - 86400
                     Log.d("Time", "unixtimestamp before 24h is $befeore24h")
-                    val response = RetrofitInstance.api.getTodayEntries(token, published_after = befeore24h)
+                    val response =
+                        RetrofitInstance.api.getTodayEntries(token, published_after = befeore24h)
 //                    Log.d("MinifluxViewModel", "Response: $response")
                     Log.d(
                         "MinifluxViewModel",
