@@ -106,7 +106,7 @@ fun MainContent(
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
-
+        val shouldRefreshTodayEntries = currentRoute?.startsWith(Screen.TodayEntryList.route) == true
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -116,6 +116,9 @@ fun MainContent(
                             Log.d("IconButton", "Refresh data")
                             viewModel.fetchFeeds()
                             viewModel.fetchCategories()
+                            if (shouldRefreshTodayEntries) {
+                                viewModel.fetchTodayEntries()
+                            }
                         }) {
                             Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
                         }
