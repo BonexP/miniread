@@ -308,7 +308,7 @@ class MinifluxViewModel : ViewModel() {
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Fetching entries with token: $token, status: $status"
+                "Fetching today's entries with token: $token, status: $status"
             )
             viewModelScope.launch {
                 try {
