@@ -74,7 +74,7 @@ sealed class Screen(val route: String, val label: String) {
     data object Categories : Screen("categories", "Categories")
     data object EntryList : Screen("entryList", "Entry List")
     data object ArticleDetail : Screen("articleDetail", "Article Detail")
-    data object TodayEntryList: Screen("todayEntryList", "Today")
+    data object TodayEntryList : Screen("todayEntryList", "Today")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -127,14 +127,17 @@ fun MainContent(
             },
             bottomBar = {
 //                BottomNavigationBar(navController = navController)
-                    if (shouldShowBottomBar) {
-                        BottomNavigationBar(navController = navController)
-                    }
+                if (shouldShowBottomBar) {
+                    BottomNavigationBar(navController = navController)
+                }
 
             }
         ) { innerPadding ->
             Surface(modifier = Modifier.padding(innerPadding)) {
-                NavHost(navController = navController, startDestination = Screen.TodayEntryList.route) {
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.TodayEntryList.route
+                ) {
                     composable(Screen.Feeds.route) {
                         FeedListScreen(viewModel) { feedId ->
                             currentFeedId = feedId
@@ -160,7 +163,7 @@ fun MainContent(
                         val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
                         val categoryId =
                             backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-                        EntryListScreen(viewModel,navController,feedId,categoryId)
+                        EntryListScreen(viewModel, navController, feedId, categoryId)
                     }
                     composable(
                         route = Screen.ArticleDetail.route + "?entryId={entryId}",
@@ -186,11 +189,12 @@ fun MainContent(
         }
     }
 }
+
 @Composable
 fun BottomNavigationBar(navController: NavController) {
     NavigationBar {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-        val items = listOf(Screen.Feeds,Screen.TodayEntryList, Screen.Categories)
+        val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
 
         items.forEach { screen ->
             NavigationBarItem(
