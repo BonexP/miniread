@@ -117,6 +117,13 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Path("feedId") feedId: Long
     )
+    @GET("v1/categories/{categoryId}/feeds")
+    suspend  fun getCategoryFeeds(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("categoryId") categoryId: Int,
+    ): List<Feed>
+
+
 
 }
 

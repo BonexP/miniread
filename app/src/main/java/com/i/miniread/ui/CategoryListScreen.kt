@@ -26,7 +26,11 @@ import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun CategoryListScreen(viewModel: MinifluxViewModel, onCategorySelected: (Int) -> Unit) {
+fun CategoryListScreen(
+    viewModel: MinifluxViewModel,
+    onCategorySelected: (Int) -> Unit,
+    onShowSubscriptions: (Int) -> Unit
+) {
     Log.d("CategoryListScreen", "CategoryListScreen: Enter CategoryListScreen")
     val categories by viewModel.categories.observeAsState(emptyList())
     val error by viewModel.error.observeAsState()
@@ -47,7 +51,7 @@ fun CategoryListScreen(viewModel: MinifluxViewModel, onCategorySelected: (Int) -
                         onCategorySelected(category.id) // Navigate to EntryListScreen
                     },
                     onMarkAsRead = { viewModel.markCategoryAsRead(category.id) },
-                    onShowSubscriptions = { viewModel.fetchChildSubscriptions(category.id) }
+                    onShowSubscriptions = { onShowSubscriptions(category.id) }
                 )
             }
         }
@@ -96,20 +100,18 @@ fun CategoryItem(
                         modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
                     )
                 }
-
-                // Button to show subscriptions with icon
-                IconButton(onClick = onShowSubscriptions) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Show Subscriptions"
-                    )
-                }
-
                 // Button to mark as read with icon
                 IconButton(onClick = onMarkAsRead) {
                     Icon(
                         imageVector = Icons.Default.Done,
                         contentDescription = "Mark as Read"
+                    )
+                }
+                // Button to show subscriptions with icon
+                IconButton(onClick = onShowSubscriptions) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowRight,
+                        contentDescription = "Show Subscriptions"
                     )
                 }
             }
