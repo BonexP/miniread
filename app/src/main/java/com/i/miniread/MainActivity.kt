@@ -41,6 +41,7 @@ import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -75,6 +76,7 @@ sealed class Screen(val route: String, val label: String) {
     data object EntryList : Screen("entryList", "Entry List")
     data object ArticleDetail : Screen("articleDetail", "Article Detail")
     data object TodayEntryList : Screen("todayEntryList", "Today")
+    data object SubFeedScreen : Screen("subFeed", "Category Feeds")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -106,7 +108,8 @@ fun MainContent(
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
-        val shouldRefreshTodayEntries = currentRoute?.startsWith(Screen.TodayEntryList.route) == true
+        val shouldRefreshTodayEntries =
+            currentRoute?.startsWith(Screen.TodayEntryList.route) == true
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -146,11 +149,13 @@ fun MainContent(
                         }
                     }
                     composable(Screen.Categories.route) {
-                        CategoryListScreen(viewModel) { categoryId ->
+                        CategoryListScreen(viewModel = viewModel, { categoryId ->
                             currentCategoryId = categoryId
                             currentFeedId = null
                             navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
-                        }
+                        }, { categoryId ->
+                            navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
+                        })
                     }
                     composable(
                         route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
@@ -183,6 +188,21 @@ fun MainContent(
                     composable(Screen.TodayEntryList.route) {
                         TodayEntryListScreen(viewModel, navController)
                     }
+                    composable(route = "subFeed?categoryId={categoryId}") { backStackEntry ->
+                        val categoryId =
+                            backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                        categoryId?.let {
+                            SubFeedScreen(
+                                viewModel = viewModel,
+                                categoryId = it,
+                                onFeedSelected = { feedId ->
+                                    currentFeedId = feedId
+                                    currentCategoryId = null
+                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                                })
+                        }
+                    }
+
 
                 }
             }
