@@ -90,8 +90,8 @@ fun MainContent(
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
-    var currentFeedId by remember { mutableStateOf<Int?>(null) }
-    var currentCategoryId by remember { mutableStateOf<Int?>(null) }
+    var currentFeedId by remember { mutableStateOf("") }
+    var currentCategoryId by remember { mutableStateOf("") }
 
     if (authToken == null) {
         LoginScreen(viewModel) { token ->
@@ -143,15 +143,15 @@ fun MainContent(
                 ) {
                     composable(Screen.Feeds.route) {
                         FeedListScreen(viewModel) { feedId ->
-                            currentFeedId = feedId
-                            currentCategoryId = null
+                            currentFeedId = feedId.toString()
+                            currentCategoryId = ""
                             navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
                         }
                     }
                     composable(Screen.Categories.route) {
                         CategoryListScreen(viewModel = viewModel, { categoryId ->
-                            currentCategoryId = categoryId
-                            currentFeedId = null
+                            currentCategoryId = categoryId.toString()
+                            currentFeedId = ""
                             navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
                         }, { categoryId ->
                             navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
@@ -160,14 +160,13 @@ fun MainContent(
                     composable(
                         route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
                         arguments = listOf(
-                            navArgument("feedId") { nullable = true; type = NavType.StringType },
-                            navArgument("categoryId") { nullable = true; type = NavType.StringType }
+                            navArgument("feedId") { type = NavType.StringType; nullable = true },
+                            navArgument("categoryId") { type = NavType.StringType; nullable = true }
 
                         )) { backStackEntry ->
-                        currentFeedId = backStackEntry.arguments?.getInt("feedId")
+                        currentFeedId = backStackEntry.arguments?.getString("feedId").toString()
                         val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
-                        val categoryId =
-                            backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                        val categoryId = backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
                         EntryListScreen(viewModel, navController, feedId, categoryId)
                     }
                     composable(
@@ -188,20 +187,26 @@ fun MainContent(
                     composable(Screen.TodayEntryList.route) {
                         TodayEntryListScreen(viewModel, navController)
                     }
-                    composable(route = "subFeed?categoryId={categoryId}") { backStackEntry ->
-                        val categoryId =
-                            backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                    composable(
+                        route = "subFeed?categoryId={categoryId}",
+                        arguments = listOf(navArgument("categoryId") { type = NavType.IntType }) // 将 categoryId 设置为 Int 类型
+                    ) { backStackEntry ->
+                        val categoryId = backStackEntry.arguments?.getInt("categoryId") // 直接获取 Int 类型的 categoryId
                         categoryId?.let {
                             SubFeedScreen(
                                 viewModel = viewModel,
                                 categoryId = it,
                                 onFeedSelected = { feedId ->
-                                    currentFeedId = feedId
-                                    currentCategoryId = null
-                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                                })
+                                    currentFeedId = feedId.toString()
+                                    currentCategoryId = ""
+                                    navController.navigate(
+                                        Screen.EntryList.route + "?feedId=$feedId"
+                                    )
+                                }
+                            )
                         }
                     }
+
 
 
                 }
