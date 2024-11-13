@@ -67,11 +67,27 @@ fun EntryListScreen(
             viewModel.refreshEntriesByCategory(categoryId)
         }
     }
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
-        items(entries) { entry ->
-            EntryItem(viewModel, entry, onClick = {
-                navController.navigate("articleDetail?entryId=${entry.id}")
-            })
+    // Show placeholder if entries list is empty
+    if (entries.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "无条目可显示",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.Gray
+            )
+        }
+    } else {
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
+            items(entries) { entry ->
+                EntryItem(viewModel, entry, onClick = {
+                    navController.navigate("articleDetail?entryId=${entry.id}")
+                })
+            }
         }
     }
 }

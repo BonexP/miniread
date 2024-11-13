@@ -15,13 +15,14 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 fun SubFeedScreen(viewModel: MinifluxViewModel, categoryId: Int, onFeedSelected: (Int) -> Unit) {
     viewModel.fetchCategoryFeeds(categoryId)
     val feeds by viewModel.selectedEntryFeeds.observeAsState(emptyList())
+    val feedsWithOutDisabled = feeds.filter { !it.disabled }.sortedBy { it.title }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        items(feeds) { feed ->
+        items(feedsWithOutDisabled) { feed ->
             FeedItem(
                 feed,
                 onClick = { onFeedSelected(feed.id) }
