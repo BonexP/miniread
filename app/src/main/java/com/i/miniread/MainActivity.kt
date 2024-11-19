@@ -1,6 +1,5 @@
 package com.i.miniread
 
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -23,7 +22,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -54,12 +52,15 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        PreferenceManager.init(this)
+        PreferenceManager.init(this) // 初始化 SharedPreferences 工具类
 
-        val sharedPreferences = getSharedPreferences("miniread_prefs", Context.MODE_PRIVATE)
-        val savedToken = sharedPreferences.getString("auth_token", null)
-        if (savedToken != null) {
-            viewModel.setAuthToken(savedToken)
+        val savedBaseUrl = PreferenceManager.baseUrl
+        val savedAuthToken = PreferenceManager.apiToken
+
+        if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
+            // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
+            RetrofitInstance.initialize(savedBaseUrl)
+            viewModel.setAuthToken(savedAuthToken)
             viewModel.fetchFeeds()
             viewModel.fetchCategories()
             viewModel.fetchUserInfo()
@@ -67,7 +68,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinireadTheme {
-                MainContent(viewModel, sharedPreferences)
+                MainContent(viewModel = viewModel)
             }
         }
     }
@@ -87,21 +88,34 @@ sealed class Screen(val route: String, val label: String) {
 @Composable
 fun MainContent(
     viewModel: MinifluxViewModel,
-    sharedPreferences: android.content.SharedPreferences
 ) {
-    var authToken by remember { mutableStateOf("") }
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
-    var isLoggedIn by remember { mutableStateOf(false) }
-    var baseUrl by remember { mutableStateOf("") }
+    var isLoggedIn by remember {
+        mutableStateOf(
+            PreferenceManager.baseUrl.isNotEmpty() && PreferenceManager.apiToken.isNotEmpty()
+        )
+    }
+    var baseUrl by remember { mutableStateOf(PreferenceManager.baseUrl) }
+    var authToken by remember { mutableStateOf(PreferenceManager.apiToken) }
 
     if (!isLoggedIn) {
-        LoginScreen(viewModel = MinifluxViewModel()) { url, token ->
+        LoginScreen(viewModel = viewModel) { url, token ->
+            // 登录成功时保存 baseUrl 和 authToken
             baseUrl = url
             authToken = token
+            PreferenceManager.baseUrl = url
+            PreferenceManager.apiToken = token
+            // 初始化 Retrofit 和 ViewModel
+            RetrofitInstance.initialize(baseUrl)
+            viewModel.setAuthToken(authToken)
+            viewModel.fetchFeeds()
+            viewModel.fetchCategories()
+            viewModel.fetchUserInfo()
+
             isLoggedIn = true
         }
     } else {
@@ -171,7 +185,8 @@ fun MainContent(
                         )) { backStackEntry ->
                         currentFeedId = backStackEntry.arguments?.getString("feedId").toString()
                         val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
-                        val categoryId = backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                        val categoryId =
+                            backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
                         EntryListScreen(viewModel, navController, feedId, categoryId)
                     }
                     composable(
@@ -194,9 +209,12 @@ fun MainContent(
                     }
                     composable(
                         route = "subFeed?categoryId={categoryId}",
-                        arguments = listOf(navArgument("categoryId") { type = NavType.IntType }) // 将 categoryId 设置为 Int 类型
+                        arguments = listOf(navArgument("categoryId") {
+                            type = NavType.IntType
+                        }) // 将 categoryId 设置为 Int 类型
                     ) { backStackEntry ->
-                        val categoryId = backStackEntry.arguments?.getInt("categoryId") // 直接获取 Int 类型的 categoryId
+                        val categoryId =
+                            backStackEntry.arguments?.getInt("categoryId") // 直接获取 Int 类型的 categoryId
                         categoryId?.let {
                             SubFeedScreen(
                                 viewModel = viewModel,
@@ -211,7 +229,6 @@ fun MainContent(
                             )
                         }
                     }
-
 
 
                 }
