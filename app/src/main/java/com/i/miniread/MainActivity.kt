@@ -36,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
@@ -44,6 +45,7 @@ import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
+import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 class MainActivity : ComponentActivity() {
@@ -52,6 +54,7 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PreferenceManager.init(this)
 
         val sharedPreferences = getSharedPreferences("miniread_prefs", Context.MODE_PRIVATE)
         val savedToken = sharedPreferences.getString("auth_token", null)
@@ -86,23 +89,25 @@ fun MainContent(
     viewModel: MinifluxViewModel,
     sharedPreferences: android.content.SharedPreferences
 ) {
-    val authToken by viewModel.authToken.observeAsState()
+    var authToken by remember { mutableStateOf("") }
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
+    var isLoggedIn by remember { mutableStateOf(false) }
+    var baseUrl by remember { mutableStateOf("") }
 
-    if (authToken == null) {
-        LoginScreen(viewModel) { token ->
-            try {
-                sharedPreferences.edit().putString("auth_token", token).apply()
-                viewModel.setAuthToken(token)
-            } catch (e: Exception) {
-                Log.e("MainContent", "Error saving token", e)
-            }
+    if (!isLoggedIn) {
+        LoginScreen(viewModel = MinifluxViewModel()) { url, token ->
+            baseUrl = url
+            authToken = token
+            isLoggedIn = true
         }
     } else {
+
+        RetrofitInstance.initialize(baseUrl)
+
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
