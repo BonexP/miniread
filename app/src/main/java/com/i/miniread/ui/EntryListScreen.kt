@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -25,6 +27,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -172,18 +175,23 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Text(
-                        text = entry.feed.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    entry.published_at?.let {
+                    Row (modifier = Modifier.fillMaxWidth()){
+                        entry.published_at?.let {
+                            Text(
+                                text = localizePublishTime(it),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                        Spacer(modifier = Modifier.padding(4.dp))
                         Text(
-                            text = localizePublishTime(it),
+                            text = entry.feed.title,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
+
                     }
+
                 }
             }
         }

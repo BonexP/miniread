@@ -91,17 +91,17 @@ fun FeedItem(feed: Feed, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleLarge
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = id.toString(),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = feed.disabled.toString(),
-                color = MaterialTheme.colorScheme.onSecondary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = id.toString(),
+//                color = MaterialTheme.colorScheme.onSurface,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+//            Text(
+//                text = feed.disabled.toString(),
+//                color = MaterialTheme.colorScheme.onSecondary,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
         }
     }
 }
