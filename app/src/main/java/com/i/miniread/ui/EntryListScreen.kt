@@ -68,11 +68,27 @@ fun EntryListScreen(
             viewModel.refreshEntriesByCategory(categoryId)
         }
     }
-    LazyColumn(modifier = Modifier.padding(16.dp)) {
-        items(entries) { entry ->
-            EntryItem(viewModel, entry, onClick = {
-                navController.navigate("articleDetail?entryId=${entry.id}")
-            })
+    // Show placeholder if entries list is empty
+    if (entries.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "无条目可显示",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.Gray
+            )
+        }
+    } else {
+        LazyColumn(modifier = Modifier.padding(16.dp)) {
+            items(entries) { entry ->
+                EntryItem(viewModel, entry, onClick = {
+                    navController.navigate("articleDetail?entryId=${entry.id}")
+                })
+            }
         }
     }
 }
@@ -89,18 +105,20 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Background to indicate swipe action
-            Card(
+            Surface(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(vertical = 8.dp)
-                    .background(MaterialTheme.colorScheme.secondaryContainer)
-                    .padding(16.dp),
-//                color = MaterialTheme.colorScheme.secondaryContainer
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.medium
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     contentAlignment = Alignment.CenterEnd
-                ) {
+                )  {
                     Icon(
                         imageVector = Icons.Default.Done,
                         contentDescription = "Mark as Read",
@@ -146,6 +164,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                             }
                         )
                     }
+
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(

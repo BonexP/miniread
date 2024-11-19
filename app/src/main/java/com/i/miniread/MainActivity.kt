@@ -1,6 +1,5 @@
 package com.i.miniread
 
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -26,7 +25,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -41,13 +39,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
+import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 class MainActivity : ComponentActivity() {
@@ -56,11 +57,15 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PreferenceManager.init(this) // 初始化 SharedPreferences 工具类
 
-        val sharedPreferences = getSharedPreferences("miniread_prefs", Context.MODE_PRIVATE)
-        val savedToken = sharedPreferences.getString("auth_token", null)
-        if (savedToken != null) {
-            viewModel.setAuthToken(savedToken)
+        val savedBaseUrl = PreferenceManager.baseUrl
+        val savedAuthToken = PreferenceManager.apiToken
+
+        if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
+            // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
+            RetrofitInstance.initialize(savedBaseUrl)
+            viewModel.setAuthToken(savedAuthToken)
             viewModel.fetchFeeds()
             viewModel.fetchCategories()
             viewModel.fetchUserInfo()
@@ -68,7 +73,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinireadTheme {
-                MainContent(viewModel, sharedPreferences)
+                MainContent(viewModel = viewModel)
             }
         }
     }
@@ -80,6 +85,7 @@ sealed class Screen(val route: String, val label: String) {
     data object EntryList : Screen("entryList", "Entry List")
     data object ArticleDetail : Screen("articleDetail", "Article Detail")
     data object TodayEntryList : Screen("todayEntryList", "Today")
+    data object SubFeedScreen : Screen("subFeed", "Category Feeds")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -87,31 +93,47 @@ sealed class Screen(val route: String, val label: String) {
 @Composable
 fun MainContent(
     viewModel: MinifluxViewModel,
-    sharedPreferences: android.content.SharedPreferences
 ) {
-    val authToken by viewModel.authToken.observeAsState()
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
 
-    var currentFeedId by remember { mutableStateOf<Int?>(null) }
-    var currentCategoryId by remember { mutableStateOf<Int?>(null) }
+    var currentFeedId by remember { mutableStateOf("") }
+    var currentCategoryId by remember { mutableStateOf("") }
+    var isLoggedIn by remember {
+        mutableStateOf(
+            PreferenceManager.baseUrl.isNotEmpty() && PreferenceManager.apiToken.isNotEmpty()
+        )
+    }
+    var baseUrl by remember { mutableStateOf(PreferenceManager.baseUrl) }
+    var authToken by remember { mutableStateOf(PreferenceManager.apiToken) }
 
-    if (authToken == null) {
-        LoginScreen(viewModel) { token ->
-            try {
-                sharedPreferences.edit().putString("auth_token", token).apply()
-                viewModel.setAuthToken(token)
-            } catch (e: Exception) {
-                Log.e("MainContent", "Error saving token", e)
-            }
+    if (!isLoggedIn) {
+        LoginScreen(viewModel = viewModel) { url, token ->
+            // 登录成功时保存 baseUrl 和 authToken
+            baseUrl = url
+            authToken = token
+            PreferenceManager.baseUrl = url
+            PreferenceManager.apiToken = token
+            // 初始化 Retrofit 和 ViewModel
+            RetrofitInstance.initialize(baseUrl)
+            viewModel.setAuthToken(authToken)
+            viewModel.fetchFeeds()
+            viewModel.fetchCategories()
+            viewModel.fetchUserInfo()
+
+            isLoggedIn = true
         }
     } else {
+
+        RetrofitInstance.initialize(baseUrl)
+
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
-
+        val shouldRefreshTodayEntries =
+            currentRoute?.startsWith(Screen.TodayEntryList.route) == true
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -126,6 +148,9 @@ fun MainContent(
                             Log.d("IconButton", "Refresh data")
                             viewModel.fetchFeeds()
                             viewModel.fetchCategories()
+                            if (shouldRefreshTodayEntries) {
+                                viewModel.fetchTodayEntries()
+                            }
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -153,26 +178,28 @@ fun MainContent(
                 ) {
                     composable(Screen.Feeds.route) {
                         FeedListScreen(viewModel) { feedId ->
-                            currentFeedId = feedId
-                            currentCategoryId = null
+                            currentFeedId = feedId.toString()
+                            currentCategoryId = ""
                             navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
                         }
                     }
                     composable(Screen.Categories.route) {
-                        CategoryListScreen(viewModel) { categoryId ->
-                            currentCategoryId = categoryId
-                            currentFeedId = null
+                        CategoryListScreen(viewModel = viewModel, { categoryId ->
+                            currentCategoryId = categoryId.toString()
+                            currentFeedId = ""
                             navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
-                        }
+                        }, { categoryId ->
+                            navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
+                        })
                     }
                     composable(
                         route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
                         arguments = listOf(
-                            navArgument("feedId") { nullable = true; type = NavType.StringType },
-                            navArgument("categoryId") { nullable = true; type = NavType.StringType }
+                            navArgument("feedId") { type = NavType.StringType; nullable = true },
+                            navArgument("categoryId") { type = NavType.StringType; nullable = true }
 
                         )) { backStackEntry ->
-                        currentFeedId = backStackEntry.arguments?.getInt("feedId")
+                        currentFeedId = backStackEntry.arguments?.getString("feedId").toString()
                         val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
                         val categoryId =
                             backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
@@ -196,6 +223,29 @@ fun MainContent(
                     composable(Screen.TodayEntryList.route) {
                         TodayEntryListScreen(viewModel, navController)
                     }
+                    composable(
+                        route = "subFeed?categoryId={categoryId}",
+                        arguments = listOf(navArgument("categoryId") {
+                            type = NavType.IntType
+                        }) // 将 categoryId 设置为 Int 类型
+                    ) { backStackEntry ->
+                        val categoryId =
+                            backStackEntry.arguments?.getInt("categoryId") // 直接获取 Int 类型的 categoryId
+                        categoryId?.let {
+                            SubFeedScreen(
+                                viewModel = viewModel,
+                                categoryId = it,
+                                onFeedSelected = { feedId ->
+                                    currentFeedId = feedId.toString()
+                                    currentCategoryId = ""
+                                    navController.navigate(
+                                        Screen.EntryList.route + "?feedId=$feedId"
+                                    )
+                                }
+                            )
+                        }
+                    }
+
 
                 }
             }

@@ -33,6 +33,9 @@ class MinifluxViewModel : ViewModel() {
     private val _selectedEntry = MutableLiveData<Entry?>()
     val selectedEntry: LiveData<Entry?> get() = _selectedEntry
 
+    private val _selectedEntryFeeds = MutableLiveData<List<Feed>>()
+    val selectedEntryFeeds: LiveData<List<Feed>> get() = _selectedEntryFeeds
+
     private val _userInfo = MutableLiveData<UserInfo?>()
     val userInfo: LiveData<UserInfo?> get() = _userInfo
 
@@ -308,7 +311,7 @@ class MinifluxViewModel : ViewModel() {
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Fetching entries with token: $token, status: $status"
+                "Fetching today's entries with token: $token, status: $status"
             )
             viewModelScope.launch {
                 try {
@@ -331,6 +334,32 @@ class MinifluxViewModel : ViewModel() {
                 }
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch entries")
+    }
+
+    fun markCategoryAsRead(id: Int) {
+        //TODO
+        Log.d("markCategoryAsRead", "markCategoryAsRead: TOBEDONE")
+    }
+
+    fun fetchChildSubscriptions(id: Int) {
+        //TODO
+    }
+
+    fun fetchCategoryFeeds(categoryId: Int){
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching category $categoryId feeds with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getCategoryFeeds(categoryId = categoryId, authToken = token)
+                    Log.d("MinifluxViewModel", "Feeds category $categoryId fetched successfully: ${response.size} items")
+                    _selectedEntryFeeds.postValue(response)
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching feeds", e)
+                    _selectedEntryFeeds.postValue(emptyList())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch feeds")
+
     }
 
 

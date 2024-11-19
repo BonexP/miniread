@@ -29,7 +29,9 @@ fun TodayEntryListScreen(viewModel: MinifluxViewModel, navController: NavControl
         items(todayEntries) { entry ->
             EntryItem(viewModel, entry, onClick = {
                 navController.navigate("articleDetail?entryId=${entry.id}")
-            })
+            },
+
+                )
         }
     }
 }

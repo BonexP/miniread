@@ -117,6 +117,13 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Path("feedId") feedId: Long
     )
+    @GET("v1/categories/{categoryId}/feeds")
+    suspend  fun getCategoryFeeds(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("categoryId") categoryId: Int,
+    ): List<Feed>
+
+
 
 }
 
@@ -196,27 +203,32 @@ data class Icon(
 
 object RetrofitInstance {
     private const val TAG = "MinifluxApi"
+    private var retrofit: Retrofit? = null
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level =
             HttpLoggingInterceptor.Level.BASIC // Logs request and response lines and their respective headers and bodies (if present)
     }
-
+    fun initialize(baseUrl: String) {
+        Log.d(TAG, "Initializing Retrofit with base URL: $baseUrl")
+        retrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .build()
 
-    val api: MinifluxApi by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://pi.lifeo3.icu:4081/")
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(MinifluxApi::class.java)
-    }
+    val api: MinifluxApi
+        get() {
+            checkNotNull(retrofit) { "RetrofitInstance is not initialized. Call initialize(baseUrl) first." }
+            return retrofit!!.create(MinifluxApi::class.java)
+        }
 
     init {
-        Log.d(TAG, "RetrofitInstance initialized with base URL: https://pi.lifeo3.icu:4081/")
+        Log.d(TAG, "RetrofitInstance initialized!")
     }
 }
