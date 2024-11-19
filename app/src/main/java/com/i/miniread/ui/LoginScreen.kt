@@ -16,10 +16,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.i.miniread.network.RetrofitInstance
+import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
-
 @Composable
-fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) {
+fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -> Unit) {
+    var baseUrl by remember { mutableStateOf("") }
     var authToken by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -30,6 +32,14 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) 
         verticalArrangement = Arrangement.Center
     ) {
         TextField(
+            value = baseUrl,
+            onValueChange = {
+                baseUrl = it
+                Log.d("LoginScreen", "LoginScreen: BaseURL: $baseUrl")
+            },
+            label = { Text("Instance Base URL") }
+        )
+        TextField(
             value = authToken,
             onValueChange = {
                 authToken = it
@@ -38,24 +48,16 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String) -> Unit) 
             label = { Text("API Token") }
         )
         Button(onClick = {
-            Log.d("LoginScreen", "Login button clicked")
-            if (authToken.isNotEmpty()) {
-                try {
-                    Log.d("LoginScreen", "Valid token: $authToken")
-                    onLoginSuccess(authToken)
-                } catch (e: Exception) {
-                    Log.e("LoginScreen", "Error during login success handling", e)
-                }
+            if (baseUrl.isNotEmpty() && authToken.isNotEmpty()) {
+                onLoginSuccess(baseUrl, authToken)
             } else {
-                Log.d("LoginScreen", "Empty token input")
-                errorMessage = "Please enter a valid API token."
+                errorMessage = "Please enter a valid Base URL and API token."
             }
         }) {
             Text("Login")
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error)
-            Log.d("LoginScreen", "Error message displayed: $errorMessage")
         }
     }
 }
