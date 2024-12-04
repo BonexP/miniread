@@ -362,5 +362,25 @@ class MinifluxViewModel : ViewModel() {
 
     }
 
+    fun markFeedAsRead(feedid: Int) {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Mark feed as  Read with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.markFeedAsRead(
+                        token, feedid
+                    )
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Mark feed as read successfully: ${response.code()==204} "
+                    )
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error mark feed as read", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark entry")
+    }
+
+
 
 }
