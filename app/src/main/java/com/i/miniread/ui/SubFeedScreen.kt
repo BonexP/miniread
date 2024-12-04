@@ -1,5 +1,6 @@
 package com.i.miniread.ui
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,7 +26,11 @@ fun SubFeedScreen(viewModel: MinifluxViewModel, categoryId: Int, onFeedSelected:
         items(feedsWithOutDisabled) { feed ->
             FeedItem(
                 feed,
-                onClick = { onFeedSelected(feed.id) }
+                onClick = { onFeedSelected(feed.id) },
+                onMarkAsRead={
+                    viewModel.markFeedAsRead(feed.id)
+                    Log.d("SubFeedScreen", "FeedListScreen: invoke onMarkAsRad in SubFeedScreen!")
+                }
             )
         }
     }

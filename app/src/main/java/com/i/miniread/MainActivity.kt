@@ -166,6 +166,7 @@ fun MainContent(
                             currentCategoryId = ""
                             navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
                         }
+
                     }
                     composable(Screen.Categories.route) {
                         CategoryListScreen(viewModel = viewModel, { categoryId ->
