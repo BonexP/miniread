@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +12,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,11 +29,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.google.android.datatransport.runtime.firebase.transport.LogEventDropped
 import com.i.miniread.network.Feed
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
-fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit) {
+fun FeedListScreen(
+    viewModel: MinifluxViewModel,
+    onFeedSelected: (Int) -> Unit,
+) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
 
     val feedsWithOutDisabled = feeds.filter { !it.disabled }.sortedBy { it.title }
@@ -57,6 +69,9 @@ fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit) 
                 FeedItem(feed, onClick = {
                     Log.d("FeedListScreen", "Feed Using:  $feed")
                     onFeedSelected(feed.id)
+                },onMarkAsRead={
+                    viewModel.markFeedAsRead(feed.id)
+                    Log.d("FeedList", "FeedListScreen: invoke onMarkAsRad in FeedlistScreen!")
                 })
             }
         }
@@ -64,7 +79,7 @@ fun FeedListScreen(viewModel: MinifluxViewModel, onFeedSelected: (Int) -> Unit) 
 }
 
 @Composable
-fun FeedItem(feed: Feed, onClick: () -> Unit) {
+fun FeedItem(feed: Feed, onClick: () -> Unit,onMarkAsRead: () -> Unit) {
     val title = feed.title
     val id = feed.id
 
@@ -81,22 +96,37 @@ fun FeedItem(feed: Feed, onClick: () -> Unit) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Text(
-                text = title,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleLarge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = id.toString(),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = feed.disabled.toString(),
-                color = MaterialTheme.colorScheme.onSecondary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = id.toString(),
+//                color = MaterialTheme.colorScheme.onSurface,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+//            Text(
+//                text = feed.disabled.toString(),
+//                color = MaterialTheme.colorScheme.onSecondary,
+//                style = MaterialTheme.typography.bodyMedium
+//            )
+                }
+                // Button to mark as read with icon
+                IconButton(onClick = onMarkAsRead) {
+                    Icon(
+                        imageVector = Icons.Default.Done,
+                        contentDescription = "Mark as Read"
+                    )
+                }
+            }
         }
     }
 }
