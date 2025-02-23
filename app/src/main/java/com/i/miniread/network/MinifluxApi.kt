@@ -83,6 +83,12 @@ interface MinifluxApi {
         @Body body: EntryAndStatus,
     ): Response<Void?>
 
+    @PUT("v1/categories/{categoryID}/mark-all-as-read")
+    suspend fun markCategoryAsRead(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("categoryID") category: Int
+    ): Response<Void?>
+
     @PUT("/v1/feeds/{feedId}/mark-all-as-read")
     suspend fun markFeedAsRead(
         @Header("X-Auth-Token") authToken: String,

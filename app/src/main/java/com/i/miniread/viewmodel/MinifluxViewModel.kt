@@ -337,8 +337,22 @@ class MinifluxViewModel : ViewModel() {
     }
 
     fun markCategoryAsRead(id: Int) {
-        //TODO
-        Log.d("markCategoryAsRead", "markCategoryAsRead: TOBEDONE")
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.markCategoryAsRead(
+                        token, id
+                    )
+                    Log.d(
+                        "MinifluxViewModel",
+                        "Category marked successfully: ${response.isSuccessful} "
+                    )
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error mark Category", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark Category as read")
     }
 
     fun fetchChildSubscriptions(id: Int) {
