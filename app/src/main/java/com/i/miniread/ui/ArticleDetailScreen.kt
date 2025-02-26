@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -184,6 +185,8 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 }
 
 private const val isOutputHtmlContent = false
+private fun Context.isTargetDomain() =
+    PreferenceManager.baseUrl.contains("pi.lifeo3.icu", true)
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -193,7 +196,9 @@ fun ArticleWebView(
     feedId: Int?,
     onScrollToBottom: () -> Unit
 ) {
-    val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
+    val context = LocalContext.current
+    val shouldInterceptByDomain = context.isTargetDomain()
+    val shouldInterceptRequests = shouldInterceptByDomain && feedId in listOf(26, 38, 52, 51)
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
     val contentHeightState = remember { mutableStateOf<Float?>(null) }
@@ -314,6 +319,10 @@ fun ArticleWebView(
 }
 
 fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
+    Log.d("Interceptor", "BASE_URL: ${PreferenceManager.baseUrl}")
+    Log.d("Interceptor", "Request host: ${request.url.host}")
+
+    if (!request.url.host?.contains("pi.lifeo3.icu")!!) return null
     val tag = "ArticleDetailScreen"
     return try {
         val modifiedRequest = Request.Builder()
