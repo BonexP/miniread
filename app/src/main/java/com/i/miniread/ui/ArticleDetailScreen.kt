@@ -3,7 +3,6 @@ package com.i.miniread.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import android.webkit.WebResourceRequest
@@ -61,6 +60,10 @@ import java.io.File
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
+    Log.d("Lifecycle", "ArticleDetailScreen recomposed") // 添加生命周期日志
+        //下面这行代码似乎没有什么用，暂时先注释
+//    remember { mutableStateOf<WebView?>(null) }
+
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -204,6 +207,15 @@ fun ArticleWebView(
 
     val webView = remember {
         WebView(context).apply {
+            post {
+                requestFocus()
+                // 添加焦点检查日志
+                Log.d("WebViewFocus", "Final focus state: ${hasFocus()}")
+            }
+            postDelayed({
+                requestFocus()
+                Log.d("WebViewFocus", "Delayed focus: ${hasFocus()}")
+            }, 500)
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -215,6 +227,10 @@ fun ArticleWebView(
                 displayZoomControls = false
                 loadsImagesAutomatically = true
                 textZoom = 125
+                isVerticalScrollBarEnabled = false
+                isFocusable = true
+                isFocusableInTouchMode = true
+                requestFocusFromTouch()
             }
             setBackgroundColor(0x00000000)
 
@@ -362,7 +378,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         if (cachedCustomCss == null) {
             cachedCustomCss =
                 readAssetFile(context, "custom.css")
-            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
+//            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")

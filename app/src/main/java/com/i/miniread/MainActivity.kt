@@ -3,6 +3,8 @@ package com.i.miniread
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
+import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -52,9 +54,32 @@ import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 class MainActivity : ComponentActivity() {
+
     private val viewModel: MinifluxViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
+    // 在 MainActivity 中添加拦截
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        Log.d("MainActivityKey", "Received key: $keyCode") // 新增验证日志
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP -> {
+                Log.d("MainActivity", "Intercepted volume key event")
+                val webView =(currentFocus as? WebView)
+                webView?.scrollBy(0, -500)
+                true
+            }
+
+            KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                Log.d("MainActivity", "Intercepted volume key event")
+                val webView =(currentFocus as? WebView)
+//                webView?.pageDown(true)
+                webView?.scrollBy(0, 800)
+                true
+            }
+
+            else -> super.onKeyDown(keyCode, event)
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PreferenceManager.init(this) // 初始化 SharedPreferences 工具类
