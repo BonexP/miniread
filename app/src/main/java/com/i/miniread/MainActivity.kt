@@ -197,7 +197,7 @@ fun MainContent(
                         val entryId = backStackEntry.arguments?.getInt("entryId")
                         if (entryId != null) {
                             selectedScreen = Screen.ArticleDetail.route
-                            ArticleDetailScreen(viewModel, entryId)
+                            ArticleDetailScreen(viewModel, entryId, navController)
                         } else {
                             Log.d(
                                 "MainActivity",
