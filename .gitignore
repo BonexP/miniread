@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# IntelliJ IDEA
+.idea/
+modules.xml
