@@ -38,7 +38,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -63,6 +62,7 @@ fun EntryListScreen(
     LaunchedEffect(feedId, categoryId) {
         if (feedId != null) {
             viewModel.refreshEntriesByFeed(feedId)
+
         } else if (categoryId != null) {
             viewModel.refreshEntriesByCategory(categoryId)
         }
@@ -82,10 +82,14 @@ fun EntryListScreen(
             )
         }
     } else {
+        viewModel.setCurrentEntryList(entries)
+
         LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(entries) { entry ->
                 EntryItem(viewModel, entry, onClick = {
+                    viewModel.setCurrentEntryList(entries)
                     navController.navigate("articleDetail?entryId=${entry.id}")
+
                 })
             }
         }

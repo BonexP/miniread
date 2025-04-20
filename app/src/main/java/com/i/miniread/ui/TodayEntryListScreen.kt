@@ -22,14 +22,20 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun TodayEntryListScreen(viewModel: MinifluxViewModel, navController: NavController) {
+fun TodayEntryListScreen(
+    viewModel: MinifluxViewModel,
+    navController: NavController
+) {
+    // 复用现有的 EntryListScreen 逻辑
+
+    val todayEntries by viewModel.entries.observeAsState(emptyList())
+
     // 在进入此屏幕时仅加载当天条目
     LaunchedEffect(Unit) {
         viewModel.fetchTodayEntries()
+        viewModel.setCurrentEntryList(entries = todayEntries )
     }
 
-    // 复用现有的 EntryListScreen 逻辑
-    val todayEntries by viewModel.entries.observeAsState(emptyList())
     if (todayEntries.isEmpty()) {
         Box(
             modifier = Modifier

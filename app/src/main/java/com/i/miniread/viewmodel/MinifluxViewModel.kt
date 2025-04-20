@@ -1,6 +1,7 @@
 package com.i.miniread.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -229,7 +230,7 @@ class MinifluxViewModel : ViewModel() {
         fetchEntries()
     }
 
-    fun refreshEntriesByFeed(feedId: Int) {
+    fun refreshEntriesByFeed(feedId: Int)  {
         Log.d("refreshEntriesByFeed", "refreshEntriesByFeed: using feedID  $feedId")
 
         viewModelScope.launch {
@@ -424,5 +425,42 @@ class MinifluxViewModel : ViewModel() {
     }
 
 
+    // 确保Entry ID类型一致
+    fun setCurrentEntryList(entries: List<Entry>) {
+        currentEntryList.clear()
+        currentEntryList.addAll(entries)
+        Log.d("setCurrentEntryList", "Set current list: now list is ${entries.map { it.id }}")
+
+    }
+
+    // MinifluxViewModel.kt
+    fun navigateToPreviousEntry(currentId: Int): Int? {
+        Log.d("navigateToPreviousEntry", "navigateToPreviousEntry: Func call!")
+        Log.d("navigateToPreviousEntry", "Set current list: now list is ${currentEntryList.map { it.id }};and whether list null is ${currentEntryList.isEmpty()}")
+        if (currentEntryList.isEmpty()) return null
+
+        Log.d("Navigation", "Current ID: $currentId (Type: ${currentId::class.java.simpleName})")
+
+        val currentIndex = currentEntryList.indexOfFirst { it.id == currentId }
+
+        Log.d("Navigation", "navigateToPreviousEntry: now var currentIndex is $currentIndex")
+        return when {
+            currentIndex == -1 -> null
+            currentIndex > 0 -> {
+                val prevId = currentEntryList[currentIndex - 1].id
+                Log.d("Navigation", "Returning prevId: $prevId")
+                prevId}
+            else -> null
+        }.also {
+            if (it == null) Log.w("Navigation", "Invalid previous entry")
+        }
+
+    }
+
+    fun navigateToNextEntry(currentId: Int): Int? {
+        //TODO
+        Log.d("navigateToNextEntry", "navigateToNextEntry: TODO!!")
+        return  null
+    }
 
 }

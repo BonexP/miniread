@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
@@ -45,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
 import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -60,7 +63,8 @@ import java.io.File
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
+fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navController: NavController) {
+    Log.d("ArticleDetailScreen", "ArticleDetailScreen: now get entryId is $entryId")
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -73,7 +77,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     }
 
     Scaffold(
-        bottomBar = { ArticleActionsBar(viewModel, entryId, snackbarHostState) },
+        bottomBar = { ArticleActionsBar(viewModel, entryId, snackbarHostState,navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
@@ -111,6 +115,7 @@ fun ArticleActionsBar(
     viewModel: MinifluxViewModel,
     entryId: Int,
     snackbarHostState: SnackbarHostState,
+    navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
@@ -152,6 +157,45 @@ fun ArticleActionsBar(
 
             }
         }
+        // ArticleDetailScreen.kt
+        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous") {
+            viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
+                Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
+
+                // 使用查询参数格式导航
+                navController.navigate("articleDetail?entryId=$prevId") {
+
+                    // 保持导航栈整洁
+                    popUpTo("articleDetail?entryId=$prevId") {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            } ?: run {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("已经是第一篇了")
+                }
+            }
+        }
+
+        ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
+            viewModel.navigateToNextEntry(entryId)?.let { nextId ->
+                // 使用查询参数格式导航
+                navController.navigate("articleDetail?entryId=$nextId") {
+                    popUpTo("articleDetail?entryId=$entryId") {
+                        inclusive = true
+                        saveState = true
+                    }
+                    restoreState = true
+                }
+            } ?: run {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("已经是最后一篇了")
+                }
+            }
+        }
+
+
 //        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
 //            Log.d("ArticleDetailScreen", "refresh webview")
 //
@@ -322,7 +366,6 @@ fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
     Log.d("Interceptor", "BASE_URL: ${PreferenceManager.baseUrl}")
     Log.d("Interceptor", "Request host: ${request.url.host}")
 
-    if (!request.url.host?.contains("pi.lifeo3.icu")!!) return null
     val tag = "ArticleDetailScreen"
     return try {
         val modifiedRequest = Request.Builder()
