@@ -4,8 +4,8 @@ plugins {
 
 }
 val versionname by extra("dev")
-val versioncode by extra("0.0.18")
-val versionnumber by extra(18)
+val versioncode by extra("0.0.19")
+val versionnumber by extra(19)
 
 android {
     namespace = "com.i.miniread"
