@@ -24,7 +24,7 @@
 /* 明亮模式下的全局样式 */
 body {
     font-family: var(--font-sans);
-    font-size: clamp(1rem, 2vw, 2.5rem);
+    font-size: 2.5rem;
     line-height: 1.6;
     color: var(--fg-light);
     background-color: var(--bg-light);
@@ -45,7 +45,7 @@ body.dark-mode {
 
 /* 段落 */
 p {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
 }
 
 /* 标题样式 */
