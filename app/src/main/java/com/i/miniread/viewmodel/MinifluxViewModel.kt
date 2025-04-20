@@ -39,6 +39,11 @@ class MinifluxViewModel : ViewModel() {
     private val _userInfo = MutableLiveData<UserInfo?>()
     val userInfo: LiveData<UserInfo?> get() = _userInfo
 
+    private val _unreadEntryCountsByCategory = MutableLiveData<Map<Int, Int>>()
+    val unreadEntryCountsByCategory: LiveData<Map<Int, Int>> get() = _unreadEntryCountsByCategory
+
+    private val currentEntryList = mutableStateListOf<Entry>()
+
     fun loadEntryById(entryId: Int) {
         viewModelScope.launch {
             try {
@@ -147,7 +152,10 @@ class MinifluxViewModel : ViewModel() {
                         "MinifluxViewModel",
                         "Categories fetched successfully: ${response.size} items"
                     )
+                    // 在MinifluxViewModel的fetchCategories()成功回调中添加
                     _categories.postValue(response)
+//                    fetchUnreadEntryCountsByCategory() // 新增
+
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching categories", e)
                     _categories.postValue(emptyList())
@@ -165,7 +173,6 @@ class MinifluxViewModel : ViewModel() {
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getEntries(token, status, categoryId)
-//                    Log.d("MinifluxViewModel", "Response: $response")
                     Log.d(
                         "MinifluxViewModel",
                         "Entries fetched successfully: ${response.entries.size} items"
@@ -355,8 +362,29 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark Category as read")
     }
 
-    fun fetchChildSubscriptions(id: Int) {
-        //TODO
+    fun fetchUnreadEntryCountsByCategory() {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching unread entry counts by category with token: $token")
+            viewModelScope.launch {
+                try {
+                    val categories = RetrofitInstance.api.getCategories(token)
+                    val unreadCounts = mutableMapOf<Int, Int>()
+
+                    for (category in categories) {
+                        val response = RetrofitInstance.api.getEntries(token, status = "unread", categoryId = category.id)
+//                        Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.entries.size} items")
+                        Log.d("MinifluxViewModel", "Fetched unread entries: total ${response.total} items")
+//                        Log.d("MinifluxViewModel", "Fetched entries: ${response.entries}")
+                        unreadCounts[category.id] = response.total
+                    }
+
+                    _unreadEntryCountsByCategory.postValue(unreadCounts)
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching unread entry counts by category", e)
+                    _unreadEntryCountsByCategory.postValue(emptyMap())
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch unread entry counts by category")
     }
 
     fun fetchCategoryFeeds(categoryId: Int){

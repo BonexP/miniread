@@ -28,6 +28,7 @@ import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 
 @Composable
@@ -36,10 +37,16 @@ fun CategoryListScreen(
     onCategorySelected: (Int) -> Unit,
     onShowSubscriptions: (Int) -> Unit
 ) {
+    // 在CategoryListScreen顶部添加
+    LaunchedEffect(Unit) {
+        viewModel.fetchUnreadEntryCountsByCategory()
+        viewModel.fetchCategories() // 确保已存在
+    }
+
     Log.d("CategoryListScreen", "CategoryListScreen: Enter CategoryListScreen")
     val categories by viewModel.categories.observeAsState(emptyList())
     val error by viewModel.error.observeAsState()
-
+    val unreadCounts by viewModel.unreadEntryCountsByCategory.observeAsState(emptyMap())
     if (error != null) {
         Text(
             text = error ?: "Unknown error occurred",
@@ -51,6 +58,7 @@ fun CategoryListScreen(
             items(categories) { category ->
                 CategoryItem(
                     category = category,
+                    unreadCount = unreadCounts[category.id]?:0,
                     onClick = {
                         viewModel.fetchEntries(categoryId = category.id, status = "unread")
                         onCategorySelected(category.id) // Navigate to EntryListScreen
@@ -74,6 +82,7 @@ fun CategoryListScreen(
 @Composable
 fun CategoryItem(
     category: Category,
+    unreadCount: Int,
     onClick: () -> Unit,
     onMarkAsRead: () -> Unit,
     onShowSubscriptions: () -> Unit
@@ -127,7 +136,7 @@ fun CategoryItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "${category.title} articles",
+                        text =  if (unreadCount > 0) "${category.title} articles,$unreadCount 未读条目" else "${category.title} articles 全部已读" ,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
