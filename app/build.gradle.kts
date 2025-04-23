@@ -26,6 +26,7 @@ android {
     }
     signingConfigs {
         create("release") {
+            println("Keystore path: ${System.getenv("KEYSTORE_FILE")}")
             val keystorePath = File(System.getenv("KEYSTORE_FILE") ?: "")
             storeFile = keystorePath
             storePassword = System.getenv("KEYSTORE_PASSWORD")
