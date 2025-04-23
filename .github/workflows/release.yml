@@ -25,8 +25,11 @@ jobs:
 
       - name: Decode keystore
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release-key.jks
-          echo "KEYSTORE_FILE=$(pwd)/release-key.jks" >> $GITHUB_ENV
+          echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.jks
+        shell: bash
+
+      - name: Set environment variable for keystore
+        run: echo "KEYSTORE_FILE=$PWD/my-release-key.jks" >> $GITHUB_ENV
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
