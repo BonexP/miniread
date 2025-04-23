@@ -24,7 +24,15 @@ android {
         }
         versionNameSuffix = versionname
     }
-
+    signingConfigs {
+        create("release") {
+            val keystorePath = File(System.getenv("KEYSTORE_FILE") ?: "")
+            storeFile = keystorePath
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
     buildTypes {
         debug {
             isMinifyEnabled =  false
@@ -48,6 +56,10 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isRenderscriptDebuggable = true
+        }
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
