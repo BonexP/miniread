@@ -180,13 +180,16 @@ fun ArticleActionsBar(
 
         ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
             viewModel.navigateToNextEntry(entryId)?.let { nextId ->
+                Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
+
                 // 使用查询参数格式导航
                 navController.navigate("articleDetail?entryId=$nextId") {
-                    popUpTo("articleDetail?entryId=$entryId") {
+
+                    // 保持导航栈整洁
+                    popUpTo("articleDetail?entryId=$nextId") {
                         inclusive = true
-                        saveState = true
                     }
-                    restoreState = true
+                    launchSingleTop = true
                 }
             } ?: run {
                 coroutineScope.launch {

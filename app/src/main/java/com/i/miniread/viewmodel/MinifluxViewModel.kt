@@ -458,9 +458,24 @@ class MinifluxViewModel : ViewModel() {
     }
 
     fun navigateToNextEntry(currentId: Int): Int? {
-        //TODO
-        Log.d("navigateToNextEntry", "navigateToNextEntry: TODO!!")
-        return  null
+        Log.d("navigateToNextEntry", "navigateToNextEntry: Func call!")
+        Log.d("navigateToNextEntry", "Set current list: now list is ${currentEntryList.map { it.id }};and whether list null is ${currentEntryList.isEmpty()}")
+        if (currentEntryList.isEmpty()) return null
+
+        Log.d("Navigation", "Current ID: $currentId (Type: ${currentId::class.java.simpleName})")
+
+        val currentIndex = currentEntryList.indexOfFirst { it.id == currentId }
+
+        Log.d("Navigation", "navigateToNextEntry: now var currentIndex is $currentIndex")
+        return when {
+            currentIndex == -1 -> null
+            currentIndex < currentEntryList.lastIndex -> {
+                val nextId = currentEntryList[currentIndex + 1].id
+                Log.d("Navigation", "Returning nextId: $nextId")
+                nextId
+            }
+            else -> null
+        }.also { if (it == null) Log.w("Navigation", "Invalid next entry") }
     }
 
 }
