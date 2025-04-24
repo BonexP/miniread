@@ -121,12 +121,14 @@ fun ArticleActionsBar(
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
     BottomAppBar {
+        // 标记为已读按钮
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Marked as read")
             }
+        // 标记为未读按钮
         }
         ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
             viewModel.markEntryAsUnread(entryId)
@@ -134,7 +136,7 @@ fun ArticleActionsBar(
                 snackbarHostState.showSnackbar("Marked as unread")
             }
         }
-
+        //分享按钮
         ActionButton(icon = Icons.Default.Share, description = "Share") {
             Log.d("ArticleDetailScreen", "Share Entry")
             selectedEntry?.let {
@@ -149,6 +151,7 @@ fun ArticleActionsBar(
                 context.startActivity(shareIntent)
             }
         }
+        //外部打开按钮
         ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
@@ -157,7 +160,7 @@ fun ArticleActionsBar(
 
             }
         }
-        // ArticleDetailScreen.kt
+        //上一篇按钮
         ActionButton(icon = Icons.Default.ArrowBack, description = "Previous") {
             viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
                 Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
@@ -177,7 +180,7 @@ fun ArticleActionsBar(
                 }
             }
         }
-
+        //下一篇按钮
         ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
             viewModel.navigateToNextEntry(entryId)?.let { nextId ->
                 Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
@@ -198,7 +201,7 @@ fun ArticleActionsBar(
             }
         }
 
-
+//todo 刷新视图
 //        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
 //            Log.d("ArticleDetailScreen", "refresh webview")
 //
@@ -206,6 +209,7 @@ fun ArticleActionsBar(
 //        }
         Spacer(modifier = Modifier.weight(1f))
         selectedEntry?.let { entry ->
+            //收藏按钮
             val isBookmarked = entry.starred
             Switch(
                 checked = isBookmarked,
