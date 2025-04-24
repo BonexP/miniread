@@ -3,7 +3,7 @@ name: Build & Release Android APK
 on:
   push:
     tags:
-      - 'v*'  # 例如 v1.0.0 才会触发
+      - 'v*'  # 例如 v1.0.0 才会触发构建和发布
 
 jobs:
   build:
@@ -26,16 +26,20 @@ jobs:
       - name: Decode keystore
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > my-release-key.jks
-        shell: bash
-
-      - name: Set environment variable for keystore
-        run: echo "KEYSTORE_FILE=$PWD/my-release-key.jks" >> $GITHUB_ENV
+          echo "KEYSTORE_FILE=$PWD/my-release-key.jks" >> $GITHUB_ENV
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Build signed release APK
         run: ./gradlew assembleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
 
       - name: Upload APK to GitHub Release
         uses: softprops/action-gh-release@v1
