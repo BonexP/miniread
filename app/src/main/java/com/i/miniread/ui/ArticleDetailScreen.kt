@@ -93,9 +93,10 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {
+                selectedEntry!!.content?.let { Log.d("ArticleWebViewContentInject", it) }
                 ArticleWebView(
                     context = context,
-                    content = selectedEntry!!.content,
+                    content = "<h1>"+selectedEntry!!.title+"</h1>"+selectedEntry!!.content,
                     feedId = selectedEntry!!.feed_id,
                     onScrollToBottom = {
                         Log.d("ArticleDetailScreen", "Article scrolled to end!")
