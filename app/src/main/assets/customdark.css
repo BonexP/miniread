@@ -26,7 +26,7 @@
 /* 明亮模式下的全局样式 */
 body {
     font-family: var(--font-sans);
-    font-size: 2.5rem;
+    font-size: 2rem;
     line-height: 1.6;
     color: var(--fg-dark);
     background-color: var(--bg-dark);
@@ -50,7 +50,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-    font-size: 2rem;
+    font-size: 3rem;
 }
 
 h2 {
