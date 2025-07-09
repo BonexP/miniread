@@ -39,7 +39,7 @@ fun CategoryListScreen(
 ) {
     // 在CategoryListScreen顶部添加
     LaunchedEffect(Unit) {
-        viewModel.fetchUnreadEntryCountsByCategory()
+        viewModel.getCategoriesUnreadCount()
         viewModel.fetchCategories() // 确保已存在
     }
 
