@@ -1,6 +1,7 @@
 package com.i.miniread.network
 
 import android.util.Log
+import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
@@ -22,9 +23,10 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String
     ): List<Feed>
 
-    @GET("v1/categories")
+        @GET("v1/categories")
     suspend fun getCategories(
-        @Header("X-Auth-Token") authToken: String
+        @Header("X-Auth-Token") authToken: String,
+        @Query("counts") counts: Boolean = true
     ): List<Category>
 
     @POST("v1/feeds")
@@ -188,7 +190,9 @@ data class Entry(
 
 data class Category(
     val id: Int,
-    val title: String
+    val title: String,
+    @SerializedName("feed_count")  val feedCount: Int = 0,
+    @SerializedName("total_unread") val unreadCount: Int = 0
 ) {
     constructor() : this(
         id = -1,
