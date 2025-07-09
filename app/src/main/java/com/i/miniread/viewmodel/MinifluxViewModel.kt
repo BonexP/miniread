@@ -13,6 +13,11 @@ import com.i.miniread.network.Feed
 import com.i.miniread.network.FeedCreationRequest
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MinifluxViewModel : ViewModel() {
@@ -40,8 +45,11 @@ class MinifluxViewModel : ViewModel() {
     private val _userInfo = MutableLiveData<UserInfo?>()
     val userInfo: LiveData<UserInfo?> get() = _userInfo
 
-    private val _unreadEntryCountsByCategory = MutableLiveData<Map<Int, Int>>()
-    val unreadEntryCountsByCategory: LiveData<Map<Int, Int>> get() = _unreadEntryCountsByCategory
+    private val _categoryUnreadCounts = MutableLiveData<Map<Int, Int>>()
+    val categoryUnreadCounts: LiveData<Map<Int, Int>> get() = _categoryUnreadCounts
+
+    private val _feedUnreadCounts = MutableLiveData<Map<Int, Int>>()
+    val feedUnreadCounts: LiveData<Map<Int, Int>> get() = _feedUnreadCounts
 
     private val currentEntryList = mutableStateListOf<Entry>()
 
@@ -142,6 +150,8 @@ class MinifluxViewModel : ViewModel() {
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch feeds")
     }
+
+
 
     fun fetchCategories() {
         _authToken.value?.let { token ->
@@ -363,7 +373,7 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark Category as read")
     }
 
-    fun getCategoriesUnreadCount() {
+    fun fetchCategoriesUnreadCount() {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching unread entry counts by category with token: $token")
             viewModelScope.launch {
@@ -380,15 +390,39 @@ class MinifluxViewModel : ViewModel() {
                         unreadCounts[category.id] = categoryUnreadCount ?: 0
                     }
 
-                    _unreadEntryCountsByCategory.postValue(unreadCounts)
+                    _categoryUnreadCounts.postValue(unreadCounts)
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching unread entry counts by category", e)
-                    _unreadEntryCountsByCategory.postValue(emptyMap())
+                    _categoryUnreadCounts.postValue(emptyMap())
                 }
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch unread entry counts by category")
     }
 
+    fun fetchFeedsUnreadCount() {
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching unread entry counts by feed with token: $token")
+            viewModelScope.launch {
+                try {
+                    val feeds = RetrofitInstance.api.getFeeds(token)
+                    val unreadCounts = mutableMapOf<Int, Int>()
+                    Log.d("MinifluxViewModel", "getFeedsUnreadCount: feeds: ${feeds.size} ")
+                    val unreadCounterList =  RetrofitInstance.api.getFeedCounters(token).unreads
+                    Log.d("MinifluxViewModel","unreadCounterList: $unreadCounterList")
+                    for (unreadFeeds in unreadCounterList) {
+                        Log.d("MinifluxViewModel", "Feed id: $unreadFeeds title: ${feeds[unreadFeeds.key.toInt()].title}")
+                        Log.d("MinifluxViewModel", "Feed id: ${unreadFeeds.key} have ${unreadFeeds.value} unread items")
+                        unreadCounts[unreadFeeds.key.toInt()] = unreadFeeds.value ?: 0
+                        _feedUnreadCounts.postValue(unreadCounts)
+
+                    }
+                    Log.d("MinifluxViewModel", "unreadCounts: $unreadCounts")
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching unread entry counts by feed", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch unread entry counts by feed")
+    }
     fun fetchCategoryFeeds(categoryId: Int){
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching category $categoryId feeds with token: $token")
@@ -479,4 +513,68 @@ class MinifluxViewModel : ViewModel() {
         }.also { if (it == null) Log.w("Navigation", "Invalid next entry") }
     }
 
+    fun fetchFeedCounters() :  Map<String, Int> {
+
+        var unreadCount= mutableMapOf<String,Int>()
+        _authToken.value?.let { token ->
+            Log.d("MinifluxViewModel", "Fetching feed counters with token: $token")
+            viewModelScope.launch {
+                try {
+                    val response = RetrofitInstance.api.getFeedCounters(token)
+                    Log.d("MinifluxViewModel", "Feed counters fetched successfully: ${response.unreads.size} items")
+                    // 这里可以处理未读计数数据
+                    unreadCount= response.unreads as MutableMap<String, Int>
+                } catch (e: Exception) {
+                    Log.e("MinifluxViewModel", "Error fetching feed counters", e)
+                }
+            }
+        } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch feed counters")
+        return unreadCount
+
+    }
+
+}
+
+data class FeedWithUnreadCount(
+    val id: Int,
+    val title: String, // 或其他字段
+    val unreadCount: Int // 未读计数
+)
+// ViewModel状态枚举
+sealed class FeedState {
+    object Loading : FeedState() // 加载中
+    data class Success(val feeds: List<FeedWithUnreadCount>) : FeedState() // 成功，包含合并数据
+    data class Error(val message: String) : FeedState() // 错误
+}
+class FeedListViewModel(private val apiService: MinifluxViewModel) : ViewModel() {
+    private val _feedState = MutableStateFlow<FeedState>(FeedState.Loading)
+    val feedState: StateFlow<FeedState> = _feedState.asStateFlow()
+    // 缓存计数在内存中，减少重复请求
+    private var cachedCounters: Map<Int, Int>? = null // 键是订阅源ID，值是未读计数
+    // 初始化时加载数据（当ViewModel创建时调用，或在UI导航时触发）
+    init {
+        loadFeedsAndCounters()
+    }
+    // 核心函数：并发加载订阅源列表和计数
+    fun loadFeedsAndCounters() {
+        viewModelScope.launch {
+            _feedState.value = FeedState.Loading // 设置加载状态
+            try {
+                // 使用SupervisorJob防止一个请求失败影响另一个
+                val deferredFeeds = async(SupervisorJob()) { apiService.fetchFeeds() }
+                val deferredCounters = async(SupervisorJob()) { apiService.fetchFeedCounters() }
+                val feeds = deferredFeeds.await()
+                val counters = deferredCounters.await()
+                // 合并数据：遍历feeds列表，匹配counters中的未读计数
+
+            } catch (e: Exception) {
+                _feedState.value = FeedState.Error("Failed to load feeds: ${e.message}") // 处理错误
+            }
+        }
+    }
+
+    // 如果在其他界面需要特定订阅源的未读计数（可选）
+    fun getUnreadCountForFeed(feedId: Int): Int {
+        return cachedCounters?.get(feedId) ?: 0 // 从内存缓存中获取，默认0
+    }
 }

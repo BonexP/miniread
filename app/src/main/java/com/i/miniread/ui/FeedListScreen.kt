@@ -78,7 +78,13 @@ fun FeedListScreen(
 }
 
 @Composable
-fun FeedItem(feed: Feed, onClick: () -> Unit, onMarkAsRead: () -> Unit) {
+fun FeedItem(
+    feed: Feed,
+    unreadCount: Int = feed.unreadCount,
+    //TODO 这里同样，同时传入feed和unreadCount并不美观，需要在后层聚合
+    onClick: () -> Unit,
+    onMarkAsRead: () -> Unit
+) {
     val title = feed.title
     val id = feed.id
     var showConfirmDialog by remember { mutableStateOf(false) } // 新增状态
@@ -132,17 +138,13 @@ fun FeedItem(feed: Feed, onClick: () -> Unit, onMarkAsRead: () -> Unit) {
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleLarge
                     )
-//            Spacer(modifier = Modifier.height(8.dp))
-//            Text(
-//                text = id.toString(),
-//                color = MaterialTheme.colorScheme.onSurface,
-//                style = MaterialTheme.typography.bodyMedium
-//            )
-//            Text(
-//                text = feed.disabled.toString(),
-//                color = MaterialTheme.colorScheme.onSecondary,
-//                style = MaterialTheme.typography.bodyMedium
-//            )
+                    Text(
+                        text =  if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读" ,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
+                    )
+
                 }
                 // Button to mark as read with icon
                 IconButton(onClick = { showConfirmDialog = true }) {

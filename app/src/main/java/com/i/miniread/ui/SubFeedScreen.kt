@@ -26,6 +26,7 @@ fun SubFeedScreen(viewModel: MinifluxViewModel, categoryId: Int, onFeedSelected:
         items(feedsWithOutDisabled) { feed ->
             FeedItem(
                 feed,
+                viewModel.feedUnreadCounts.value?.get(feed.id) ?: 0,
                 onClick = { onFeedSelected(feed.id) },
                 onMarkAsRead={
                     viewModel.markFeedAsRead(feed.id)
