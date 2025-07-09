@@ -39,14 +39,15 @@ fun CategoryListScreen(
 ) {
     // 在CategoryListScreen顶部添加
     LaunchedEffect(Unit) {
-        viewModel.getCategoriesUnreadCount()
+        viewModel.fetchCategoriesUnreadCount()
         viewModel.fetchCategories() // 确保已存在
+        viewModel.fetchFeedsUnreadCount()
     }
 
     Log.d("CategoryListScreen", "CategoryListScreen: Enter CategoryListScreen")
     val categories by viewModel.categories.observeAsState(emptyList())
     val error by viewModel.error.observeAsState()
-    val unreadCounts by viewModel.unreadEntryCountsByCategory.observeAsState(emptyMap())
+    val unreadCounts by viewModel.categoryUnreadCounts.observeAsState(emptyMap())
     if (error != null) {
         Text(
             text = error ?: "Unknown error occurred",
@@ -83,6 +84,7 @@ fun CategoryListScreen(
 fun CategoryItem(
     category: Category,
     unreadCount: Int,
+    //TODO 这里unreadCount和Category的unreadCount有重复,可以精简代码，直接传入category,让UI直接使用category.unreadCount
     onClick: () -> Unit,
     onMarkAsRead: () -> Unit,
     onShowSubscriptions: () -> Unit
