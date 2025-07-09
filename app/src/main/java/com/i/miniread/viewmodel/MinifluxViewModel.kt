@@ -363,20 +363,21 @@ class MinifluxViewModel : ViewModel() {
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot mark Category as read")
     }
 
-    fun fetchUnreadEntryCountsByCategory() {
+    fun getCategoriesUnreadCount() {
         _authToken.value?.let { token ->
             Log.d("MinifluxViewModel", "Fetching unread entry counts by category with token: $token")
             viewModelScope.launch {
                 try {
                     val categories = RetrofitInstance.api.getCategories(token)
                     val unreadCounts = mutableMapOf<Int, Int>()
-
+                    Log.d("MinifluxViewModel", "getCategoriesUnreadCount: ")
                     for (category in categories) {
-                        val response = RetrofitInstance.api.getEntries(token, status = "unread", categoryId = category.id)
+//                        val response = RetrofitInstance.api.getEntries(token, status = "unread", categoryId = category.id)
+                        val categoryUnreadCount= category.unreadCount
 //                        Log.d("MinifluxViewModel", "Entries fetched successfully: ${response.entries.size} items")
-                        Log.d("MinifluxViewModel", "Fetched unread entries: total ${response.total} items")
+                        Log.d("MinifluxViewModel", "Category id: ${category.id} have $categoryUnreadCount unread items")
 //                        Log.d("MinifluxViewModel", "Fetched entries: ${response.entries}")
-                        unreadCounts[category.id] = response.total
+                        unreadCounts[category.id] = categoryUnreadCount ?: 0
                     }
 
                     _unreadEntryCountsByCategory.postValue(unreadCounts)
