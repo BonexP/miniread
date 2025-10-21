@@ -48,13 +48,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
-import com.i.miniread.util.PreferenceManager
+import com.i.miniread.util.DataStoreManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -237,8 +238,13 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 }
 
 private const val isOutputHtmlContent = false
-private fun Context.isTargetDomain() =
-    PreferenceManager.baseUrl.contains("pi.lifeo3.icu", true)
+private fun Context.isTargetDomain(): Boolean {
+    // 使用 runBlocking 同步读取 DataStore 数据
+    return runBlocking {
+        val baseUrl = DataStoreManager.getBaseUrl()
+        baseUrl.contains("pi.lifeo3.icu", true)
+    }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -371,7 +377,8 @@ fun ArticleWebView(
 }
 
 fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
-    Log.d("Interceptor", "BASE_URL: ${PreferenceManager.baseUrl}")
+    val baseUrl = runBlocking { DataStoreManager.getBaseUrl() }
+    Log.d("Interceptor", "BASE_URL: $baseUrl")
     Log.d("Interceptor", "Request host: ${request.url.host}")
 
     val tag = "ArticleDetailScreen"
@@ -454,5 +461,3 @@ fun saveHtmlToFile(context: Context, htmlContent: String): File {
     file.writeText(htmlContent)
     return file
 }
-
-
