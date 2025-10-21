@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-
+    alias(libs.plugins.ksp)
 }
 val versionname by extra("dev")
 val versioncode by extra("0.1.7")
@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.firebase.messaging)
     implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.preference.ktx)
