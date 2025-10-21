@@ -1,11 +1,16 @@
 package com.i.miniread.viewmodel
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.Room
+import com.i.miniread.data.AppDatabase
+import com.i.miniread.data.FeedOrderEntity
 import com.i.miniread.network.Category
 import com.i.miniread.network.Entry
 import com.i.miniread.network.EntryAndStatus
@@ -20,7 +25,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class MinifluxViewModel : ViewModel() {
+class MinifluxViewModel(application: Application) : AndroidViewModel(application) {
+    private val database = Room.databaseBuilder(
+        application,
+        AppDatabase::class.java,
+        "miniread-database"
+    ).fallbackToDestructiveMigration().build()
+
+    private val feedOrderDao = database.feedOrderDao()
+
     private val _authToken = MutableLiveData<String?>()
     val authToken: LiveData<String?> get() = _authToken
 
@@ -533,6 +546,38 @@ class MinifluxViewModel : ViewModel() {
 
     }
 
+    // 保存 Feed 的自定义排序
+    fun saveFeedOrder(feedList: List<Feed>) {
+        viewModelScope.launch {
+            try {
+                val feedOrders = feedList.mapIndexed { index, feed ->
+                    FeedOrderEntity(feedId = feed.id, orderIndex = index)
+                }
+                feedOrderDao.insertAllFeedOrders(feedOrders)
+                Log.d("MinifluxViewModel", "Feed order saved successfully")
+            } catch (e: Exception) {
+                Log.e("MinifluxViewModel", "Error saving feed order", e)
+            }
+        }
+    }
+
+    // 加载自定义排序的 Feeds
+    suspend fun loadCustomFeedOrder(feeds: List<Feed>): List<Feed> {
+        return try {
+            val feedOrders = feedOrderDao.getAllFeedOrders()
+            if (feedOrders.isEmpty()) {
+                // 如果没有保存的排序，返回按标题排序的列表
+                feeds.sortedBy { it.title }
+            } else {
+                // 按照保存的顺序排列
+                val orderMap = feedOrders.associate { it.feedId to it.orderIndex }
+                feeds.sortedBy { feed -> orderMap[feed.id] ?: Int.MAX_VALUE }
+            }
+        } catch (e: Exception) {
+            Log.e("MinifluxViewModel", "Error loading feed order", e)
+            feeds.sortedBy { it.title }
+        }
+    }
 }
 
 data class FeedWithUnreadCount(
