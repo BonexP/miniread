@@ -8,9 +8,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
-import com.i.miniread.data.AppDatabase
-import com.i.miniread.data.FeedOrderEntity
 import com.i.miniread.network.Category
 import com.i.miniread.network.Entry
 import com.i.miniread.network.EntryAndStatus
@@ -18,6 +15,7 @@ import com.i.miniread.network.Feed
 import com.i.miniread.network.FeedCreationRequest
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
+import com.i.miniread.util.DataStoreManager
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,13 +24,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class MinifluxViewModel(application: Application) : AndroidViewModel(application) {
-    private val database = Room.databaseBuilder(
-        application,
-        AppDatabase::class.java,
-        "miniread-database"
-    ).fallbackToDestructiveMigration().build()
-
-    private val feedOrderDao = database.feedOrderDao()
 
     private val _authToken = MutableLiveData<String?>()
     val authToken: LiveData<String?> get() = _authToken
@@ -550,11 +541,12 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     fun saveFeedOrder(feedList: List<Feed>) {
         viewModelScope.launch {
             try {
-                val feedOrders = feedList.mapIndexed { index, feed ->
-                    FeedOrderEntity(feedId = feed.id, orderIndex = index)
-                }
-                feedOrderDao.insertAllFeedOrders(feedOrders)
-                Log.d("MinifluxViewModel", "Feed order saved successfully")
+                // 转换为 Map<FeedId, OrderIndex>
+                val feedOrderMap = feedList.mapIndexed { index, feed ->
+                    feed.id to index
+                }.toMap()
+                DataStoreManager.saveFeedOrder(feedOrderMap)
+                Log.d("MinifluxViewModel", "Feed order saved successfully to DataStore")
             } catch (e: Exception) {
                 Log.e("MinifluxViewModel", "Error saving feed order", e)
             }
@@ -564,14 +556,13 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     // 加载自定义排序的 Feeds
     suspend fun loadCustomFeedOrder(feeds: List<Feed>): List<Feed> {
         return try {
-            val feedOrders = feedOrderDao.getAllFeedOrders()
-            if (feedOrders.isEmpty()) {
+            val feedOrderMap = DataStoreManager.getFeedOrder()
+            if (feedOrderMap.isEmpty()) {
                 // 如果没有保存的排序，返回按标题排序的列表
                 feeds.sortedBy { it.title }
             } else {
                 // 按照保存的顺序排列
-                val orderMap = feedOrders.associate { it.feedId to it.orderIndex }
-                feeds.sortedBy { feed -> orderMap[feed.id] ?: Int.MAX_VALUE }
+                feeds.sortedBy { feed -> feedOrderMap[feed.id] ?: Int.MAX_VALUE }
             }
         } catch (e: Exception) {
             Log.e("MinifluxViewModel", "Error loading feed order", e)

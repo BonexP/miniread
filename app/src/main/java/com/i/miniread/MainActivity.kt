@@ -21,12 +21,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -43,8 +46,9 @@ import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
-import com.i.miniread.util.PreferenceManager
+import com.i.miniread.util.DataStoreManager
 import com.i.miniread.viewmodel.MinifluxViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MinifluxViewModel by viewModels()
@@ -52,18 +56,21 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        PreferenceManager.init(this) // 初始化 SharedPreferences 工具类
+        DataStoreManager.init(this) // 初始化 DataStore
 
-        val savedBaseUrl = PreferenceManager.baseUrl
-        val savedAuthToken = PreferenceManager.apiToken
+        // 使用协程读取存储的数据
+        lifecycleScope.launch {
+            val savedBaseUrl = DataStoreManager.getBaseUrl()
+            val savedAuthToken = DataStoreManager.getApiToken()
 
-        if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
-            // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
-            RetrofitInstance.initialize(savedBaseUrl)
-            viewModel.setAuthToken(savedAuthToken)
-            viewModel.fetchFeeds()
-            viewModel.fetchCategories()
-            viewModel.fetchUserInfo()
+            if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
+                // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
+                RetrofitInstance.initialize(savedBaseUrl)
+                viewModel.setAuthToken(savedAuthToken)
+                viewModel.fetchFeeds()
+                viewModel.fetchCategories()
+                viewModel.fetchUserInfo()
+            }
         }
 
         setContent {
@@ -91,24 +98,30 @@ fun MainContent(
 ) {
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
+    val scope = rememberCoroutineScope()
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
-    var isLoggedIn by remember {
-        mutableStateOf(
-            PreferenceManager.baseUrl.isNotEmpty() && PreferenceManager.apiToken.isNotEmpty()
-        )
+    var isLoggedIn by remember { mutableStateOf(false) }
+    var baseUrl by remember { mutableStateOf("") }
+    var authToken by remember { mutableStateOf("") }
+
+    // 初始化时读取 DataStore 数据
+    LaunchedEffect(Unit) {
+        baseUrl = DataStoreManager.getBaseUrl()
+        authToken = DataStoreManager.getApiToken()
+        isLoggedIn = baseUrl.isNotEmpty() && authToken.isNotEmpty()
     }
-    var baseUrl by remember { mutableStateOf(PreferenceManager.baseUrl) }
-    var authToken by remember { mutableStateOf(PreferenceManager.apiToken) }
 
     if (!isLoggedIn) {
         LoginScreen(viewModel = viewModel) { url, token ->
             // 登录成功时保存 baseUrl 和 authToken
             baseUrl = url
             authToken = token
-            PreferenceManager.baseUrl = url
-            PreferenceManager.apiToken = token
+            scope.launch {
+                DataStoreManager.setBaseUrl(url)
+                DataStoreManager.setApiToken(token)
+            }
             // 初始化 Retrofit 和 ViewModel
             RetrofitInstance.initialize(baseUrl)
             viewModel.setAuthToken(authToken)
@@ -264,6 +277,3 @@ fun BottomNavigationBar(navController: NavController) {
         }
     }
 }
-
-
-
