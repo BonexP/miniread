@@ -408,21 +408,22 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
             Log.d("MinifluxViewModel", "Fetching unread entry counts by feed with token: $token")
             viewModelScope.launch {
                 try {
-                    val feeds = RetrofitInstance.api.getFeeds(token)
+                    val unreadCounterList = RetrofitInstance.api.getFeedCounters(token).unreads
                     val unreadCounts = mutableMapOf<Int, Int>()
-                    Log.d("MinifluxViewModel", "getFeedsUnreadCount: feeds: ${feeds.size} ")
-                    val unreadCounterList =  RetrofitInstance.api.getFeedCounters(token).unreads
-                    Log.d("MinifluxViewModel","unreadCounterList: $unreadCounterList")
-                    for (unreadFeeds in unreadCounterList) {
-                        Log.d("MinifluxViewModel", "Feed id: $unreadFeeds title: ${feeds[unreadFeeds.key.toInt()].title}")
-                        Log.d("MinifluxViewModel", "Feed id: ${unreadFeeds.key} have ${unreadFeeds.value} unread items")
-                        unreadCounts[unreadFeeds.key.toInt()] = unreadFeeds.value ?: 0
-                        _feedUnreadCounts.postValue(unreadCounts)
 
+                    Log.d("MinifluxViewModel", "getFeedsUnreadCount: unreadCounterList: $unreadCounterList")
+
+                    for ((feedIdStr, count) in unreadCounterList) {
+                        val feedId = feedIdStr.toInt()
+                        unreadCounts[feedId] = count
+                        Log.d("MinifluxViewModel", "Feed id: $feedId have $count unread items")
                     }
+
                     Log.d("MinifluxViewModel", "unreadCounts: $unreadCounts")
+                    _feedUnreadCounts.postValue(unreadCounts)
                 } catch (e: Exception) {
                     Log.e("MinifluxViewModel", "Error fetching unread entry counts by feed", e)
+                    _feedUnreadCounts.postValue(emptyMap())
                 }
             }
         } ?: Log.d("MinifluxViewModel", "No auth token available, cannot fetch unread entry counts by feed")
