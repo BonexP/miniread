@@ -140,32 +140,97 @@ fun MainContent(
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
-        val shouldRefreshTodayEntries =
-            currentRoute?.startsWith(Screen.TodayEntryList.route) == true
+
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(id = R.string.app_name)) },
                     actions = {
                         IconButton(onClick = {
-                            Log.d("IconButton", "Refresh data")
-                            viewModel.fetchFeeds()
-                            viewModel.fetchCategories()
-                            if (shouldRefreshTodayEntries) {
-                                viewModel.fetchTodayEntries()
+                            Log.d("IconButton", "Refresh button clicked, current route: $currentRoute")
+
+                            // 根据当前路由执行不同的刷新逻辑
+                            when {
+                                // Today 页面：刷新今日条目
+                                currentRoute?.startsWith(Screen.TodayEntryList.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Today entries")
+                                    viewModel.fetchTodayEntries()
+                                }
+
+                                // Feeds 页面：刷新订阅源列表和未读计数
+                                currentRoute?.startsWith(Screen.Feeds.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Feeds")
+                                    viewModel.fetchFeeds()
+                                    viewModel.fetchFeedsUnreadCount()
+                                }
+
+                                // Categories 页面：刷新分类列表和未读计数
+                                currentRoute?.startsWith(Screen.Categories.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Categories")
+                                    viewModel.fetchCategories()
+                                    viewModel.fetchCategoriesUnreadCount()
+                                    viewModel.fetchFeedsUnreadCount()
+                                }
+
+                                // SubFeed 页面（分类下的订阅源）：刷新该分类的订阅源
+                                currentRoute?.startsWith(Screen.SubFeedScreen.route) == true -> {
+                                    val categoryId = navBackStackEntry?.arguments?.getInt("categoryId")
+                                    Log.d("RefreshAction", "Refreshing SubFeed for category: $categoryId")
+                                    categoryId?.let {
+                                        viewModel.fetchCategoryFeeds(it)
+                                        viewModel.fetchFeedsUnreadCount()
+                                    }
+                                }
+
+                                // EntryList 页面：根据 feedId 或 categoryId 刷新条目列表
+                                currentRoute?.startsWith(Screen.EntryList.route) == true -> {
+                                    val feedId = navBackStackEntry?.arguments?.getString("feedId")?.toIntOrNull()
+                                    val categoryId = navBackStackEntry?.arguments?.getString("categoryId")?.toIntOrNull()
+
+                                    when {
+                                        feedId != null -> {
+                                            Log.d("RefreshAction", "Refreshing entries for feed: $feedId")
+                                            viewModel.refreshEntriesByFeed(feedId)
+                                        }
+                                        categoryId != null -> {
+                                            Log.d("RefreshAction", "Refreshing entries for category: $categoryId")
+                                            viewModel.refreshEntriesByCategory(categoryId)
+                                        }
+                                        else -> {
+                                            Log.d("RefreshAction", "Refreshing default entries")
+                                            viewModel.refreshEntries()
+                                        }
+                                    }
+                                }
+
+                                // ArticleDetail 页面：重新加载文章内容
+                                currentRoute?.startsWith(Screen.ArticleDetail.route) == true -> {
+                                    val entryId = navBackStackEntry?.arguments?.getInt("entryId")
+                                    Log.d("RefreshAction", "Refreshing article: $entryId")
+                                    entryId?.let {
+                                        viewModel.reloadArticleContent(it)
+                                        // TODO: 可以考虑添加以下功能：
+                                        // - 清除 WebView 缓存
+                                        // - 显示刷新加载动画
+                                        // - 刷新后滚动到顶部
+                                    }
+                                }
+
+                                // 默认情况：不执行任何操作
+                                else -> {
+                                    Log.d("RefreshAction", "No refresh action for route: $currentRoute")
+                                }
                             }
                         }) {
-                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null)
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = "刷新")
                         }
                     }
                 )
             },
             bottomBar = {
-//                BottomNavigationBar(navController = navController)
                 if (shouldShowBottomBar) {
                     BottomNavigationBar(navController = navController)
                 }
-
             }
         ) { innerPadding ->
             Surface(modifier = Modifier.padding(innerPadding)) {
