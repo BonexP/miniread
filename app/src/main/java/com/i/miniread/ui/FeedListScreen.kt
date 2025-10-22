@@ -63,11 +63,11 @@ fun FeedListScreen(
         viewModel.fetchFeeds()
     }
 
-    // 使用 remember 保存可变的排序列表
+    // 使用 remember 保存可变的排序列表（所有订阅源，用于编辑模式）
     val sortedFeeds = remember { mutableStateListOf<Feed>() }
 
-    // 当 feeds 变化时，加载自定义排序
-    LaunchedEffect(feeds) {
+    // 当 feeds 或 feedUnreadCounts 变化时，加载自定义排序
+    LaunchedEffect(feeds, feedUnreadCounts) {
         if (feeds.isNotEmpty()) {
             val customSorted = viewModel.loadCustomFeedOrder(feeds.filter { !it.disabled })
             sortedFeeds.clear()
@@ -75,11 +75,27 @@ fun FeedListScreen(
         }
     }
 
+    // 根据模式过滤订阅源：编辑模式显示全部，正常模式只显示有未读的
+    val displayedFeeds = remember(sortedFeeds.toList(), feedUnreadCounts, isEditMode) {
+        if (isEditMode) {
+            // 编辑模式：显示所有订阅源
+            sortedFeeds.toList()
+        } else {
+            // 正常模式：只显示有未读条目的订阅源
+            sortedFeeds.filter { feed ->
+                val unreadCount = feedUnreadCounts[feed.id] ?: 0
+                unreadCount > 0
+            }
+        }
+    }
+
     Log.d("FeedListScreen", "Number of feeds: ${feeds.size}")
     Log.d("FeedListScreen", "Number of Enabled feeds: ${sortedFeeds.size}")
+    Log.d("FeedListScreen", "Number of Displayed feeds (with unread): ${displayedFeeds.size}")
+    Log.d("FeedListScreen", "Edit mode: $isEditMode")
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (sortedFeeds.isEmpty()) {
+        if (displayedFeeds.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -87,7 +103,7 @@ fun FeedListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "无条目可显示",
+                    text = if (isEditMode) "无订阅源可显示" else "全部已读，暂无未读条目",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.Gray
                 )
@@ -102,39 +118,62 @@ fun FeedListScreen(
                     bottom = 88.dp
                 )
             ) {
-                itemsIndexed(
-                    items = sortedFeeds,
-                    key = { _, feed -> feed.id }
-                ) { index, feed ->
-                    FeedItem(
-                        feed = feed,
-                        unreadCount = feedUnreadCounts[feed.id] ?: 0,
-                        isEditMode = isEditMode,
-                        onMoveUp = if (index > 0) {
-                            {
-                                val temp = sortedFeeds[index]
-                                sortedFeeds[index] = sortedFeeds[index - 1]
-                                sortedFeeds[index - 1] = temp
+                if (isEditMode) {
+                    // 编辑模式：使用 itemsIndexed 并且直接操作 sortedFeeds
+                    itemsIndexed(
+                        items = sortedFeeds.toList(),
+                        key = { _, feed -> feed.id }
+                    ) { index, feed ->
+                        FeedItem(
+                            feed = feed,
+                            unreadCount = feedUnreadCounts[feed.id] ?: 0,
+                            isEditMode = isEditMode,
+                            onMoveUp = if (index > 0) {
+                                {
+                                    val temp = sortedFeeds[index]
+                                    sortedFeeds[index] = sortedFeeds[index - 1]
+                                    sortedFeeds[index - 1] = temp
+                                }
+                            } else null,
+                            onMoveDown = if (index < sortedFeeds.size - 1) {
+                                {
+                                    val temp = sortedFeeds[index]
+                                    sortedFeeds[index] = sortedFeeds[index + 1]
+                                    sortedFeeds[index + 1] = temp
+                                }
+                            } else null,
+                            onClick = {
+                                if (!isEditMode) {
+                                    Log.d("FeedListScreen", "Feed Using: $feed")
+                                    onFeedSelected(feed.id)
+                                }
+                            },
+                            onMarkAsRead = {
+                                viewModel.markFeedAsRead(feed.id)
+                                Log.d("FeedList", "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!")
                             }
-                        } else null,
-                        onMoveDown = if (index < sortedFeeds.size - 1) {
-                            {
-                                val temp = sortedFeeds[index]
-                                sortedFeeds[index] = sortedFeeds[index + 1]
-                                sortedFeeds[index + 1] = temp
-                            }
-                        } else null,
-                        onClick = {
-                            if (!isEditMode) {
+                        )
+                    }
+                } else {
+                    // 正常模式：只显示有未读的订阅源
+                    items(
+                        items = displayedFeeds,
+                        key = { feed -> feed.id }
+                    ) { feed ->
+                        FeedItem(
+                            feed = feed,
+                            unreadCount = feedUnreadCounts[feed.id] ?: 0,
+                            isEditMode = isEditMode,
+                            onClick = {
                                 Log.d("FeedListScreen", "Feed Using: $feed")
                                 onFeedSelected(feed.id)
+                            },
+                            onMarkAsRead = {
+                                viewModel.markFeedAsRead(feed.id)
+                                Log.d("FeedList", "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!")
                             }
-                        },
-                        onMarkAsRead = {
-                            viewModel.markFeedAsRead(feed.id)
-                            Log.d("FeedList", "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!")
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
