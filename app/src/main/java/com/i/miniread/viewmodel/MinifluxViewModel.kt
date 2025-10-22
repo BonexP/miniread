@@ -259,21 +259,16 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
         fetchEntries()
     }
 
-    fun refreshEntriesByFeed(feedId: Int)  {
-        Log.d("refreshEntriesByFeed", "refreshEntriesByFeed: using feedID  $feedId")
-
-        viewModelScope.launch {
-            // Logic to fetch entries by feedId
-            fetchEntries(Feed(feedId)) // Replace with actual method
-        }
+    fun refreshEntriesByFeed(feedId: Int) {
+        Log.d("refreshEntriesByFeed", "refreshEntriesByFeed: using feedID $feedId")
+        // 直接调用 fetchEntries，它内部已经使用了 viewModelScope.launch
+        fetchEntries(Feed(feedId))
     }
 
     fun refreshEntriesByCategory(categoryId: Int) {
         Log.d("refreshEntriesByCategory", "refreshEntriesByCategory: using categoryId $categoryId")
-        viewModelScope.launch {
-            // Logic to fetch entries by feedId
-            fetchEntries("unread", categoryId) // Replace with actual method
-        }
+        // 直接调用 fetchEntries，它内部已经使用了 viewModelScope.launch
+        fetchEntries("unread", categoryId)
     }
 
     fun refreshFeeds() {

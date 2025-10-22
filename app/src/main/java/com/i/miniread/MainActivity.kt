@@ -167,7 +167,8 @@ fun MainContent(
                                 // Categories 页面：刷新分类列表和未读计数
                                 currentRoute?.startsWith(Screen.Categories.route) == true -> {
                                     Log.d("RefreshAction", "Refreshing Categories")
-                                    viewModel.fetchCategories()
+                                    // fetchCategoriesUnreadCount 内部会调用 getCategories，
+                                    // 所以只调用这一个方法即可同时获取分类和未读计数
                                     viewModel.fetchCategoriesUnreadCount()
                                     viewModel.fetchFeedsUnreadCount()
                                 }
