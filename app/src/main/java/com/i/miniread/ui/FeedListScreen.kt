@@ -53,8 +53,15 @@ fun FeedListScreen(
     onFeedSelected: (Int) -> Unit,
 ) {
     val feeds by viewModel.feeds.observeAsState(emptyList())
+    val feedUnreadCounts by viewModel.feedUnreadCounts.observeAsState(emptyMap())
     var isEditMode by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+
+    // 在FeedListScreen顶部添加，用于获取未读计数
+    LaunchedEffect(Unit) {
+        viewModel.fetchFeedsUnreadCount()
+        viewModel.fetchFeeds()
+    }
 
     // 使用 remember 保存可变的排序列表
     val sortedFeeds = remember { mutableStateListOf<Feed>() }
@@ -101,6 +108,7 @@ fun FeedListScreen(
                 ) { index, feed ->
                     FeedItem(
                         feed = feed,
+                        unreadCount = feedUnreadCounts[feed.id] ?: 0,
                         isEditMode = isEditMode,
                         onMoveUp = if (index > 0) {
                             {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
@@ -14,8 +15,15 @@ import com.i.miniread.viewmodel.MinifluxViewModel
 
 @Composable
 fun SubFeedScreen(viewModel: MinifluxViewModel, categoryId: Int, onFeedSelected: (Int) -> Unit) {
-    viewModel.fetchCategoryFeeds(categoryId)
     val feeds by viewModel.selectedEntryFeeds.observeAsState(emptyList())
+    val feedUnreadCounts by viewModel.feedUnreadCounts.observeAsState(emptyMap())
+
+    // 获取分类下的订阅源和未读计数
+    LaunchedEffect(categoryId) {
+        viewModel.fetchCategoryFeeds(categoryId)
+        viewModel.fetchFeedsUnreadCount()
+    }
+
     val feedsWithOutDisabled = feeds.filter { !it.disabled }.sortedBy { it.title }
 
     LazyColumn(
@@ -26,7 +34,7 @@ fun SubFeedScreen(viewModel: MinifluxViewModel, categoryId: Int, onFeedSelected:
         items(feedsWithOutDisabled) { feed ->
             FeedItem(
                 feed,
-                viewModel.feedUnreadCounts.value?.get(feed.id) ?: 0,
+                unreadCount = feedUnreadCounts[feed.id] ?: 0,
                 onClick = { onFeedSelected(feed.id) },
                 onMarkAsRead={
                     viewModel.markFeedAsRead(feed.id)

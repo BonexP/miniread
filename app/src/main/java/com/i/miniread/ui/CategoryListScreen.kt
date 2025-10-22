@@ -138,7 +138,7 @@ fun CategoryItem(
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text =  if (unreadCount > 0) "${category.title} articles,$unreadCount 未读条目" else "${category.title} articles 全部已读" ,
+                        text =  if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读" ,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
