@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 val versionname by extra("dev")
-val versioncode by extra("0.2.0")
-val versionnumber by extra(24)
+val versioncode by extra("0.2.1")
+val versionnumber by extra(25)
 
 android {
     namespace = "com.i.miniread"
