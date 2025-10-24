@@ -1,11 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-
+    alias(libs.plugins.ksp)
 }
 val versionname by extra("dev")
-val versioncode by extra("0.0.18")
-val versionnumber by extra(18)
+val versioncode by extra("0.2.2")
+val versionnumber by extra(26)
 
 android {
     namespace = "com.i.miniread"
@@ -24,7 +24,16 @@ android {
         }
         versionNameSuffix = versionname
     }
-
+    signingConfigs {
+        create("release") {
+            println("Keystore path: ${System.getenv("KEYSTORE_FILE")}")
+            val keystorePath = File(System.getenv("KEYSTORE_FILE") ?: "")
+            storeFile = keystorePath
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
     buildTypes {
         debug {
             isMinifyEnabled =  false
@@ -48,7 +57,10 @@ android {
             isDebuggable = true
             isJniDebuggable = true
             isRenderscriptDebuggable = true
-            versionNameSuffix = "ink"
+        }
+        getByName("release") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -86,16 +98,15 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.volley)
-    implementation(libs.androidx.room.common)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.firebase.messaging)
-    implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.preference.ktx)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

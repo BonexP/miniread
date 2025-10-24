@@ -1,8 +1,10 @@
+/*正在使用暗黑模式*/
 /* 基础样式重置 */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+
 }
 
 /* 定义变量 */
@@ -26,22 +28,12 @@ body {
     font-family: var(--font-sans);
     font-size: 2rem;
     line-height: 1.6;
-    color: var(--fg-light);
-    background-color: var(--bg-light);
+    color: var(--fg-dark);
+    background-color: var(--bg-dark);
     padding: 16px;
     word-wrap: break-word;
 }
-body.dark-mode {
-    background-color: var(--bg-dark);
-    color: var(--fg-dark);
-}
-/* 夜间模式下的全局样式 */
-@media (prefers-color-scheme: dark) {
-    body {
-        color: var(--fg-dark);
-        background-color: var(--bg-dark);
-    }
-}
+
 
 /* 段落 */
 p {
