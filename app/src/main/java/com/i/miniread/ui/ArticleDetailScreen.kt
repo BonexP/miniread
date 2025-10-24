@@ -3,6 +3,7 @@ package com.i.miniread.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.util.Log
 import android.webkit.WebResourceRequest
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
@@ -40,17 +43,19 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.navigation.NavController
+import com.i.miniread.util.DataStoreManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -59,11 +64,8 @@ import java.io.File
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
-    Log.d("Lifecycle", "ArticleDetailScreen recomposed") // 添加生命周期日志
-        //下面这行代码似乎没有什么用，暂时先注释
-//    remember { mutableStateOf<WebView?>(null) }
-
+fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navController: NavController) {
+    Log.d("ArticleDetailScreen", "ArticleDetailScreen: now get entryId is $entryId")
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,7 +78,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
     }
 
     Scaffold(
-        bottomBar = { ArticleActionsBar(viewModel, entryId, snackbarHostState) },
+        bottomBar = { ArticleActionsBar(viewModel, entryId, snackbarHostState,navController) },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
@@ -92,9 +94,10 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int) {
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {
+                selectedEntry!!.content?.let { Log.d("ArticleWebViewContentInject", it) }
                 ArticleWebView(
                     context = context,
-                    content = selectedEntry!!.content,
+                    content = "<h1>"+selectedEntry!!.title+"</h1>"+selectedEntry!!.content,
                     feedId = selectedEntry!!.feed_id,
                     onScrollToBottom = {
                         Log.d("ArticleDetailScreen", "Article scrolled to end!")
@@ -114,18 +117,20 @@ fun ArticleActionsBar(
     viewModel: MinifluxViewModel,
     entryId: Int,
     snackbarHostState: SnackbarHostState,
+    navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
-    BottomAppBar(containerColor = Color.White) {
-
+    BottomAppBar {
+        // 标记为已读按钮
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Marked as read")
             }
+        // 标记为未读按钮
         }
         ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
             viewModel.markEntryAsUnread(entryId)
@@ -133,7 +138,7 @@ fun ArticleActionsBar(
                 snackbarHostState.showSnackbar("Marked as unread")
             }
         }
-
+        //分享按钮
         ActionButton(icon = Icons.Default.Share, description = "Share") {
             Log.d("ArticleDetailScreen", "Share Entry")
             selectedEntry?.let {
@@ -148,6 +153,7 @@ fun ArticleActionsBar(
                 context.startActivity(shareIntent)
             }
         }
+        //外部打开按钮
         ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
@@ -156,6 +162,48 @@ fun ArticleActionsBar(
 
             }
         }
+        //上一篇按钮
+        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous") {
+            viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
+                Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
+
+                // 使用查询参数格式导航
+                navController.navigate("articleDetail?entryId=$prevId") {
+
+                    // 保持导航栈整洁
+                    popUpTo("articleDetail?entryId=$prevId") {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            } ?: run {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("已经是第一篇了")
+                }
+            }
+        }
+        //下一篇按钮
+        ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
+            viewModel.navigateToNextEntry(entryId)?.let { nextId ->
+                Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
+
+                // 使用查询参数格式导航
+                navController.navigate("articleDetail?entryId=$nextId") {
+
+                    // 保持导航栈整洁
+                    popUpTo("articleDetail?entryId=$nextId") {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            } ?: run {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("已经是最后一篇了")
+                }
+            }
+        }
+
+//todo 刷新视图
 //        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
 //            Log.d("ArticleDetailScreen", "refresh webview")
 //
@@ -163,6 +211,7 @@ fun ArticleActionsBar(
 //        }
         Spacer(modifier = Modifier.weight(1f))
         selectedEntry?.let { entry ->
+            //收藏按钮
             val isBookmarked = entry.starred
             Switch(
                 checked = isBookmarked,
@@ -189,6 +238,13 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 }
 
 private const val isOutputHtmlContent = false
+private fun Context.isTargetDomain(): Boolean {
+    // 使用 runBlocking 同步读取 DataStore 数据
+    return runBlocking {
+        val baseUrl = DataStoreManager.getBaseUrl()
+        baseUrl.contains("pi.lifeo3.icu", true)
+    }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -198,7 +254,9 @@ fun ArticleWebView(
     feedId: Int?,
     onScrollToBottom: () -> Unit
 ) {
-    val shouldInterceptRequests = feedId in listOf(26, 38, 52, 51)
+    val context = LocalContext.current
+    val shouldInterceptByDomain = context.isTargetDomain()
+    val shouldInterceptRequests = shouldInterceptByDomain && feedId in listOf(26, 38, 52, 51)
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
     val contentHeightState = remember { mutableStateOf<Float?>(null) }
@@ -207,15 +265,6 @@ fun ArticleWebView(
 
     val webView = remember {
         WebView(context).apply {
-            post {
-                requestFocus()
-                // 添加焦点检查日志
-                Log.d("WebViewFocus", "Final focus state: ${hasFocus()}")
-            }
-            postDelayed({
-                requestFocus()
-                Log.d("WebViewFocus", "Delayed focus: ${hasFocus()}")
-            }, 500)
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -227,10 +276,6 @@ fun ArticleWebView(
                 displayZoomControls = false
                 loadsImagesAutomatically = true
                 textZoom = 125
-                isVerticalScrollBarEnabled = false
-                isFocusable = true
-                isFocusableInTouchMode = true
-                requestFocusFromTouch()
             }
             setBackgroundColor(0x00000000)
 
@@ -332,6 +377,10 @@ fun ArticleWebView(
 }
 
 fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
+    val baseUrl = runBlocking { DataStoreManager.getBaseUrl() }
+    Log.d("Interceptor", "BASE_URL: $baseUrl")
+    Log.d("Interceptor", "Request host: ${request.url.host}")
+
     val tag = "ArticleDetailScreen"
     return try {
         val modifiedRequest = Request.Builder()
@@ -370,6 +419,8 @@ private var cachedHtmlTemplate: String? = null
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
+    val isDarkMode = (context.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
@@ -377,8 +428,8 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
 
         if (cachedCustomCss == null) {
             cachedCustomCss =
-                readAssetFile(context, "custom.css")
-//            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
+                readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
+            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")
@@ -410,5 +461,3 @@ fun saveHtmlToFile(context: Context, htmlContent: String): File {
     file.writeText(htmlContent)
     return file
 }
-
-
