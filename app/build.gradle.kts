@@ -22,7 +22,7 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        versionNameSuffix = versionname
+        versionNameSuffix = "-eink"
     }
     signingConfigs {
         create("release") {
