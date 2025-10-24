@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.i.miniread.network.RetrofitInstance
-import com.i.miniread.util.PreferenceManager
 import com.i.miniread.viewmodel.MinifluxViewModel
 @Composable
 fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -> Unit) {

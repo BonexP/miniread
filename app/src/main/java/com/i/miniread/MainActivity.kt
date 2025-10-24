@@ -3,15 +3,11 @@ package com.i.miniread
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.KeyEvent
-import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
@@ -19,21 +15,21 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -50,50 +46,31 @@ import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.theme.MinireadTheme
-import com.i.miniread.util.PreferenceManager
+import com.i.miniread.util.DataStoreManager
 import com.i.miniread.viewmodel.MinifluxViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: MinifluxViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.O)
-    // 在 MainActivity 中添加拦截
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        Log.d("MainActivityKey", "Received key: $keyCode") // 新增验证日志
-        return when (keyCode) {
-            KeyEvent.KEYCODE_VOLUME_UP -> {
-                Log.d("MainActivity", "Intercepted volume key event")
-                val webView =(currentFocus as? WebView)
-                webView?.scrollBy(0, -500)
-                true
-            }
-
-            KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                Log.d("MainActivity", "Intercepted volume key event")
-                val webView =(currentFocus as? WebView)
-//                webView?.pageDown(true)
-                webView?.scrollBy(0, 800)
-                true
-            }
-
-            else -> super.onKeyDown(keyCode, event)
-        }
-    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        PreferenceManager.init(this) // 初始化 SharedPreferences 工具类
+        DataStoreManager.init(this) // 初始化 DataStore
 
-        val savedBaseUrl = PreferenceManager.baseUrl
-        val savedAuthToken = PreferenceManager.apiToken
+        // 使用协程读取存储的数据
+        lifecycleScope.launch {
+            val savedBaseUrl = DataStoreManager.getBaseUrl()
+            val savedAuthToken = DataStoreManager.getApiToken()
 
-        if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
-            // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
-            RetrofitInstance.initialize(savedBaseUrl)
-            viewModel.setAuthToken(savedAuthToken)
-            viewModel.fetchFeeds()
-            viewModel.fetchCategories()
-            viewModel.fetchUserInfo()
+            if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
+                // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
+                RetrofitInstance.initialize(savedBaseUrl)
+                viewModel.setAuthToken(savedAuthToken)
+                viewModel.fetchFeeds()
+                viewModel.fetchCategories()
+                viewModel.fetchUserInfo()
+            }
         }
 
         setContent {
@@ -121,24 +98,30 @@ fun MainContent(
 ) {
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
+    val scope = rememberCoroutineScope()
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
-    var isLoggedIn by remember {
-        mutableStateOf(
-            PreferenceManager.baseUrl.isNotEmpty() && PreferenceManager.apiToken.isNotEmpty()
-        )
+    var isLoggedIn by remember { mutableStateOf(false) }
+    var baseUrl by remember { mutableStateOf("") }
+    var authToken by remember { mutableStateOf("") }
+
+    // 初始化时读取 DataStore 数据
+    LaunchedEffect(Unit) {
+        baseUrl = DataStoreManager.getBaseUrl()
+        authToken = DataStoreManager.getApiToken()
+        isLoggedIn = baseUrl.isNotEmpty() && authToken.isNotEmpty()
     }
-    var baseUrl by remember { mutableStateOf(PreferenceManager.baseUrl) }
-    var authToken by remember { mutableStateOf(PreferenceManager.apiToken) }
 
     if (!isLoggedIn) {
         LoginScreen(viewModel = viewModel) { url, token ->
             // 登录成功时保存 baseUrl 和 authToken
             baseUrl = url
             authToken = token
-            PreferenceManager.baseUrl = url
-            PreferenceManager.apiToken = token
+            scope.launch {
+                DataStoreManager.setBaseUrl(url)
+                DataStoreManager.setApiToken(token)
+            }
             // 初始化 Retrofit 和 ViewModel
             RetrofitInstance.initialize(baseUrl)
             viewModel.setAuthToken(authToken)
@@ -157,43 +140,98 @@ fun MainContent(
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
-        val shouldRefreshTodayEntries =
-            currentRoute?.startsWith(Screen.TodayEntryList.route) == true
+
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            text = stringResource(id = R.string.app_name),
-                            style = MaterialTheme.typography.titleMedium // Use a smaller style
-                        )
-                    },
+                    title = { Text(stringResource(id = R.string.app_name)) },
                     actions = {
                         IconButton(onClick = {
-                            Log.d("IconButton", "Refresh data")
-                            viewModel.fetchFeeds()
-                            viewModel.fetchCategories()
-                            if (shouldRefreshTodayEntries) {
-                                viewModel.fetchTodayEntries()
+                            Log.d("IconButton", "Refresh button clicked, current route: $currentRoute")
+
+                            // 根据当前路由执行不同的刷新逻辑
+                            when {
+                                // Today 页面：刷新今日条目
+                                currentRoute?.startsWith(Screen.TodayEntryList.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Today entries")
+                                    viewModel.fetchTodayEntries()
+                                }
+
+                                // Feeds 页面：刷新订阅源列表和未读计数
+                                currentRoute?.startsWith(Screen.Feeds.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Feeds")
+                                    viewModel.fetchFeeds()
+                                    viewModel.fetchFeedsUnreadCount()
+                                }
+
+                                // Categories 页面：刷新分类列表和未读计数
+                                currentRoute?.startsWith(Screen.Categories.route) == true -> {
+                                    Log.d("RefreshAction", "Refreshing Categories")
+                                    // fetchCategoriesUnreadCount 内部会调用 getCategories，
+                                    // 所以只调用这一个方法即可同时获取分类和未读计数
+                                    viewModel.fetchCategoriesUnreadCount()
+                                    viewModel.fetchFeedsUnreadCount()
+                                }
+
+                                // SubFeed 页面（分类下的订阅源）：刷新该分类的订阅源
+                                currentRoute?.startsWith(Screen.SubFeedScreen.route) == true -> {
+                                    val categoryId = navBackStackEntry?.arguments?.getInt("categoryId")
+                                    Log.d("RefreshAction", "Refreshing SubFeed for category: $categoryId")
+                                    categoryId?.let {
+                                        viewModel.fetchCategoryFeeds(it)
+                                        viewModel.fetchFeedsUnreadCount()
+                                    }
+                                }
+
+                                // EntryList 页面：根据 feedId 或 categoryId 刷新条目列表
+                                currentRoute?.startsWith(Screen.EntryList.route) == true -> {
+                                    val feedId = navBackStackEntry?.arguments?.getString("feedId")?.toIntOrNull()
+                                    val categoryId = navBackStackEntry?.arguments?.getString("categoryId")?.toIntOrNull()
+
+                                    when {
+                                        feedId != null -> {
+                                            Log.d("RefreshAction", "Refreshing entries for feed: $feedId")
+                                            viewModel.refreshEntriesByFeed(feedId)
+                                        }
+                                        categoryId != null -> {
+                                            Log.d("RefreshAction", "Refreshing entries for category: $categoryId")
+                                            viewModel.refreshEntriesByCategory(categoryId)
+                                        }
+                                        else -> {
+                                            Log.d("RefreshAction", "Refreshing default entries")
+                                            viewModel.refreshEntries()
+                                        }
+                                    }
+                                }
+
+                                // ArticleDetail 页面：重新加载文章内容
+                                currentRoute?.startsWith(Screen.ArticleDetail.route) == true -> {
+                                    val entryId = navBackStackEntry?.arguments?.getInt("entryId")
+                                    Log.d("RefreshAction", "Refreshing article: $entryId")
+                                    entryId?.let {
+                                        viewModel.reloadArticleContent(it)
+                                        // TODO: 可以考虑添加以下功能：
+                                        // - 清除 WebView 缓存
+                                        // - 显示刷新加载动画
+                                        // - 刷新后滚动到顶部
+                                    }
+                                }
+
+                                // 默认情况：不执行任何操作
+                                else -> {
+                                    Log.d("RefreshAction", "No refresh action for route: $currentRoute")
+                                }
                             }
                         }) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = "刷新")
                         }
-                    },
-                    modifier = Modifier.height(40.dp),
-
-                    )
+                    }
+                )
             },
             bottomBar = {
-//                BottomNavigationBar(navController = navController)
                 if (shouldShowBottomBar) {
                     BottomNavigationBar(navController = navController)
                 }
-
             }
         ) { innerPadding ->
             Surface(modifier = Modifier.padding(innerPadding)) {
@@ -207,6 +245,7 @@ fun MainContent(
                             currentCategoryId = ""
                             navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
                         }
+
                     }
                     composable(Screen.Categories.route) {
                         CategoryListScreen(viewModel = viewModel, { categoryId ->
@@ -237,7 +276,7 @@ fun MainContent(
                         val entryId = backStackEntry.arguments?.getInt("entryId")
                         if (entryId != null) {
                             selectedScreen = Screen.ArticleDetail.route
-                            ArticleDetailScreen(viewModel, entryId)
+                            ArticleDetailScreen(viewModel, entryId, navController)
                         } else {
                             Log.d(
                                 "MainActivity",
@@ -280,24 +319,13 @@ fun MainContent(
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
-    NavigationBar(
-        modifier = Modifier.height(48.dp), // 使导航栏高度更扁
-        containerColor = Color.White,
-
-    ) {
+    NavigationBar {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
 
         items.forEach { screen ->
             NavigationBarItem(
-//                label = {
-//                    Text(
-//                        text = screen.label,
-//                        fontSize = 10.sp, // 调整字体大小，确保不会与图标重叠
-//                        style = MaterialTheme.typography.labelSmall, // 使用较小字体
-//
-//                    )
-//                },
+                label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
@@ -308,18 +336,10 @@ fun BottomNavigationBar(navController: NavController) {
                         restoreState = true
                     }
                 },
-                icon = {
 
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = screen.label, // 有意义的描述
-                        modifier = Modifier.size(20.dp), // 调整图标大小，使其更小
-                        tint = if (currentRoute == screen.route) Color.White else Color.Black // 根据选中状态设置图标为黑色或灰色
-                    )
-                }
+                icon = { Icon(imageVector = Icons.Default.Menu, "somthing") }
+
             )
         }
     }
 }
-
-

@@ -1,6 +1,7 @@
 package com.i.miniread.network
 
 import android.util.Log
+import com.google.gson.annotations.SerializedName
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
@@ -24,7 +25,8 @@ interface MinifluxApi {
 
     @GET("v1/categories")
     suspend fun getCategories(
-        @Header("X-Auth-Token") authToken: String
+        @Header("X-Auth-Token") authToken: String,
+        @Query("counts") counts: Boolean = true
     ): List<Category>
 
     @POST("v1/feeds")
@@ -59,6 +61,16 @@ interface MinifluxApi {
         @Query("direction") direction: String?
     ): EntriesResponse
 
+    @GET("v1/feeds/counters")
+    suspend fun getFeedCounters(
+        @Header("X-Auth-Token") authToken: String
+    ): FeedCountersResponse
+
+    data class FeedCountersResponse(
+        val reads: Map<String, Int>,
+        val unreads: Map<String, Int>
+    )
+
     @GET("v1/feeds/{feedId}/icon")
     suspend fun getFeedIcon(
         @Header("X-Auth-Token") authToken: String,
@@ -82,6 +94,18 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Body body: EntryAndStatus,
     ): Response<Void?>
+
+    @PUT("v1/categories/{categoryID}/mark-all-as-read")
+    suspend fun markCategoryAsRead(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("categoryID") category: Int
+    ): Response<Void?>
+
+    @PUT("/v1/feeds/{feedId}/mark-all-as-read")
+    suspend fun markFeedAsRead(
+        @Header("X-Auth-Token") authToken: String,
+        @Path("feedId") feedId: Int
+    ): Response<Void>
 
     @GET("v1/entries")
     suspend fun getEntries(
@@ -117,12 +141,12 @@ interface MinifluxApi {
         @Header("X-Auth-Token") authToken: String,
         @Path("feedId") feedId: Long
     )
+
     @GET("v1/categories/{categoryId}/feeds")
-    suspend  fun getCategoryFeeds(
+    suspend fun getCategoryFeeds(
         @Header("X-Auth-Token") authToken: String,
         @Path("categoryId") categoryId: Int,
     ): List<Feed>
-
 
 
 }
@@ -149,7 +173,8 @@ data class Feed(
     val site_url: String,
     val feed_url: String,
     val category: Category,
-    val disabled: Boolean
+    val disabled: Boolean,
+    @SerializedName("unread_count") val unreadCount: Int = 0,
 ) {
     constructor(id: Int) : this(
         id = id,
@@ -176,7 +201,9 @@ data class Entry(
 
 data class Category(
     val id: Int,
-    val title: String
+    val title: String,
+    @SerializedName("feed_count") val feedCount: Int = 0,
+    @SerializedName("total_unread") val unreadCount: Int = 0
 ) {
     constructor() : this(
         id = -1,
@@ -209,6 +236,7 @@ object RetrofitInstance {
         level =
             HttpLoggingInterceptor.Level.BASIC // Logs request and response lines and their respective headers and bodies (if present)
     }
+
     fun initialize(baseUrl: String) {
         Log.d(TAG, "Initializing Retrofit with base URL: $baseUrl")
         retrofit = Retrofit.Builder()

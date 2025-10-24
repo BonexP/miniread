@@ -4,15 +4,12 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -20,11 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -67,6 +62,7 @@ fun EntryListScreen(
     LaunchedEffect(feedId, categoryId) {
         if (feedId != null) {
             viewModel.refreshEntriesByFeed(feedId)
+
         } else if (categoryId != null) {
             viewModel.refreshEntriesByCategory(categoryId)
         }
@@ -86,10 +82,14 @@ fun EntryListScreen(
             )
         }
     } else {
+        viewModel.setCurrentEntryList(entries)
+
         LazyColumn(modifier = Modifier.padding(16.dp)) {
             items(entries) { entry ->
                 EntryItem(viewModel, entry, onClick = {
+                    viewModel.setCurrentEntryList(entries)
                     navController.navigate("articleDetail?entryId=${entry.id}")
+
                 })
             }
         }
@@ -105,6 +105,8 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
 
     AnimatedVisibility(
         visible = isVisible.value,
+        enter = androidx.compose.animation.fadeIn(animationSpec = tween(300)),
+        exit = androidx.compose.animation.fadeOut(animationSpec = tween(300))
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Background to indicate swipe action
@@ -131,37 +133,27 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                 }
             }
             Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(offsetX.roundToInt(), 0) }
                     .padding(vertical = 8.dp)
                     .clickable { onClick() }
-                    .border(BorderStroke(0.5.dp, Color.Black), shape = RoundedCornerShape(8.dp))
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
                                 offsetX = (offsetX + dragAmount).coerceIn(-swipeThreshold * 2, 0f)
-                                Log.d(
-                                    "EntryItem",
-                                    "EntryItem: Dragging entry with id ${entry.id}, offsetX: $offsetX"
-                                )
+                                Log.d("EntryItem", "EntryItem: Dragging entry with id ${entry.id}, offsetX: $offsetX")
                             },
                             onDragEnd = {
                                 if (offsetX < -swipeThreshold) {
-                                    Log.d(
-                                        "EntryItem",
-                                        "EntryItem: Swiped sufficiently on entry with id ${entry.id}, marking as read"
-                                    )
+                                    Log.d("EntryItem", "EntryItem: Swiped sufficiently on entry with id ${entry.id}, marking as read")
                                     // Mark entry as read when swiped sufficiently
                                     viewModel.markEntryAsRead(entry.id)
                                     isVisible.value = false
                                 } else {
-                                    Log.d(
-                                        "EntryItem",
-                                        "EntryItem: Swipe not sufficient for entry with id ${entry.id}, resetting"
-                                    )
+                                    Log.d("EntryItem", "EntryItem: Swipe not sufficient for entry with id ${entry.id}, resetting")
                                     offsetX = 0f
                                 }
                             }
@@ -175,23 +167,18 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Row (modifier = Modifier.fillMaxWidth()){
-                        entry.published_at?.let {
-                            Text(
-                                text = localizePublishTime(it),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                        Spacer(modifier = Modifier.padding(4.dp))
+                    Text(
+                        text = entry.feed.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                    entry.published_at?.let {
                         Text(
-                            text = entry.feed.title,
+                            text = localizePublishTime(it),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
-
                     }
-
                 }
             }
         }
