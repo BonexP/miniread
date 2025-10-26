@@ -1,7 +1,17 @@
+# MiniRead
+
+![Build Debug](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20Debug%20APKs/badge.svg)
+![Release](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
 
 ### 项目简介
 
 本项目是一个使用 Jetpack Compose 和 Material Design 3 (MD3) 构建的现代化 Miniflux Android 阅读客户端。应用提供简洁的 RSS 订阅管理功能，用户可以浏览、阅读和分类管理文章内容，并享受优雅且流畅的 UI 体验。
+
+**MiniRead 提供两个产品变体：**
+- 📱 **Standard 版本**：适用于常规 Android 设备，支持完整的 Material Design 3 主题、动态颜色和深色模式
+- 📖 **E-Ink 版本**：专为电子墨水屏设备优化，采用高对比度黑白 UI，无动画，提供最佳阅读体验
+
+> 💡 两个版本可以同时安装在同一设备上，互不冲突
 
 ### 主要功能
 
@@ -46,14 +56,58 @@
     - 支持通过 `LaunchedEffect` 实现动态刷新文章列表。
 - **TodayEntryListScreen.kt**：
     - 继承自 `EntryListScreen`，只显示当天的文章，利用 UNIX 时间戳计算当日范围的文章。
+#### 快速开始
+
 - **ArticleDetailScreen.kt**：
     - 使用 WebView 渲染文章内容，支持动态注入 `Referer` 头和优化 HTML 渲染。
     - 通过注入自定义 CSS 和 JavaScript，提升文章在移动设备上的阅读体验。
+   cd miniread
+
 
 ### 部署与运行
 
+3. **选择构建变体**：
+   - 在 Android Studio 左侧打开 **Build Variants** 面板
+   - 选择你想要的变体：
+     - `standardDebug` - 标准版 Debug（推荐日常开发）
+     - `einkDebug` - E-Ink 版 Debug
+     - `standardRelease` - 标准版 Release
+     - `einkRelease` - E-Ink 版 Release
+
 1. **克隆仓库**：
    ```bash
+5. **配置 API Token**：在应用首次启动时，输入 Miniflux API Token 并保存。
+
+#### 构建所有变体
+
+**在 Android Studio 中：**
+- 打开右侧 **Gradle** 面板
+- 展开 `miniread` → `app` → `Tasks` → `build`
+- 双击 `assemble` 任务即可构建所有变体
+
+**在命令行中：**
+```bash
+# 构建所有变体（Standard + E-Ink，Debug + Release）
+./gradlew assemble
+
+# 或分别构建
+./gradlew assembleStandardDebug    # 标准版 Debug
+./gradlew assembleEinkDebug        # E-Ink 版 Debug
+./gradlew assembleStandardRelease  # 标准版 Release
+./gradlew assembleEinkRelease      # E-Ink 版 Release
+```
+
+构建完成后，APK 文件位于：
+```
+app/build/outputs/apk/
+├── standard/debug/app-standard-debug.apk
+├── standard/release/app-standard-release.apk
+├── eink/debug/app-eink-debug.apk
+└── eink/release/app-eink-release.apk
+```
+
+📖 **详细构建指南**: [BUILD_GUIDE.md](./doc/BUILD_GUIDE.md)
+
    git clone <repository-url>
    ```
 2. **打开 Android Studio**：导入项目，并等待依赖加载完成。

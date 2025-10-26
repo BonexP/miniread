@@ -2,7 +2,50 @@
 
 欢迎查阅 MiniRead 项目文档！
 
-## 📚 文档列表
+## 🚀 快速开始
+
+- 🏗️ **[BUILD_GUIDE.md](./BUILD_GUIDE.md)** - 完整的构建指南（**推荐新手阅读**）
+- ⚡ **[QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md)** - 构建命令速查表
+- 📝 **[BUILD_CONFIGURATION_SUMMARY.md](./BUILD_CONFIGURATION_SUMMARY.md)** - 构建配置完成总结
+
+## 📚 核心文档
+
+### [BUILD_GUIDE.md](./BUILD_GUIDE.md) ⭐ 新增
+**完整构建指南** - 一站式构建操作手册
+
+包含内容：
+- Android Studio 操作指南（3种方法）
+- 命令行构建详解
+- GitHub Workflow 使用说明
+- 构建变体对比
+- 故障排除指南
+- 快速参考命令
+
+**适合人群**：所有需要构建项目的开发者
+
+### [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) ⭐ 新增
+**构建命令速查表** - 快速查找构建命令
+
+包含内容：
+- 所有常用构建命令
+- GitHub Actions 操作
+- APK 输出位置
+- Build Variants 对照表
+- 快速故障排除
+
+**适合人群**：日常开发需要快速查找命令的开发者
+
+### [BUILD_CONFIGURATION_SUMMARY.md](./BUILD_CONFIGURATION_SUMMARY.md) ⭐ 新增
+**构建配置完成总结** - 配置说明和使用指南
+
+包含内容：
+- 已完成的配置说明
+- Android Studio 使用指南
+- GitHub Actions 使用指南
+- 配置检查清单
+- 构建变体对比
+
+**适合人群**：了解整体配置的开发者、项目维护者
 
 ### [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)
 **Build Flavors 开发指南** - 详细的多风味开发和维护文档
@@ -21,18 +64,16 @@
 **适合人群**：新加入的开发者、需要了解架构设计的开发者
 
 ### [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
-**快速参考手册** - 常用命令和代码片段
+**快速参考手册** - 常用代码片段和配置
 
 包含内容：
-- 快速构建命令
 - 代码片段示例
 - 目录结构速查
 - 资源命名约定
-- 输出文件位置
 - 调试技巧
 - 版本发布检查清单
 
-**适合人群**：日常开发需要快速查找命令的开发者
+**适合人群**：日常开发需要快速查找代码示例的开发者
 
 ### [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
 **迁移指南** - 将现有代码迁移到 Flavor 架构
@@ -41,6 +82,7 @@
 - 迁移步骤说明
 - 代码重构示例
 - 迁移检查清单
+- 构建与发布说明
 - 常见问题解答
 
 **适合人群**：需要重构现有代码以适配新架构的开发者

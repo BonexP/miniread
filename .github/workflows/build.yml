@@ -1,0 +1,76 @@
+name: Build Debug APKs
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    name: Build Debug APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build all flavor Debug APKs
+        run: |
+          echo "Building Standard Debug..."
+          ./gradlew assembleStandardDebug
+          echo "Building E-Ink Debug..."
+          ./gradlew assembleEinkDebug
+
+      - name: List generated APKs
+        run: |
+          echo "Generated APK files:"
+          find app/build/outputs/apk -name "*.apk" -type f
+
+      - name: Upload Standard Debug APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: MiniRead-standard-debug
+          path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
+          retention-days: 30
+
+      - name: Upload E-Ink Debug APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: MiniRead-eink-debug
+          path: app/build/outputs/apk/eink/debug/app-eink-debug.apk
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "## 构建完成 ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "已成功构建以下 APK：" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Standard Debug" >> $GITHUB_STEP_SUMMARY
+          echo "- 文件: app-standard-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "- 应用 ID: com.i.miniread" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📖 E-Ink Debug" >> $GITHUB_STEP_SUMMARY
+          echo "- 文件: app-eink-debug.apk" >> $GITHUB_STEP_SUMMARY
+          echo "- 应用 ID: com.i.miniread.eink" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "可从 Actions 的 Artifacts 区域下载编译好的 APK" >> $GITHUB_STEP_SUMMARY
+

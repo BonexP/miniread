@@ -341,7 +341,31 @@ A:
 如果在迁移过程中遇到问题：
 1. 查看 [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md) 了解最佳实践
 2. 参考 [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) 获取代码示例
-3. 检查现有 flavor 代码的实现
+3. 查看 [BUILD_GUIDE.md](./BUILD_GUIDE.md) 了解如何构建不同的 flavor
+4. 检查现有 flavor 代码的实现
+
+## 构建与发布
+
+迁移完成后，你可能需要：
+1. **测试所有 Flavor**: 确保 Standard 和 E-Ink 版本都能正常工作
+2. **同时构建两个版本**: 参考 [BUILD_GUIDE.md](./BUILD_GUIDE.md) 学习如何一次性构建所有变体
+3. **配置 CI/CD**: GitHub Workflow 已配置为自动构建两个版本
+
+### 快速构建命令
+
+```bash
+# 构建所有变体
+./gradlew assemble
+
+# 构建并安装到设备
+./gradlew installStandardDebug
+./gradlew installEinkDebug
+
+# 创建 Release（需要配置签名）
+./gradlew assembleRelease
+```
+
+更多详情请参考 [BUILD_GUIDE.md](./BUILD_GUIDE.md)。
 
 ---
 
