@@ -45,14 +45,14 @@ jobs:
           find app/build/outputs/apk -name "*.apk" -type f
 
       - name: Upload Standard Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: MiniRead-standard-debug
           path: app/build/outputs/apk/standard/debug/app-standard-debug.apk
           retention-days: 30
 
       - name: Upload E-Ink Debug APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: MiniRead-eink-debug
           path: app/build/outputs/apk/eink/debug/app-eink-debug.apk
