@@ -19,3 +19,38 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Jetpack Compose
+-keep class androidx.compose.** { *; }
+-keep interface androidx.compose.** { *; }
+-keepclassmembers class androidx.compose.** { *; }
+
+# Compose UI
+-keep class androidx.compose.ui.** { *; }
+-keep interface androidx.compose.ui.** { *; }
+-dontwarn androidx.compose.ui.**
+
+# Compose Foundation
+-keep class androidx.compose.foundation.** { *; }
+-keep interface androidx.compose.foundation.** { *; }
+
+# Compose Runtime
+-keep class androidx.compose.runtime.** { *; }
+-keep interface androidx.compose.runtime.** { *; }
+
+# Compose Material3
+-keep class androidx.compose.material3.** { *; }
+-keep interface androidx.compose.material3.** { *; }
+
+# Kotlin 协程和反射
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# 保持 Kotlin 元数据
+-keep class kotlin.Metadata { *; }
