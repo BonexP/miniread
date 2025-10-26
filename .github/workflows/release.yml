@@ -33,17 +33,52 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build signed release APK
-        run: ./gradlew assembleRelease
+      - name: Build all flavor Release APKs
+        run: |
+          echo "Building Standard flavor..."
+          ./gradlew assembleStandardRelease
+          echo "Building E-Ink flavor..."
+          ./gradlew assembleEinkRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
 
-      - name: Upload APK to GitHub Release
+      - name: Rename APK files
+        run: |
+          cd app/build/outputs/apk
+          # 重命名文件以便更清晰地识别
+          if [ -f standard/release/app-standard-release.apk ]; then
+            mv standard/release/app-standard-release.apk standard/release/MiniRead-standard-${{ github.ref_name }}.apk
+          fi
+          if [ -f eink/release/app-eink-release.apk ]; then
+            mv eink/release/app-eink-release.apk eink/release/MiniRead-eink-${{ github.ref_name }}.apk
+          fi
+
+      - name: Upload Standard APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: app/build/outputs/apk/release/*.apk
+          files: |
+            app/build/outputs/apk/standard/release/MiniRead-standard-${{ github.ref_name }}.apk
+            app/build/outputs/apk/eink/release/MiniRead-eink-${{ github.ref_name }}.apk
+          body: |
+            ## MiniRead Release ${{ github.ref_name }}
+            
+            此版本包含两个构建变体：
+            
+            ### 📱 Standard 版本
+            - **文件**: MiniRead-standard-${{ github.ref_name }}.apk
+            - **说明**: 标准版本，适用于常规 Android 设备
+            - **应用 ID**: com.i.miniread
+            - **特性**: 完整的 Material Design 3 主题，支持动态颜色和深色模式
+            
+            ### 📖 E-Ink 版本
+            - **文件**: MiniRead-eink-${{ github.ref_name }}.apk
+            - **说明**: 电子墨水屏优化版本，适用于墨水屏设备
+            - **应用 ID**: com.i.miniread.eink
+            - **特性**: 高对比度黑白 UI，无动画，专为墨水屏优化
+            
+            > 💡 两个版本可以同时安��在同一设备上
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

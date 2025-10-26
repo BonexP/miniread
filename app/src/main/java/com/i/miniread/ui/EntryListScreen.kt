@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,6 +40,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.i.miniread.BuildConfig
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 import java.time.OffsetDateTime
@@ -114,8 +116,18 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
-                color = MaterialTheme.colorScheme.secondaryContainer,
+                    .then(
+                        if (BuildConfig.IS_EINK) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = Color.Black,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                        } else {
+                            Modifier
+                        }
+                    ),
+                color = if (BuildConfig.IS_EINK) Color.White else MaterialTheme.colorScheme.secondaryContainer,
                 shape = MaterialTheme.shapes.medium
             ) {
                 Box(
@@ -127,17 +139,35 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.Done,
                         contentDescription = "Mark as Read",
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
             Card(
                 shape = MaterialTheme.shapes.medium,
+                colors = if (BuildConfig.IS_EINK) {
+                    CardDefaults.cardColors(
+                        containerColor = Color.White
+                    )
+                } else {
+                    CardDefaults.cardColors()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .offset { IntOffset(offsetX.roundToInt(), 0) }
                     .padding(vertical = 8.dp)
+                    .then(
+                        if (BuildConfig.IS_EINK) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = Color.Black,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
                     .clickable { onClick() }
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
@@ -165,18 +195,18 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                     Text(
                         text = entry.title ?: "Untitled",
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = entry.feed.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.secondary
+                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.secondary
                     )
                     entry.published_at?.let {
                         Text(
                             text = localizePublishTime(it),
                             style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.secondary
+                            color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.secondary
                         )
                     }
                 }
