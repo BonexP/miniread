@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Standard flavor specific strings -->
+    <string name="flavor_description">标准版</string>
+    <string name="flavor_welcome">欢迎使用 MiniRead 标准版</string>
+</resources>
+

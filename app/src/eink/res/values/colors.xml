@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- E-Ink flavor specific colors -->
+    <!-- 电子墨水屏优化的黑白主题 -->
+    <color name="flavor_primary">#000000</color>
+    <color name="flavor_primary_variant">#424242</color>
+    <color name="flavor_secondary">#757575</color>
+    <color name="flavor_background">#FFFFFF</color>
+    <color name="flavor_surface">#F5F5F5</color>
+
+    <!-- E-Ink 专用颜色 - 优化对比度 -->
+    <color name="eink_text_primary">#000000</color>
+    <color name="eink_text_secondary">#424242</color>
+    <color name="eink_divider">#BDBDBD</color>
+    <color name="eink_highlight">#E0E0E0</color>
+</resources>
+

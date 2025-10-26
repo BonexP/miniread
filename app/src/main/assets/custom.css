@@ -7,7 +7,8 @@
 
 /* 定义变量 */
 :root {
-    --fg-light: #0e0e0e;
+    /* E-Ink 优化：使用纯黑色文字以最大化对比度 */
+    --fg-light: #000000;  /* 从 #0e0e0e 改为纯黑 #000000 */
     --bg-light: #00000000;
     --link-light: #1a73e8;
     --highlight-light: #ffeb3b;
@@ -24,7 +25,8 @@
 /* 明亮模式下的全局样式 */
 body {
     font-family: var(--font-sans);
-    font-size: 2rem;
+    /* E-Ink 优化：增大字体以提高可读性（从 2rem 增加到 2.2rem，约 10%） */
+    font-size: 2.2rem;
     line-height: 1.6;
     color: var(--fg-light);
     background-color: var(--bg-light);

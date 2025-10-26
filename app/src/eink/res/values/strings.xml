@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- E-Ink flavor specific strings -->
+    <string name="flavor_description">电子墨水屏优化版</string>
+    <string name="flavor_welcome">欢迎使用 MiniRead 电子墨水屏版</string>
+
+    <!-- E-Ink 专用设置 -->
+    <string name="eink_refresh_mode">刷新模式</string>
+    <string name="eink_contrast_enhancement">对比度增强</string>
+    <string name="eink_animation_disabled">动画已禁用以优化显示效果</string>
+</resources>
+

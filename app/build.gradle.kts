@@ -34,6 +34,34 @@ android {
             keyPassword = System.getenv("KEY_PASSWORD")
         }
     }
+    flavorDimensions += "version"
+
+    productFlavors {
+        create("standard") {
+            dimension = "version"
+            applicationIdSuffix = ""
+            versionNameSuffix = "-standard"
+
+            // 标准版配置
+            buildConfigField("String", "FLAVOR_TYPE", "\"standard\"")
+            buildConfigField("boolean", "IS_EINK", "false")
+
+            resValue("string", "app_name", "MiniRead")
+        }
+
+        create("eink") {
+            dimension = "version"
+            applicationIdSuffix = ".eink"
+            versionNameSuffix = "-eink"
+
+            // 电子墨水屏版本配置
+            buildConfigField("String", "FLAVOR_TYPE", "\"eink\"")
+            buildConfigField("boolean", "IS_EINK", "true")
+
+            resValue("string", "app_name", "MiniRead E-Ink")
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled =  false
@@ -72,6 +100,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.1"
