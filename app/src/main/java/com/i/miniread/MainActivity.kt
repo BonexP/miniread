@@ -3,6 +3,8 @@ package com.i.miniread
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
+import android.webkit.WebView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -28,7 +30,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -78,6 +83,67 @@ class MainActivity : ComponentActivity() {
                 MainContent(viewModel = viewModel)
             }
         }
+    }
+
+    /**
+     * 处理按键事件 - E-Ink 版本专用功能
+     * 
+     * ⚠️ 注意事项：
+     * - 此功能仅在 E-Ink 版本中启用
+     * - 需要 WebView 获得焦点才能工作
+     * - 如果焦点不在 WebView 上，音量键将保持默认行为
+     * - 建议在设置中提供开关选项让用户选择是否启用此功能
+     * 
+     * 实现细节：
+     * - 音量上键：向上滚动 500px
+     * - 音量下键：向下滚动 800px（考虑阅读习惯，向下滚动距离更大）
+     * - 其他按键：保持默认行为
+     */
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // 仅在 E-Ink 版本启用音量键翻页
+        if (BuildConfig.IS_EINK) {
+            Log.d("MainActivity", "Key pressed: $keyCode")
+            
+            return when (keyCode) {
+                KeyEvent.KEYCODE_VOLUME_UP -> {
+                    // 尝试获取当前焦点的 WebView
+                    val webView = currentFocus as? WebView
+                    if (webView != null) {
+                        // WebView 有焦点，执行向上滚动
+                        webView.scrollBy(0, -500)
+                        Log.d("MainActivity", "Volume up - scrolled up 500px")
+                        true  // 消费此事件，不再传递
+                    } else {
+                        // WebView 没有焦点，记录警告并保持默认行为
+                        Log.w("MainActivity", "Volume up pressed but WebView not focused")
+                        super.onKeyDown(keyCode, event)
+                    }
+                }
+                
+                KeyEvent.KEYCODE_VOLUME_DOWN -> {
+                    // 尝试获取当前焦点的 WebView
+                    val webView = currentFocus as? WebView
+                    if (webView != null) {
+                        // WebView 有焦点，执行向下滚动
+                        webView.scrollBy(0, 800)
+                        Log.d("MainActivity", "Volume down - scrolled down 800px")
+                        true  // 消费此事件，不再传递
+                    } else {
+                        // WebView 没有焦点，记录警告并保持默认行为
+                        Log.w("MainActivity", "Volume down pressed but WebView not focused")
+                        super.onKeyDown(keyCode, event)
+                    }
+                }
+                
+                else -> {
+                    // 其他按键保持默认行为
+                    super.onKeyDown(keyCode, event)
+                }
+            }
+        }
+        
+        // 标准版本保持默认按键行为
+        return super.onKeyDown(keyCode, event)
     }
 }
 
@@ -144,7 +210,16 @@ fun MainContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text(stringResource(id = R.string.app_name)) },
+                    title = { 
+                        Text(
+                            stringResource(id = R.string.app_name),
+                            // E-Ink 版本使用更小的字体
+                            style = if (BuildConfig.IS_EINK) 
+                                androidx.compose.material3.MaterialTheme.typography.titleMedium
+                            else 
+                                androidx.compose.material3.MaterialTheme.typography.titleLarge
+                        )
+                    },
                     actions = {
                         IconButton(onClick = {
                             Log.d("IconButton", "Refresh button clicked, current route: $currentRoute")
@@ -223,9 +298,22 @@ fun MainContent(
                                 }
                             }
                         }) {
-                            Icon(imageVector = Icons.Default.Refresh, contentDescription = "刷新")
+                            Icon(
+                                imageVector = Icons.Default.Refresh, 
+                                contentDescription = "刷新",
+                                // E-Ink 版本使用更小的图标
+                                modifier = if (BuildConfig.IS_EINK)
+                                    androidx.compose.ui.Modifier.size(18.dp)
+                                else
+                                    androidx.compose.ui.Modifier
+                            )
                         }
-                    }
+                    },
+                    // E-Ink 版本使用更小的高度
+                    modifier = if (BuildConfig.IS_EINK)
+                        androidx.compose.ui.Modifier.height(40.dp)
+                    else
+                        androidx.compose.ui.Modifier
                 )
             },
             bottomBar = {
@@ -317,15 +405,36 @@ fun MainContent(
     }
 }
 
+/**
+ * 底部导航栏
+ * 
+ * E-Ink 版本优化：
+ * - 减小高度（48dp vs 80dp）
+ * - 移除文本标签以减少刷新区域和视觉复杂度
+ * - 使用更小的图标
+ * - 使用纯白背景避免残影
+ */
 @Composable
 fun BottomNavigationBar(navController: NavController) {
-    NavigationBar {
+    NavigationBar(
+        // E-Ink 版本使用更小的高度
+        modifier = if (BuildConfig.IS_EINK)
+            Modifier.height(48.dp)
+        else
+            Modifier,
+        // E-Ink 版本使用纯白背景
+        containerColor = if (BuildConfig.IS_EINK)
+            androidx.compose.ui.graphics.Color.White
+        else
+            androidx.compose.material3.MaterialTheme.colorScheme.surface
+    ) {
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
         val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
 
         items.forEach { screen ->
             NavigationBarItem(
-                label = { Text(screen.label) },
+                // E-Ink 版本移除文本标签以节省空间和减少刷新
+                label = if (BuildConfig.IS_EINK) null else { { Text(screen.label) } },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
@@ -336,9 +445,26 @@ fun BottomNavigationBar(navController: NavController) {
                         restoreState = true
                     }
                 },
-
-                icon = { Icon(imageVector = Icons.Default.Menu, "somthing") }
-
+                icon = { 
+                    Icon(
+                        imageVector = Icons.Default.Menu, 
+                        contentDescription = screen.label,
+                        // E-Ink 版本使用更小的图标
+                        modifier = if (BuildConfig.IS_EINK)
+                            Modifier.size(20.dp)
+                        else
+                            Modifier,
+                        // E-Ink 版本使用黑白对比
+                        tint = if (BuildConfig.IS_EINK) {
+                            if (currentRoute == screen.route)
+                                androidx.compose.ui.graphics.Color.Black
+                            else
+                                androidx.compose.ui.graphics.Color.DarkGray
+                        } else {
+                            androidx.compose.material3.LocalContentColor.current
+                        }
+                    )
+                }
             )
         }
     }

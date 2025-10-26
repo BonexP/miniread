@@ -122,7 +122,13 @@ fun ArticleActionsBar(
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
-    BottomAppBar {
+    BottomAppBar(
+        // E-Ink 版本使用纯白背景避免残影
+        containerColor = if (com.i.miniread.BuildConfig.IS_EINK)
+            androidx.compose.ui.graphics.Color.White
+        else
+            androidx.compose.material3.MaterialTheme.colorScheme.surface
+    ) {
         // 标记为已读按钮
         ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
@@ -265,6 +271,22 @@ fun ArticleWebView(
 
     val webView = remember {
         WebView(context).apply {
+            // ===== E-Ink 优化：强化焦点管理 =====
+            // ⚠️ 注意：E-Ink 版本需要 WebView 获得焦点以支持音量键翻页
+            // 原因：MainActivity 的 onKeyDown 方法依赖 currentFocus 获取 WebView
+            if (com.i.miniread.BuildConfig.IS_EINK) {
+                // 初始化后立即请求焦点
+                post {
+                    requestFocus()
+                    Log.d("WebViewFocus", "Initial focus request: hasFocus=${hasFocus()}")
+                }
+                // 延迟 500ms 再次请求焦点，确保焦点获取
+                postDelayed({
+                    requestFocus()
+                    Log.d("WebViewFocus", "Delayed focus request (500ms): hasFocus=${hasFocus()}")
+                }, 500)
+            }
+            
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
@@ -276,8 +298,28 @@ fun ArticleWebView(
                 displayZoomControls = false
                 loadsImagesAutomatically = true
                 textZoom = 125
+                
+                // ===== E-Ink 优化：隐藏滚动条 =====
+                // ⚠️ 原因：墨水屏刷新滚动条会产生残影和闪烁
+                // 在 E-Ink 设备上禁用垂直滚动条以避免刷新问题
+                if (com.i.miniread.BuildConfig.IS_EINK) {
+                    isVerticalScrollBarEnabled = false
+                }
+                
+                // ===== E-Ink 优化：触摸焦点 =====
+                // 改善触摸交互体验，确保触摸时能获得焦点
+                if (com.i.miniread.BuildConfig.IS_EINK) {
+                    isFocusable = true
+                    isFocusableInTouchMode = true
+                }
             }
+            
             setBackgroundColor(0x00000000)
+            
+            // E-Ink 版本额外的焦点请求
+            if (com.i.miniread.BuildConfig.IS_EINK) {
+                requestFocusFromTouch()
+            }
 
             webViewClient = object : WebViewClient() {
                 override fun shouldOverrideUrlLoading(
