@@ -9,7 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
@@ -30,8 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -61,20 +61,31 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DataStoreManager.init(this) // 初始化 DataStore
+
+        try {
+            DataStoreManager.init(this) // 初始化 DataStore
+            Log.d("MainActivity", "DataStoreManager initialized successfully")
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error initializing DataStoreManager", e)
+        }
 
         // 使用协程读取存储的数据
         lifecycleScope.launch {
-            val savedBaseUrl = DataStoreManager.getBaseUrl()
-            val savedAuthToken = DataStoreManager.getApiToken()
+            try {
+                val savedBaseUrl = DataStoreManager.getBaseUrl()
+                val savedAuthToken = DataStoreManager.getApiToken()
+                Log.d("MainActivity", "Loaded: baseUrl=$savedBaseUrl, token=${if(savedAuthToken.isNotEmpty()) "exists" else "empty"}")
 
-            if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
-                // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
-                RetrofitInstance.initialize(savedBaseUrl)
-                viewModel.setAuthToken(savedAuthToken)
-                viewModel.fetchFeeds()
-                viewModel.fetchCategories()
-                viewModel.fetchUserInfo()
+                if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
+                    // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
+                    RetrofitInstance.initialize(savedBaseUrl)
+                    viewModel.setAuthToken(savedAuthToken)
+                    viewModel.fetchFeeds()
+                    viewModel.fetchCategories()
+                    viewModel.fetchUserInfo()
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error loading saved credentials", e)
             }
         }
 

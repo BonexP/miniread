@@ -94,19 +94,21 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {
-                selectedEntry!!.content?.let { Log.d("ArticleWebViewContentInject", it) }
-                ArticleWebView(
-                    context = context,
-                    content = "<h1>"+selectedEntry!!.title+"</h1>"+selectedEntry!!.content,
-                    feedId = selectedEntry!!.feed_id,
-                    onScrollToBottom = {
-                        Log.d("ArticleDetailScreen", "Article scrolled to end!")
-                        viewModel.markEntryAsRead(entryId)
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Marked as read")
+                selectedEntry?.content?.let { Log.d("ArticleWebViewContentInject", it) }
+                selectedEntry?.let { entry ->
+                    ArticleWebView(
+                        context = context,
+                        content = "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}",
+                        feedId = entry.feed_id,
+                        onScrollToBottom = {
+                            Log.d("ArticleDetailScreen", "Article scrolled to end!")
+                            viewModel.markEntryAsRead(entryId)
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Marked as read")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }
@@ -478,10 +480,19 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         }
 
         // 构建HTML内容
-        val htmlContent = cachedHtmlTemplate!!
-            .replace("\$normalize_css", cachedNormalizeCss!!)
-            .replace("\$custom_css", cachedCustomCss!!)
-            .replace("\$content", content)
+        val htmlContent = cachedHtmlTemplate?.let { template ->
+            cachedNormalizeCss?.let { normalizeCss ->
+                cachedCustomCss?.let { customCss ->
+                    template
+                        .replace("\$normalize_css", normalizeCss)
+                        .replace("\$custom_css", customCss)
+                        .replace("\$content", content)
+                }
+            }
+        } ?: run {
+            Log.e("ArticleWebView", "Failed to load HTML template or CSS")
+            "<html><body><h1>Error</h1><p>Failed to load content template</p></body></html>"
+        }
 //        Log.d("loadHtmlContentAsync", "loadHtmlContentAsync: htmlContent $htmlContent")
 
         if (isOutputHtmlContent) {

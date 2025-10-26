@@ -26,12 +26,19 @@ android {
     }
     signingConfigs {
         create("release") {
-            println("Keystore path: ${System.getenv("KEYSTORE_FILE")}")
-            val keystorePath = File(System.getenv("KEYSTORE_FILE") ?: "")
-            storeFile = keystorePath
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            println("Keystore path: $keystoreFile")
+
+            // 只有在环境变量存在时才配置签名
+            if (!keystoreFile.isNullOrEmpty() && File(keystoreFile).exists()) {
+                storeFile = File(keystoreFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+                println("Release signing config is set up with keystore")
+            } else {
+                println("Warning: KEYSTORE_FILE not found or not set. Using debug signing for release build.")
+            }
         }
     }
     flavorDimensions += "version"
@@ -64,11 +71,12 @@ android {
 
     buildTypes {
         debug {
-            isMinifyEnabled =  false
-            proguardFiles (getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // 确保启用了调试标志
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isDebuggable = true
-            isDefault=true
+            isJniDebuggable = true
+            isRenderscriptDebuggable = true
+            isDefault = true
         }
         release {
             isMinifyEnabled = false
@@ -80,7 +88,7 @@ android {
             isJniDebuggable = false
             isRenderscriptDebuggable = false
             versionNameSuffix = "alpha"
-        }
+            }
         getByName("debug") {
             isDebuggable = true
             isJniDebuggable = true
@@ -103,7 +111,7 @@ android {
         buildConfig = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        kotlinCompilerExtensionVersion = "1.5.3"
     }
     packaging {
         resources {
