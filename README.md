@@ -56,14 +56,14 @@
     - 支持通过 `LaunchedEffect` 实现动态刷新文章列表。
 - **TodayEntryListScreen.kt**：
     - 继承自 `EntryListScreen`，只显示当天的文章，利用 UNIX 时间戳计算当日范围的文章。
-#### 快速开始
-
 - **ArticleDetailScreen.kt**：
     - 使用 WebView 渲染文章内容，支持动态注入 `Referer` 头和优化 HTML 渲染。
     - 通过注入自定义 CSS 和 JavaScript，提升文章在移动设备上的阅读体验。
+
+
+#### 快速开始
+
    cd miniread
-
-
 ### 部署与运行
 
 3. **选择构建变体**：
