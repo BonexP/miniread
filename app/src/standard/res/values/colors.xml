@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Standard flavor specific colors -->
+    <!-- 使用标准的彩色主题 -->
+    <color name="flavor_primary">#6200EE</color>
+    <color name="flavor_primary_variant">#3700B3</color>
+    <color name="flavor_secondary">#03DAC6</color>
+    <color name="flavor_background">#FFFFFF</color>
+    <color name="flavor_surface">#FFFFFF</color>
+</resources>
+
