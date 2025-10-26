@@ -1,6 +1,7 @@
 package com.i.miniread.ui
 
 import android.util.Log
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import com.i.miniread.BuildConfig
 import com.i.miniread.network.Feed
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
@@ -240,9 +243,27 @@ fun FeedItem(
     }
 
     Card(
+        colors = if (BuildConfig.IS_EINK) {
+            CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        } else {
+            CardDefaults.cardColors()
+        },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
+            .then(
+                if (BuildConfig.IS_EINK) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = Color.Black,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clickable(enabled = !isEditMode) { onClick() },
     ) {
         Column(
@@ -280,13 +301,13 @@ fun FeedItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = title,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.titleLarge
                     )
                     Text(
                         text = if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }

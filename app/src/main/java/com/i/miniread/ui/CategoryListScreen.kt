@@ -1,6 +1,7 @@
 package com.i.miniread.ui
 
 import android.util.Log
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,7 +25,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.i.miniread.BuildConfig
 import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
 import androidx.compose.material3.AlertDialog
@@ -118,9 +122,27 @@ fun CategoryItem(
     }
 
     Card(
+        colors = if (BuildConfig.IS_EINK) {
+            CardDefaults.cardColors(
+                containerColor = Color.White
+            )
+        } else {
+            CardDefaults.cardColors()
+        },
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
+            .then(
+                if (BuildConfig.IS_EINK) {
+                    Modifier.border(
+                        width = 2.dp,
+                        color = Color.Black,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clickable { onClick() },
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -135,12 +157,12 @@ fun CategoryItem(
                     Text(
                         text = category.title,
                         style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text =  if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读" ,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
                     )
                 }
