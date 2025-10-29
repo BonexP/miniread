@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
+import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -50,6 +54,8 @@ import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
+import com.i.miniread.ui.adaptive.AdaptiveLayoutHelper
+import com.i.miniread.ui.adaptive.AppNavigationRail
 import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.util.DataStoreManager
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -58,6 +64,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val viewModel: MinifluxViewModel by viewModels()
 
+    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +98,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinireadTheme {
-                MainContent(viewModel = viewModel)
+                val windowSizeClass = calculateWindowSizeClass(this)
+                MainContent(viewModel = viewModel, windowSizeClass = windowSizeClass.widthSizeClass)
             }
         }
     }
@@ -172,6 +180,7 @@ sealed class Screen(val route: String, val label: String) {
 @Composable
 fun MainContent(
     viewModel: MinifluxViewModel,
+    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 ) {
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
@@ -218,22 +227,28 @@ fun MainContent(
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
 
+        // 判断是否应该使用侧边导航栏（平板横屏模式）
+        val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
+
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { 
+                    title = {
                         Text(
                             stringResource(id = R.string.app_name),
                             // E-Ink 版本使用更小的字体
-                            style = if (BuildConfig.IS_EINK) 
+                            style = if (BuildConfig.IS_EINK)
                                 androidx.compose.material3.MaterialTheme.typography.titleMedium
-                            else 
+                            else
                                 androidx.compose.material3.MaterialTheme.typography.titleLarge
                         )
                     },
                     actions = {
                         IconButton(onClick = {
-                            Log.d("IconButton", "Refresh button clicked, current route: $currentRoute")
+                            Log.d(
+                                "IconButton",
+                                "Refresh button clicked, current route: $currentRoute"
+                            )
 
                             // 根据当前路由执行不同的刷新逻辑
                             when {
@@ -261,8 +276,12 @@ fun MainContent(
 
                                 // SubFeed 页面（分类下的订阅源）：刷新该分类的订阅源
                                 currentRoute?.startsWith(Screen.SubFeedScreen.route) == true -> {
-                                    val categoryId = navBackStackEntry?.arguments?.getInt("categoryId")
-                                    Log.d("RefreshAction", "Refreshing SubFeed for category: $categoryId")
+                                    val categoryId =
+                                        navBackStackEntry?.arguments?.getInt("categoryId")
+                                    Log.d(
+                                        "RefreshAction",
+                                        "Refreshing SubFeed for category: $categoryId"
+                                    )
                                     categoryId?.let {
                                         viewModel.fetchCategoryFeeds(it)
                                         viewModel.fetchFeedsUnreadCount()
@@ -271,18 +290,29 @@ fun MainContent(
 
                                 // EntryList 页面：根据 feedId 或 categoryId 刷新条目列表
                                 currentRoute?.startsWith(Screen.EntryList.route) == true -> {
-                                    val feedId = navBackStackEntry?.arguments?.getString("feedId")?.toIntOrNull()
-                                    val categoryId = navBackStackEntry?.arguments?.getString("categoryId")?.toIntOrNull()
+                                    val feedId = navBackStackEntry?.arguments?.getString("feedId")
+                                        ?.toIntOrNull()
+                                    val categoryId =
+                                        navBackStackEntry?.arguments?.getString("categoryId")
+                                            ?.toIntOrNull()
 
                                     when {
                                         feedId != null -> {
-                                            Log.d("RefreshAction", "Refreshing entries for feed: $feedId")
+                                            Log.d(
+                                                "RefreshAction",
+                                                "Refreshing entries for feed: $feedId"
+                                            )
                                             viewModel.refreshEntriesByFeed(feedId)
                                         }
+
                                         categoryId != null -> {
-                                            Log.d("RefreshAction", "Refreshing entries for category: $categoryId")
+                                            Log.d(
+                                                "RefreshAction",
+                                                "Refreshing entries for category: $categoryId"
+                                            )
                                             viewModel.refreshEntriesByCategory(categoryId)
                                         }
+
                                         else -> {
                                             Log.d("RefreshAction", "Refreshing default entries")
                                             viewModel.refreshEntries()
@@ -305,12 +335,15 @@ fun MainContent(
 
                                 // 默认情况：不执行任何操作
                                 else -> {
-                                    Log.d("RefreshAction", "No refresh action for route: $currentRoute")
+                                    Log.d(
+                                        "RefreshAction",
+                                        "No refresh action for route: $currentRoute"
+                                    )
                                 }
                             }
                         }) {
                             Icon(
-                                imageVector = Icons.Default.Refresh, 
+                                imageVector = Icons.Default.Refresh,
                                 contentDescription = "刷新",
                                 // E-Ink 版本使用更小的图标
                                 modifier = if (BuildConfig.IS_EINK)
@@ -328,155 +361,245 @@ fun MainContent(
                 )
             },
             bottomBar = {
-                if (shouldShowBottomBar) {
+                // 只在手机模式下显示底部导航栏
+                if (shouldShowBottomBar && !useNavigationRail) {
                     BottomNavigationBar(navController = navController)
                 }
             }
         ) { innerPadding ->
-            Surface(modifier = Modifier.padding(innerPadding)) {
-                NavHost(
-                    navController = navController,
-                    startDestination = Screen.TodayEntryList.route
-                ) {
-                    composable(Screen.Feeds.route) {
-                        FeedListScreen(viewModel) { feedId ->
-                            currentFeedId = feedId.toString()
-                            currentCategoryId = ""
-                            navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                        }
-
-                    }
-                    composable(Screen.Categories.route) {
-                        CategoryListScreen(viewModel = viewModel, { categoryId ->
-                            currentCategoryId = categoryId.toString()
-                            currentFeedId = ""
-                            navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
-                        }, { categoryId ->
-                            navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
-                        })
-                    }
-                    composable(
-                        route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
-                        arguments = listOf(
-                            navArgument("feedId") { type = NavType.StringType; nullable = true },
-                            navArgument("categoryId") { type = NavType.StringType; nullable = true }
-
-                        )) { backStackEntry ->
-                        currentFeedId = backStackEntry.arguments?.getString("feedId").toString()
-                        val feedId = backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
-                        val categoryId =
-                            backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-                        EntryListScreen(viewModel, navController, feedId, categoryId)
-                    }
-                    composable(
-                        route = Screen.ArticleDetail.route + "?entryId={entryId}",
-                        arguments = listOf(navArgument("entryId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val entryId = backStackEntry.arguments?.getInt("entryId")
-                        if (entryId != null) {
-                            selectedScreen = Screen.ArticleDetail.route
-                            ArticleDetailScreen(viewModel, entryId, navController)
-                        } else {
-                            Log.d(
-                                "MainActivity",
-                                "MainContent: Error while getting entryId"
-                            )
-                        }
-                    }
-                    composable(Screen.TodayEntryList.route) {
-                        TodayEntryListScreen(viewModel, navController)
-                    }
-                    composable(
-                        route = "subFeed?categoryId={categoryId}",
-                        arguments = listOf(navArgument("categoryId") {
-                            type = NavType.IntType
-                        }) // 将 categoryId 设置为 Int 类型
-                    ) { backStackEntry ->
-                        val categoryId =
-                            backStackEntry.arguments?.getInt("categoryId") // 直接获取 Int 类型的 categoryId
-                        categoryId?.let {
-                            SubFeedScreen(
-                                viewModel = viewModel,
-                                categoryId = it,
-                                onFeedSelected = { feedId ->
+            // 平板横屏模式：使用侧边导航栏 + 内容区域
+            if (useNavigationRail) {
+                Row(modifier = Modifier.padding(innerPadding)) {
+                    AppNavigationRail(navController = navController)
+                    Surface(modifier = Modifier.weight(1f)) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.TodayEntryList.route
+                        ) {
+                            composable(Screen.Feeds.route) {
+                                FeedListScreen(viewModel) { feedId ->
                                     currentFeedId = feedId.toString()
                                     currentCategoryId = ""
-                                    navController.navigate(
-                                        Screen.EntryList.route + "?feedId=$feedId"
+                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                                }
+                            }
+                            composable(Screen.Categories.route) {
+                                CategoryListScreen(viewModel = viewModel, { categoryId ->
+                                    currentCategoryId = categoryId.toString()
+                                    currentFeedId = ""
+                                    navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
+                                }, { categoryId ->
+                                    navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
+                                })
+                            }
+                            composable(
+                                route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
+                                arguments = listOf(
+                                    navArgument("feedId") {
+                                        type = NavType.StringType; nullable = true
+                                    },
+                                    navArgument("categoryId") {
+                                        type = NavType.StringType; nullable = true
+                                    }
+                                )) { backStackEntry ->
+                                currentFeedId =
+                                    backStackEntry.arguments?.getString("feedId").toString()
+                                val feedId =
+                                    backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
+                                val categoryId =
+                                    backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                                EntryListScreen(viewModel, navController, feedId, categoryId)
+                            }
+                            composable(
+                                route = Screen.ArticleDetail.route + "?entryId={entryId}",
+                                arguments = listOf(navArgument("entryId") {
+                                    type = NavType.IntType
+                                })
+                            ) { backStackEntry ->
+                                val entryId = backStackEntry.arguments?.getInt("entryId")
+                                if (entryId != null) {
+                                    selectedScreen = Screen.ArticleDetail.route
+                                    ArticleDetailScreen(viewModel, entryId, navController)
+                                } else {
+                                    Log.d(
+                                        "MainActivity",
+                                        "MainContent: Error while getting entryId"
                                     )
                                 }
-                            )
+                            }
+                            composable(Screen.TodayEntryList.route) {
+                                TodayEntryListScreen(viewModel, navController)
+                            }
+                            composable(
+                                route = "subFeed?categoryId={categoryId}",
+                                arguments = listOf(navArgument("categoryId") {
+                                    type = NavType.IntType
+                                })
+                            ) { backStackEntry ->
+                                val categoryId = backStackEntry.arguments?.getInt("categoryId")
+                                categoryId?.let {
+                                    SubFeedScreen(
+                                        viewModel = viewModel,
+                                        categoryId = it,
+                                        onFeedSelected = { feedId ->
+                                            currentFeedId = feedId.toString()
+                                            currentCategoryId = ""
+                                            navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
-
-
                 }
+            } else {
+                // 手机模式：传统布局
+                Surface(modifier = Modifier.padding(innerPadding)) {
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.TodayEntryList.route
+                    ) {
+                        composable(Screen.Feeds.route) {
+                            FeedListScreen(viewModel) { feedId ->
+                                currentFeedId = feedId.toString()
+                                currentCategoryId = ""
+                                navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                            }
+                        }
+                        composable(Screen.Categories.route) {
+                            CategoryListScreen(viewModel = viewModel, { categoryId ->
+                                currentCategoryId = categoryId.toString()
+                                currentFeedId = ""
+                                navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
+                            }, { categoryId ->
+                                navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
+                            })
+                        }
+                        composable(
+                            route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
+                            arguments = listOf(
+                                navArgument("feedId") {
+                                    type = NavType.StringType; nullable = true
+                                },
+                                navArgument("categoryId") {
+                                    type = NavType.StringType; nullable = true
+                                }
+                            )) { backStackEntry ->
+                            currentFeedId = backStackEntry.arguments?.getString("feedId").toString()
+                            val feedId =
+                                backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
+                            val categoryId =
+                                backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
+                            EntryListScreen(viewModel, navController, feedId, categoryId)
+                        }
+                        composable(
+                            route = Screen.ArticleDetail.route + "?entryId={entryId}",
+                            arguments = listOf(navArgument("entryId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val entryId = backStackEntry.arguments?.getInt("entryId")
+                            if (entryId != null) {
+                                selectedScreen = Screen.ArticleDetail.route
+                                ArticleDetailScreen(viewModel, entryId, navController)
+                            } else {
+                                Log.d("MainActivity", "MainContent: Error while getting entryId")
+                            }
+                        }
+                        composable(Screen.TodayEntryList.route) {
+                            TodayEntryListScreen(viewModel, navController)
+                        }
+                        composable(
+                            route = "subFeed?categoryId={categoryId}",
+                            arguments = listOf(navArgument("categoryId") { type = NavType.IntType })
+                        ) { backStackEntry ->
+                            val categoryId = backStackEntry.arguments?.getInt("categoryId")
+                            categoryId?.let {
+                                SubFeedScreen(
+                                    viewModel = viewModel,
+                                    categoryId = it,
+                                    onFeedSelected = { feedId ->
+                                        currentFeedId = feedId.toString()
+                                        currentCategoryId = ""
+                                        navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 底部导航栏
+     *
+     * E-Ink 版本优化：
+     * - 减小高度（48dp vs 80dp）
+     * - 移除文本标签以减少刷新区域和视觉复杂度
+     * - 使用更小的图标
+     * - 使用纯白背景避免残影
+     */
+    @Composable
+    fun BottomNavigationBar(navController: NavController) {
+        NavigationBar(
+            // E-Ink 版本使用更小的高度
+            modifier = if (BuildConfig.IS_EINK)
+                Modifier.height(48.dp)
+            else
+                Modifier,
+            // E-Ink 版本使用纯白背景
+            containerColor = if (BuildConfig.IS_EINK)
+                androidx.compose.ui.graphics.Color.White
+            else
+                androidx.compose.material3.MaterialTheme.colorScheme.surface
+        ) {
+            val currentRoute =
+                navController.currentBackStackEntryAsState().value?.destination?.route
+            val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
+
+            items.forEach { screen ->
+                NavigationBarItem(
+                    // E-Ink 版本移除文本标签以节省空间和减少刷新
+                    label = if (BuildConfig.IS_EINK) null else {
+                        { Text(screen.label) }
+                    },
+                    selected = currentRoute == screen.route,
+                    onClick = {
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = screen.label,
+                            // E-Ink 版本使用更小的图标
+                            modifier = if (BuildConfig.IS_EINK)
+                                Modifier.size(20.dp)
+                            else
+                                Modifier,
+                            // E-Ink 版本使用黑白对比
+                            tint = if (BuildConfig.IS_EINK) {
+                                if (currentRoute == screen.route)
+                                    androidx.compose.ui.graphics.Color.Black
+                                else
+                                    androidx.compose.ui.graphics.Color.DarkGray
+                            } else {
+                                androidx.compose.material3.LocalContentColor.current
+                            }
+                        )
+                    }
+                )
             }
         }
     }
 }
 
-/**
- * 底部导航栏
- * 
- * E-Ink 版本优化：
- * - 减小高度（48dp vs 80dp）
- * - 移除文本标签以减少刷新区域和视觉复杂度
- * - 使用更小的图标
- * - 使用纯白背景避免残影
- */
 @Composable
-fun BottomNavigationBar(navController: NavController) {
-    NavigationBar(
-        // E-Ink 版本使用更小的高度
-        modifier = if (BuildConfig.IS_EINK)
-            Modifier.height(48.dp)
-        else
-            Modifier,
-        // E-Ink 版本使用纯白背景
-        containerColor = if (BuildConfig.IS_EINK)
-            androidx.compose.ui.graphics.Color.White
-        else
-            androidx.compose.material3.MaterialTheme.colorScheme.surface
-    ) {
-        val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-        val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
-
-        items.forEach { screen ->
-            NavigationBarItem(
-                // E-Ink 版本移除文本标签以节省空间和减少刷新
-                label = if (BuildConfig.IS_EINK) null else { { Text(screen.label) } },
-                selected = currentRoute == screen.route,
-                onClick = {
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                icon = { 
-                    Icon(
-                        imageVector = Icons.Default.Menu, 
-                        contentDescription = screen.label,
-                        // E-Ink 版本使用更小的图标
-                        modifier = if (BuildConfig.IS_EINK)
-                            Modifier.size(20.dp)
-                        else
-                            Modifier,
-                        // E-Ink 版本使用黑白对比
-                        tint = if (BuildConfig.IS_EINK) {
-                            if (currentRoute == screen.route)
-                                androidx.compose.ui.graphics.Color.Black
-                            else
-                                androidx.compose.ui.graphics.Color.DarkGray
-                        } else {
-                            androidx.compose.material3.LocalContentColor.current
-                        }
-                    )
-                }
-            )
-        }
-    }
+fun BottomNavigationBar(navController: NavHostController) {
+    TODO("Not yet implemented")
 }

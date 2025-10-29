@@ -465,6 +465,10 @@ private var cachedHtmlTemplate: String? = null
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
     val isDarkMode = (context.resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+
+    // 检测是否为平板设备
+    val isTablet = context.resources.configuration.screenWidthDp >= 600
+
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
@@ -475,17 +479,25 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
                 readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
             Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
+
+        // 平板设备加载额外的优化CSS
+        val tabletCss = if (isTablet) {
+            readAssetFile(context, "tablet_styles.css")
+        } else {
+            ""
+        }
+
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")
         }
 
-        // 构建HTML内容
+        // 构建HTML内容，为平板添加额外的CSS
         val htmlContent = cachedHtmlTemplate?.let { template ->
             cachedNormalizeCss?.let { normalizeCss ->
                 cachedCustomCss?.let { customCss ->
                     template
                         .replace("\$normalize_css", normalizeCss)
-                        .replace("\$custom_css", customCss)
+                        .replace("\$custom_css", "$customCss\n$tabletCss")
                         .replace("\$content", content)
                 }
             }
