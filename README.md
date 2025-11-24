@@ -1,7 +1,7 @@
 # MiniRead
 
-![Build Debug](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20Debug%20APKs/badge.svg)
-![Release](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
+![Build Debug](https://github.com/BonexP/miniread/workflows/Build%20Debug%20APKs/badge.svg)
+![Release](https://github.com/BonexP/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
 
 ### 项目简介
 

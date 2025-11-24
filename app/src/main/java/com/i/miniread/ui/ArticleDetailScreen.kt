@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.i.miniread.util.DataStoreManager
+import com.i.miniread.util.DomainHelper
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -211,12 +212,6 @@ fun ArticleActionsBar(
             }
         }
 
-//todo 刷新视图
-//        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
-//            Log.d("ArticleDetailScreen", "refresh webview")
-//
-//
-//        }
         Spacer(modifier = Modifier.weight(1f))
         selectedEntry?.let { entry ->
             //收藏按钮
@@ -246,13 +241,6 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 }
 
 private const val isOutputHtmlContent = false
-private fun Context.isTargetDomain(): Boolean {
-    // 使用 runBlocking 同步读取 DataStore 数据
-    return runBlocking {
-        val baseUrl = DataStoreManager.getBaseUrl()
-        baseUrl.contains("pi.lifeo3.icu", true)
-    }
-}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -263,8 +251,9 @@ fun ArticleWebView(
     onScrollToBottom: () -> Unit
 ) {
     val context = LocalContext.current
-    val shouldInterceptByDomain = context.isTargetDomain()
-    val shouldInterceptRequests = shouldInterceptByDomain && feedId in listOf(26, 38, 52, 51)
+    val shouldInterceptByDomain = DomainHelper.isTargetDomain(context)
+    val advancedFeedIds = DomainHelper.getAdvancedFeedIds()
+    val shouldInterceptRequests = shouldInterceptByDomain && feedId in advancedFeedIds
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
     val contentHeightState = remember { mutableStateOf<Float?>(null) }

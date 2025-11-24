@@ -70,17 +70,11 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
-     * 重新加载文章内容
-     * TODO: 实现文章内容的刷新功能
-     * 可能的实现方案：
-     * 1. 重新从 API 获取文章内容
-     * 2. 清除 WebView 缓存并重新加载
-     * 3. 刷新文章的元数据（标题、作者、发布时间等）
+     * Reload article content by entry ID
+     * This method re-fetches the article from the API to get the latest content
      */
     fun reloadArticleContent(entryId: Int) {
         Log.d("MinifluxViewModel", "reloadArticleContent called for entry: $entryId")
-        // TODO: 实现文章内容刷新逻辑
-        // 当前可以先简单地重新加载文章
         loadEntryById(entryId)
     }
 
