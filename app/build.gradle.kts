@@ -3,9 +3,9 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
 }
-val versionname by extra("dev")
-val versioncode by extra("0.3.1")
-val versionnumber by extra(30)
+val versionname by extra("release")
+val versioncode by extra("1.0.0")
+val versionnumber by extra(100)
 
 android {
     namespace = "com.i.miniread"
@@ -87,7 +87,6 @@ android {
             isDebuggable = false
             isJniDebuggable = false
             isRenderscriptDebuggable = false
-            versionNameSuffix = "alpha"
             }
         getByName("debug") {
             isDebuggable = true
