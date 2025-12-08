@@ -12,17 +12,22 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,10 +35,6 @@ import androidx.compose.ui.unit.dp
 import com.i.miniread.BuildConfig
 import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.setValue
 
 @Composable
 fun CategoryListScreen(
@@ -99,8 +100,18 @@ fun CategoryItem(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("标记分类为已读") },
-            text = { Text("确定要将${category.title}分类下的所有条目标记为已读吗？此操作不可撤销。") },
+            title = {
+                Text(
+                    "标记分类为已读",
+                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    "确定要将${category.title}分类下的所有条目标记为已读吗？此操作不可撤销。",
+                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -108,15 +119,31 @@ fun CategoryItem(
                         onMarkAsRead() // 执行实际标记操作
                     }
                 ) {
-                    Text("确认")
+                    Text(
+                        "确认",
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
+                    )
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showConfirmDialog = false }
                 ) {
-                    Text("取消")
+                    Text(
+                        "取消",
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
+                    )
                 }
+            },
+            containerColor = if (BuildConfig.IS_EINK) Color.White else AlertDialogDefaults.containerColor,
+            modifier = if (BuildConfig.IS_EINK) {
+                Modifier.border(
+                    width = 2.dp,
+                    color = Color.Black,
+                    shape = AlertDialogDefaults.shape
+                )
+            } else {
+                Modifier
             }
         )
     }

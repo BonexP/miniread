@@ -3,7 +3,6 @@ package com.i.miniread.ui
 import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,11 +16,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -42,8 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.i.miniread.BuildConfig
 import com.i.miniread.network.Feed
@@ -220,8 +215,18 @@ fun FeedItem(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("标记订阅源为已读") },
-            text = { Text("确定要将${feed.title}订阅源的所有条目标记为已读吗？此操作不可撤销。") },
+            title = {
+                Text(
+                    "标记订阅源为已读",
+                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    "确定要将${feed.title}订阅源的所有条目标记为已读吗？此操作不可撤销。",
+                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -229,15 +234,31 @@ fun FeedItem(
                         onMarkAsRead()
                     }
                 ) {
-                    Text("确认")
+                    Text(
+                        "确认",
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
+                    )
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showConfirmDialog = false }
                 ) {
-                    Text("取消")
+                    Text(
+                        "取消",
+                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
+                    )
                 }
+            },
+            containerColor = if (BuildConfig.IS_EINK) Color.White else AlertDialogDefaults.containerColor,
+            modifier = if (BuildConfig.IS_EINK) {
+                Modifier.border(
+                    width = 2.dp,
+                    color = Color.Black,
+                    shape = AlertDialogDefaults.shape
+                )
+            } else {
+                Modifier
             }
         )
     }
