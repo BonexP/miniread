@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Card
@@ -140,6 +141,12 @@ fun FeedListScreen(
                                     sortedFeeds[index + 1] = temp
                                 }
                             } else null,
+                            onPinToTop = if (index > 0) {
+                                {
+                                    val feed = sortedFeeds.removeAt(index)
+                                    sortedFeeds.add(0, feed)
+                                }
+                            } else null,
                             onClick = {
                                 if (!isEditMode) {
                                     Log.d("FeedListScreen", "Feed Using: $feed")
@@ -206,6 +213,7 @@ fun FeedItem(
     isEditMode: Boolean = false,
     onMoveUp: (() -> Unit)? = null,
     onMoveDown: (() -> Unit)? = null,
+    onPinToTop: (() -> Unit)? = null,
     onClick: () -> Unit,
     onMarkAsRead: () -> Unit
 ) {
@@ -314,6 +322,14 @@ fun FeedItem(
                                     contentDescription = "Move Down"
                                 )
 
+                            }
+                        }
+                        if (onPinToTop != null) {
+                            IconButton(onClick = onPinToTop) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = "Pin to Top"
+                                )
                             }
                         }
                     }
