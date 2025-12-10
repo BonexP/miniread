@@ -10,10 +10,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -94,53 +95,54 @@ fun CategoryItem(
     onMarkAsRead: () -> Unit,
     onShowSubscriptions: () -> Unit
 ) {
-    var showConfirmDialog by remember { mutableStateOf(false) } // 新增对话框状态
+    var showConfirmDialog by remember { mutableStateOf(false) }
 
-    // 新增确认对话框
     if (showConfirmDialog) {
+        val eInkButtonColor =
+            if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
             title = {
-                Text(
-                    "标记分类为已读",
-                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
-                )
+                Text("标记分类为已读")
             },
             text = {
                 Text(
-                    "确定要将${category.title}分类下的所有条目标记为已读吗？此操作不可撤销。",
-                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                    "确定要将${category.title}分类下的所有条目标记为已读吗？此操作不可撤销。"
                 )
             },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showConfirmDialog = false
-                        onMarkAsRead() // 执行实际标记操作
-                    }
+                        onMarkAsRead()
+                    }, colors = ButtonDefaults.textButtonColors(
+                        contentColor = eInkButtonColor
+                    )
                 ) {
                     Text(
                         "确认",
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showConfirmDialog = false }
+                    onClick = { showConfirmDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = eInkButtonColor
+                    )
                 ) {
                     Text(
                         "取消",
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                 }
             },
             containerColor = if (BuildConfig.IS_EINK) Color.White else AlertDialogDefaults.containerColor,
+            tonalElevation = if (BuildConfig.IS_EINK) 0.dp else AlertDialogDefaults.TonalElevation,
+            textContentColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+            titleContentColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface,
             modifier = if (BuildConfig.IS_EINK) {
                 Modifier.border(
-                    width = 2.dp,
-                    color = Color.Black,
-                    shape = AlertDialogDefaults.shape
+                    width = 2.dp, color = Color.Black, shape = AlertDialogDefaults.shape
                 )
             } else {
                 Modifier
@@ -203,7 +205,7 @@ fun CategoryItem(
                 // Button to show subscriptions with icon
                 IconButton(onClick = onShowSubscriptions) {
                     Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Show Subscriptions"
                     )
                 }

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -111,18 +112,13 @@ fun FeedListScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = 16.dp,
-                    bottom = 88.dp
+                    start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp
                 )
             ) {
                 if (isEditMode) {
                     // 编辑模式：使用 itemsIndexed 并且直接操作 sortedFeeds
                     itemsIndexed(
-                        items = sortedFeeds.toList(),
-                        key = { _, feed -> feed.id }
-                    ) { index, feed ->
+                        items = sortedFeeds.toList(), key = { _, feed -> feed.id }) { index, feed ->
                         FeedItem(
                             feed = feed,
                             unreadCount = feedUnreadCounts[feed.id] ?: 0,
@@ -155,16 +151,16 @@ fun FeedListScreen(
                             },
                             onMarkAsRead = {
                                 viewModel.markFeedAsRead(feed.id)
-                                Log.d("FeedList", "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!")
-                            }
-                        )
+                                Log.d(
+                                    "FeedList",
+                                    "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!"
+                                )
+                            })
                     }
                 } else {
                     // 正常模式：只显示有未读的订阅源
                     items(
-                        items = displayedFeeds,
-                        key = { feed -> feed.id }
-                    ) { feed ->
+                        items = displayedFeeds, key = { feed -> feed.id }) { feed ->
                         FeedItem(
                             feed = feed,
                             unreadCount = feedUnreadCounts[feed.id] ?: 0,
@@ -175,9 +171,11 @@ fun FeedListScreen(
                             },
                             onMarkAsRead = {
                                 viewModel.markFeedAsRead(feed.id)
-                                Log.d("FeedList", "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!")
-                            }
-                        )
+                                Log.d(
+                                    "FeedList",
+                                    "FeedListScreen: invoke onMarkAsRead in FeedlistScreen!"
+                                )
+                            })
                     }
                 }
             }
@@ -193,8 +191,7 @@ fun FeedListScreen(
                     }
                 }
                 isEditMode = !isEditMode
-            },
-            modifier = Modifier
+            }, modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(16.dp)
         ) {
@@ -221,18 +218,16 @@ fun FeedItem(
     var showConfirmDialog by remember { mutableStateOf(false) }
 
     if (showConfirmDialog) {
+        val eInkButtonColor =
+            if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
             title = {
-                Text(
-                    "标记订阅源为已读",
-                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
-                )
+                Text("标记订阅源为已读")
             },
             text = {
                 Text(
-                    "确定要将${feed.title}订阅源的所有条目标记为已读吗？此操作不可撤销。",
-                    color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface
+                    "确定要将${feed.title}订阅源的所有条目标记为已读吗？此操作不可撤销。"
                 )
             },
             confirmButton = {
@@ -240,30 +235,34 @@ fun FeedItem(
                     onClick = {
                         showConfirmDialog = false
                         onMarkAsRead()
-                    }
+                    }, colors = ButtonDefaults.textButtonColors(
+                        contentColor = eInkButtonColor
+                    )
                 ) {
                     Text(
                         "确认",
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                 }
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showConfirmDialog = false }
+                    onClick = { showConfirmDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = eInkButtonColor
+                    )
                 ) {
                     Text(
                         "取消",
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                 }
             },
             containerColor = if (BuildConfig.IS_EINK) Color.White else AlertDialogDefaults.containerColor,
+            tonalElevation = if (BuildConfig.IS_EINK) 0.dp else AlertDialogDefaults.TonalElevation,
+            textContentColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+            titleContentColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface,
             modifier = if (BuildConfig.IS_EINK) {
                 Modifier.border(
-                    width = 2.dp,
-                    color = Color.Black,
-                    shape = AlertDialogDefaults.shape
+                    width = 2.dp, color = Color.Black, shape = AlertDialogDefaults.shape
                 )
             } else {
                 Modifier
@@ -285,9 +284,7 @@ fun FeedItem(
             .then(
                 if (BuildConfig.IS_EINK) {
                     Modifier.border(
-                        width = 2.dp,
-                        color = Color.Black,
-                        shape = MaterialTheme.shapes.medium
+                        width = 2.dp, color = Color.Black, shape = MaterialTheme.shapes.medium
                     )
                 } else {
                     Modifier
@@ -301,8 +298,7 @@ fun FeedItem(
                 .padding(16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically
             ) {
                 // 编辑模式下显示拖拽手柄
                 if (isEditMode) {
@@ -344,7 +340,9 @@ fun FeedItem(
                     Text(
                         text = if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.7f
+                        ),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -353,8 +351,7 @@ fun FeedItem(
                 if (!isEditMode) {
                     IconButton(onClick = { showConfirmDialog = true }) {
                         Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = "Mark as Read"
+                            imageVector = Icons.Default.Done, contentDescription = "Mark as Read"
                         )
                     }
                 }
