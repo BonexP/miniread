@@ -11,26 +11,32 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.twotone.Star
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +49,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -124,61 +132,50 @@ fun ArticleActionsBar(
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
+
+    // 定义 E-Ink 下的修饰符：纯白背景、去灰底、加顶部分割线
+    val barModifier = if (com.i.miniread.BuildConfig.IS_EINK) {
+        Modifier
+            .height(48.dp) // 紧凑高度
+            .drawBehind {
+                // 绘制顶部分割线
+                drawLine(
+                    color = androidx.compose.ui.graphics.Color.Black,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+    } else {
+        Modifier
+    }
+
     BottomAppBar(
-        // E-Ink 版本使用纯白背景避免残影
+        modifier = barModifier,
+        // 关键：E-Ink 模式下纯白背景
         containerColor = if (com.i.miniread.BuildConfig.IS_EINK)
             androidx.compose.ui.graphics.Color.White
         else
-            androidx.compose.material3.MaterialTheme.colorScheme.surface
+            MaterialTheme.colorScheme.surface,
+        // 关键：E-Ink 模式下去除 Elevation 导致的灰色滤镜
+        tonalElevation = if (com.i.miniread.BuildConfig.IS_EINK) 0.dp else BottomAppBarDefaults.ContainerElevation,
+        // 移除默认的 Padding，让我们自己控制布局更紧凑
+        contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
-        // 标记为已读按钮
-        ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
-            Log.d("ArticleDetailScreen", "Mark Entry as Read")
-            viewModel.markEntryAsRead(entryId)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Marked as read")
-            }
-        // 标记为未读按钮
-        }
-        ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
-            viewModel.markEntryAsUnread(entryId)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar("Marked as unread")
-            }
-        }
-        //分享按钮
-        ActionButton(icon = Icons.Default.Share, description = "Share") {
-            Log.d("ArticleDetailScreen", "Share Entry")
-            selectedEntry?.let {
-                val shareIntent = Intent.createChooser(
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, it.title)
-                        putExtra(Intent.EXTRA_TEXT, "${it.title}\n${it.url}")
-                    },
-                    null
-                )
-                context.startActivity(shareIntent)
-            }
-        }
-        //外部打开按钮
-        ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
-            Log.d("ArticleDetailScreen", "Open Entry External")
-            selectedEntry?.let {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
-                context.startActivity(intent)
+        // 使用 Row 来平均分布按钮，实现“紧凑但整齐”的效果
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween, // 或者 SpaceEvenly
+            verticalAlignment = Alignment.CenterVertically
+    ) {
 
-            }
-        }
-        //上一篇按钮
-        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous") {
+            // --- 导航组 ---
+
+            // 上一篇
+            EInkAwareIconButton(
+                onClick = {
             viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
-                Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
-
-                // 使用查询参数格式导航
                 navController.navigate("articleDetail?entryId=$prevId") {
-
-                    // 保持导航栈整洁
                     popUpTo("articleDetail?entryId=$prevId") {
                         inclusive = true
                     }
@@ -189,55 +186,131 @@ fun ArticleActionsBar(
                     snackbarHostState.showSnackbar("已经是第一篇了")
                 }
             }
-        }
-        //下一篇按钮
-        ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
+                },
+                icon = Icons.AutoMirrored.Filled.ArrowBack, // 使用 AutoMirrored 适应 RTL
+                description = "Previous"
+            )
+
+            // 下一篇
+            EInkAwareIconButton(
+                onClick = {
             viewModel.navigateToNextEntry(entryId)?.let { nextId ->
-                Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
-
-                // 使用查询参数格式导航
                 navController.navigate("articleDetail?entryId=$nextId") {
-
-                    // 保持导航栈整洁
                     popUpTo("articleDetail?entryId=$nextId") {
                         inclusive = true
                     }
                     launchSingleTop = true
                 }
             } ?: run {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar("已经是最后一篇了")
+                        coroutineScope.launch { snackbarHostState.showSnackbar("已经是最后一篇了") }
                 }
-            }
-        }
+                },
+                icon = Icons.AutoMirrored.Filled.ArrowForward,
+                description = "Next"
+            )
 
-//todo 刷新视图
-//        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
-//            Log.d("ArticleDetailScreen", "refresh webview")
-//
-//
-//        }
-        Spacer(modifier = Modifier.weight(1f))
+            // --- 状态组 ---
+
+            // 标记已读
+            EInkAwareIconButton(
+                onClick = {
+                    viewModel.markEntryAsRead(entryId)
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Marked as read") }
+                },
+                icon = Icons.Default.CheckCircle,
+                description = "Mark Read"
+            )
+
+            // 标记未读 (如果需要保留的话)
+            EInkAwareIconButton(
+                onClick = {
+                    viewModel.markEntryAsUnread(entryId)
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Marked as unread") }
+                },
+                icon = Icons.Outlined.CheckCircle,
+                description = "Mark Unread"
+            )
+
+            // --- 系统/功能组 ---
+
+            // 收藏 (原本是 Switch，现在改为图标切换，更紧凑)
         selectedEntry?.let { entry ->
-            //收藏按钮
             val isBookmarked = entry.starred
-            Switch(
+                IconToggleButton(
                 checked = isBookmarked,
                 onCheckedChange = { checked ->
                     viewModel.toggleStarred(entry.id, checked)
                     coroutineScope.launch {
-                        snackbarHostState.showSnackbar(if (checked) "Bookmarked" else "Removed from bookmarks")
+                            snackbarHostState.showSnackbar(if (checked) "Bookmarked" else "Removed bookmark")
+                        }
+                    }
+                ) {
+                    Icon(
+                        // 选中是用实心星，未选中用空心星
+                        imageVector = if (isBookmarked) Icons.Filled.Star else Icons.TwoTone.Star,
+                        contentDescription = "Bookmark",
+                        // E-Ink 颜色处理
+                        tint = if (com.i.miniread.BuildConfig.IS_EINK) {
+                            androidx.compose.ui.graphics.Color.Black // 墨水屏始终黑色，靠实心/空心区分
+                        } else {
+                             if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        }
+                    )
+                }
+            }
+
+            // 分享
+            EInkAwareIconButton(
+                onClick = {
+                    selectedEntry?.let {
+                        val shareIntent = Intent.createChooser(
+                            Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_SUBJECT, it.title)
+                                putExtra(Intent.EXTRA_TEXT, "${it.title}\n${it.url}")
+                            }, null
+                        )
+                        context.startActivity(shareIntent)
                     }
                 },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+                icon = Icons.Default.Share,
+                description = "Share"
                 )
+
+            // 外部打开
+            EInkAwareIconButton(
+                onClick = {
+                    selectedEntry?.let {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
+                        context.startActivity(intent)
+                    }
+                },
+                icon = Icons.Default.ExitToApp,
+                description = "External"
             )
         }
     }
 }
 
+// 封装一个简单的 Helper 组件来处理颜色逻辑，减少重复代码
+@Composable
+private fun EInkAwareIconButton(
+    onClick: () -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String
+) {
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            // E-Ink 模式下强制使用纯黑，普通模式使用主题色
+            tint = if (com.i.miniread.BuildConfig.IS_EINK)
+                androidx.compose.ui.graphics.Color.Black
+            else
+                MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
 @Composable
 fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick) {

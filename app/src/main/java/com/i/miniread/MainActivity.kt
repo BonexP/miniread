@@ -227,6 +227,7 @@ fun MainContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
+
                     title = { 
                         Text(
                             stringResource(id = R.string.app_name),
@@ -321,23 +322,31 @@ fun MainContent(
                                 // E-Ink 版本使用更小的图标
                                 modifier = if (BuildConfig.IS_EINK)
                                     androidx.compose.ui.Modifier.size(18.dp)
+
                                 else
                                     androidx.compose.ui.Modifier
                             )
                         }
                     },
                     // E-Ink 版本使用更小的高度
-                    modifier = if (BuildConfig.IS_EINK)
+                    modifier = if (BuildConfig.IS_EINK) {
                         androidx.compose.ui.Modifier.height(40.dp)
+//                        Modifier.padding(paddingValues = PaddingValues(bottom = 0.dp))
+//                        Modifier.padding(horizontal = 0.dp)
+
+                    }
                     else
-                        androidx.compose.ui.Modifier
+                        androidx.compose.ui.Modifier,
                 )
+
             },
             bottomBar = {
                 if (shouldShowBottomBar) {
                     BottomNavigationBar(navController = navController)
                 }
-            }
+            },
+
+
         ) { innerPadding ->
             Surface(modifier = Modifier.padding(innerPadding)) {
                 NavHost(
@@ -413,9 +422,8 @@ fun MainContent(
                                 }
                             )
                         }
+
                     }
-
-
                 }
             }
         }
