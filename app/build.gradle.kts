@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 val versionname by extra("dev")
-val versioncode by extra("0.3.3")
-val versionnumber by extra(32)
+val versioncode by extra("0.3.1")
+val versionnumber by extra(30)
 
 android {
     namespace = "com.i.miniread"
@@ -131,6 +131,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
     implementation(libs.adapter.guava)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
