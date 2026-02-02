@@ -1,5 +1,6 @@
 package com.i.miniread.ui.adaptive
 
+import android.util.Log
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -12,6 +13,8 @@ import androidx.compose.ui.platform.LocalConfiguration
  */
 @Stable
 object AdaptiveLayoutHelper {
+
+    private const val TAG = "AdaptiveLayoutHelper"
 
     /**
      * 判断当前设备是否为平板
@@ -55,7 +58,9 @@ object AdaptiveLayoutHelper {
      * 根据 WindowWidthSizeClass 判断布局类型
      */
     fun shouldUseNavigationRail(windowSizeClass: WindowWidthSizeClass): Boolean {
-        return windowSizeClass >= WindowWidthSizeClass.Medium
+        val shouldUse = windowSizeClass >= WindowWidthSizeClass.Medium
+        Log.d(TAG, "Checking adaptive layout: WidthClass=$windowSizeClass, UseRail=$shouldUse")
+        return shouldUse
     }
 
     /**
@@ -90,4 +95,3 @@ enum class ContentType {
     SINGLE_PANE,  // 单栏布局
     DUAL_PANE     // 双栏布局
 }
-

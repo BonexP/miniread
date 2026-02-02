@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -39,7 +40,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -230,6 +230,11 @@ fun MainContent(
         // 判断是否应该使用侧边导航栏（平板横屏模式）
         val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
 
+        LaunchedEffect(windowSizeClass) {
+            Log.d("MainActivity", "WindowSizeClass changed: $windowSizeClass")
+            Log.d("MainActivity", "Should use NavigationRail: $useNavigationRail")
+        }
+
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
@@ -347,17 +352,17 @@ fun MainContent(
                                 contentDescription = "刷新",
                                 // E-Ink 版本使用更小的图标
                                 modifier = if (BuildConfig.IS_EINK)
-                                    androidx.compose.ui.Modifier.size(18.dp)
+                                    Modifier.size(18.dp)
                                 else
-                                    androidx.compose.ui.Modifier
+                                    Modifier
                             )
                         }
                     },
                     // E-Ink 版本使用更小的高度
                     modifier = if (BuildConfig.IS_EINK)
-                        androidx.compose.ui.Modifier.height(40.dp)
+                        Modifier.height(40.dp)
                     else
-                        androidx.compose.ui.Modifier
+                        Modifier
                 )
             },
             bottomBar = {
@@ -529,77 +534,81 @@ fun MainContent(
             }
         }
     }
-
-    /**
-     * 底部导航栏
-     *
-     * E-Ink 版本优化：
-     * - 减小高度（48dp vs 80dp）
-     * - 移除文本标签以减少刷新区域和视觉复杂度
-     * - 使用更小的图标
-     * - 使用纯白背景避免残影
-     */
-    @Composable
-    fun BottomNavigationBar(navController: NavController) {
-        NavigationBar(
-            // E-Ink 版本使用更小的高度
-            modifier = if (BuildConfig.IS_EINK)
-                Modifier.height(48.dp)
-            else
-                Modifier,
-            // E-Ink 版本使用纯白背景
-            containerColor = if (BuildConfig.IS_EINK)
-                androidx.compose.ui.graphics.Color.White
-            else
-                androidx.compose.material3.MaterialTheme.colorScheme.surface
-        ) {
-            val currentRoute =
-                navController.currentBackStackEntryAsState().value?.destination?.route
-            val items = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
-
-            items.forEach { screen ->
-                NavigationBarItem(
-                    // E-Ink 版本移除文本标签以节省空间和减少刷新
-                    label = if (BuildConfig.IS_EINK) null else {
-                        { Text(screen.label) }
-                    },
-                    selected = currentRoute == screen.route,
-                    onClick = {
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = screen.label,
-                            // E-Ink 版本使用更小的图标
-                            modifier = if (BuildConfig.IS_EINK)
-                                Modifier.size(20.dp)
-                            else
-                                Modifier,
-                            // E-Ink 版本使用黑白对比
-                            tint = if (BuildConfig.IS_EINK) {
-                                if (currentRoute == screen.route)
-                                    androidx.compose.ui.graphics.Color.Black
-                                else
-                                    androidx.compose.ui.graphics.Color.DarkGray
-                            } else {
-                                androidx.compose.material3.LocalContentColor.current
-                            }
-                        )
-                    }
-                )
-            }
-        }
-    }
 }
 
+/**
+ * 底部导航栏
+ *
+ * E-Ink 版本优化：
+ * - 减小高度（48dp vs 80dp）
+ * - 移除文本标签以减少刷新区域和视觉复杂度
+ * - 使用更小的图标
+ * - 使用纯白背景避免残影
+ */
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
-    TODO("Not yet implemented")
+fun BottomNavigationBar(navController: NavController) {
+    NavigationBar(
+        // E-Ink 版本使用更小的高度
+        modifier = if (BuildConfig.IS_EINK)
+            Modifier.height(48.dp)
+        else
+            Modifier,
+        // E-Ink 版本使用纯白背景
+        containerColor = if (BuildConfig.IS_EINK)
+            androidx.compose.ui.graphics.Color.White
+        else
+            androidx.compose.material3.MaterialTheme.colorScheme.surface
+    ) {
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentRoute = navBackStackEntry?.destination?.route
+
+        val screens = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
+
+        screens.forEach { screen ->
+            NavigationBarItem(
+                // E-Ink 版本移除文本标签以节省空间和减少刷新
+                label = if (BuildConfig.IS_EINK) null else {
+                    { Text(screen.label) }
+                },
+                selected = currentRoute == screen.route,
+                onClick = {
+                    navController.navigate(screen.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = {
+                    // Choose icon
+                    val iconVector = when(screen) {
+                            Screen.Feeds -> Icons.Default.Menu
+                            Screen.TodayEntryList -> Icons.Default.DateRange
+                            Screen.Categories -> Icons.Default.Menu
+                            else -> Icons.Default.Menu
+                    }
+
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = screen.label,
+                        // E-Ink 版本使用更小的图标
+                        modifier = if (BuildConfig.IS_EINK)
+                            Modifier.size(20.dp)
+                        else
+                            Modifier,
+                        // E-Ink 版本使用黑白对比
+                        tint = if (BuildConfig.IS_EINK) {
+                            if (currentRoute == screen.route)
+                                androidx.compose.ui.graphics.Color.Black
+                            else
+                                androidx.compose.ui.graphics.Color.DarkGray
+                        } else {
+                            androidx.compose.material3.LocalContentColor.current
+                        }
+                    )
+                }
+            )
+        }
+    }
 }
