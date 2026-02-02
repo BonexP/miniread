@@ -21,8 +21,11 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,6 +39,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -122,7 +128,7 @@ class MainActivity : ComponentActivity() {
         // 仅在 E-Ink 版本启用音量键翻页
         if (BuildConfig.IS_EINK) {
             Log.d("MainActivity", "Key pressed: $keyCode")
-            
+
             return when (keyCode) {
                 KeyEvent.KEYCODE_VOLUME_UP -> {
                     // 尝试获取当前焦点的 WebView
@@ -138,7 +144,7 @@ class MainActivity : ComponentActivity() {
                         super.onKeyDown(keyCode, event)
                     }
                 }
-                
+
                 KeyEvent.KEYCODE_VOLUME_DOWN -> {
                     // 尝试获取当前焦点的 WebView
                     val webView = currentFocus as? WebView
@@ -153,14 +159,14 @@ class MainActivity : ComponentActivity() {
                         super.onKeyDown(keyCode, event)
                     }
                 }
-                
+
                 else -> {
                     // 其他按键保持默认行为
                     super.onKeyDown(keyCode, event)
                 }
             }
         }
-        
+
         // 标准版本保持默认按键行为
         return super.onKeyDown(keyCode, event)
     }
@@ -238,6 +244,7 @@ fun MainContent(
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
+
                     title = {
                         Text(
                             stringResource(id = R.string.app_name),
@@ -359,18 +366,25 @@ fun MainContent(
                         }
                     },
                     // E-Ink 版本使用更小的高度
-                    modifier = if (BuildConfig.IS_EINK)
+                    modifier = if (BuildConfig.IS_EINK) {
                         Modifier.height(40.dp)
+//                        Modifier.padding(paddingValues = PaddingValues(bottom = 0.dp))
+//                        Modifier.padding(horizontal = 0.dp)
+
+                    }
                     else
-                        Modifier
+                        Modifier,
                 )
+
             },
             bottomBar = {
                 // 只在手机模式下显示底部导航栏
                 if (shouldShowBottomBar && !useNavigationRail) {
                     BottomNavigationBar(navController = navController)
                 }
-            }
+            },
+
+
         ) { innerPadding ->
             // 平板横屏模式：使用侧边导航栏 + 内容区域
             if (useNavigationRail) {
@@ -528,7 +542,7 @@ fun MainContent(
                                     }
                                 )
                             }
-                        }
+
                     }
                 }
             }
@@ -547,17 +561,28 @@ fun MainContent(
  */
 @Composable
 fun BottomNavigationBar(navController: NavController) {
+    // 定义 E-Ink 模式下的高度和修饰符
+    val navModifier = if (BuildConfig.IS_EINK) {
+        Modifier
+            .height(56.dp) // 建议至少 56dp，48dp 对触摸不太友好，且容易切掉图标
+            .drawBehind { // E-INK 专用：画一条顶部分割线，增加层次感
+                drawLine(
+                    color = Color.Black,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+    } else {
+        Modifier
+    }
+
     NavigationBar(
-        // E-Ink 版本使用更小的高度
-        modifier = if (BuildConfig.IS_EINK)
-            Modifier.height(48.dp)
-        else
-            Modifier,
-        // E-Ink 版本使用纯白背景
-        containerColor = if (BuildConfig.IS_EINK)
-            androidx.compose.ui.graphics.Color.White
-        else
-            androidx.compose.material3.MaterialTheme.colorScheme.surface
+        modifier = navModifier,
+        // 1. 关键：设置纯白背景
+        containerColor = if (BuildConfig.IS_EINK) Color.White else MaterialTheme.colorScheme.surface,
+        // 2. 关键：移除 Elevation 带来的灰色遮罩
+        tonalElevation = if (BuildConfig.IS_EINK) 0.dp else NavigationBarDefaults.Elevation
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
@@ -565,12 +590,13 @@ fun BottomNavigationBar(navController: NavController) {
         val screens = listOf(Screen.Feeds, Screen.TodayEntryList, Screen.Categories)
 
         screens.forEach { screen ->
+            val isSelected = currentRoute == screen.route
             NavigationBarItem(
-                // E-Ink 版本移除文本标签以节省空间和减少刷新
+                // E-Ink 模式下不显示 label，或者你可以选择始终不显示
                 label = if (BuildConfig.IS_EINK) null else {
                     { Text(screen.label) }
                 },
-                selected = currentRoute == screen.route,
+                selected = isSelected,
                 onClick = {
                     navController.navigate(screen.route) {
                         popUpTo(navController.graph.startDestinationId) {
@@ -590,24 +616,28 @@ fun BottomNavigationBar(navController: NavController) {
                     }
 
                     Icon(
-                        imageVector = iconVector,
+                        imageVector = iconVector,// 注意：这里你应该换成 screen.icon
                         contentDescription = screen.label,
-                        // E-Ink 版本使用更小的图标
-                        modifier = if (BuildConfig.IS_EINK)
-                            Modifier.size(20.dp)
-                        else
-                            Modifier,
-                        // E-Ink 版本使用黑白对比
-                        tint = if (BuildConfig.IS_EINK) {
-                            if (currentRoute == screen.route)
-                                androidx.compose.ui.graphics.Color.Black
-                            else
-                                androidx.compose.ui.graphics.Color.DarkGray
-                        } else {
-                            androidx.compose.material3.LocalContentColor.current
-                        }
+                        modifier = if (BuildConfig.IS_EINK) Modifier.size(24.dp) else Modifier,
+                        // 注意：这里不需要手动设置 tint，下面 colors 属性会自动处理
                     )
-                }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    // --- E-INK 配色核心逻辑 ---
+
+                    // 3. 选中图标：纯黑
+                    selectedIconColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSecondaryContainer,
+
+                    // 4. 未选中图标：深灰/浅黑（保证对比度）
+                    unselectedIconColor = if (BuildConfig.IS_EINK) Color.Gray else MaterialTheme.colorScheme.onSurfaceVariant,
+
+                    // 5. 关键优化：将指示器背景设为透明！
+                    // 避免墨水屏出现一大块浅灰色的色块，那非常难看且容易留残影
+                    indicatorColor = if (BuildConfig.IS_EINK) Color.Transparent else MaterialTheme.colorScheme.secondaryContainer,
+
+                    selectedTextColor = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSurface,
+                    unselectedTextColor = if (BuildConfig.IS_EINK) Color.Gray else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
     }
