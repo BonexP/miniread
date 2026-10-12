@@ -1,9 +1,9 @@
-# MiniRead v1.0.1
+# MiniRead v1.0.2
 
 MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS 服务 Android 客户端。
 
-- **版本**：v1.0.1（versionCode 101）
-- **Tag**：`v1.0.1`
+- **版本**：v1.0.2（versionCode 102）
+- **Tag**：`v1.0.2`
 - **渠道**：GitHub Releases（仅此渠道分发）
 
 ## 下载
@@ -12,10 +12,21 @@ MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS �
 
 | 变体 | APK 文件 | applicationId | 适用设备 |
 |------|----------|---------------|----------|
-| Standard（标准版） | `MiniRead-standard-v1.0.1.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
-| E-Ink（墨水屏版） | `MiniRead-eink-v1.0.1.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
+| Standard（标准版） | `MiniRead-standard-v1.0.2.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
+| E-Ink（墨水屏版） | `MiniRead-eink-v1.0.2.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
 
-## 本版新增（1.0.1）
+## 本版修复（1.0.2）
+
+- **中英文覆盖补全**：修复多个页面把用户可见文案硬编码在代码中造成的语言错乱（中文设备显示英文、英文设备显示中文）：
+  - 登录页（输入框标签、登录按钮、校验提示）
+  - 分类列表页（「标记分类为已读」确认对话框、未读计数）
+  - 条目列表页（空列表占位、无标题）
+  - 文章详情页（加载提示、底部操作栏 6 个按钮的无障碍描述、操作反馈提示）
+  - 底部导航栏与**平板侧边导航栏**的标签、刷新按钮的无障碍描述
+- **资源结构修正**：`standard` / `eink` 两个产品变体的字符串资源原先把**中文放在默认目录**，导致英文设备也显示中文；现拆分为 `values`（英文）+ `values-zh`（中文）两套。
+- 新增 38 个字符串资源，英文与中文的 key 名严格一致。
+
+## 1.0.1 内容
 
 - **Agent 文档**：新增 `AGENTS.md`，说明项目结构、模块职责、常见任务定位路径、开发约定与禁区。
 - **定向增强改为可配置**：目标域名拦截、feed 白名单与站点 Referer 规则不再写死在代码里，改为在**隐藏设置页**自行配置（**连续点击顶栏标题 7 次**进入），支持导出 / 导入配置文本。公开版本默认不做任何定向处理。
@@ -46,6 +57,7 @@ MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS �
 - 暂无推送通知。
 - 未接入墨水屏厂商 SDK（ONYX / 博阅等）；E-Ink 版本通过高对比配色与禁用动画进行优化。
 - 隐藏设置页的配置**不会随云备份恢复**（备份规则排除了 DataStore），换机 / 重装后请用「导出 / 导入」恢复。
+- 应用名（`MiniRead` / `MiniRead E-Ink`）由构建期生成，不随系统语言切换。
 
 ---
 

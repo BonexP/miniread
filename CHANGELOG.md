@@ -5,7 +5,7 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.2] - 2026-10-12
 
 ### Fixed
 - 补齐全仓中英文本地化覆盖。此前多个页面的用户可见文案是硬编码的（中英混杂），导致中文设备显示英文、英文设备显示中文：
@@ -80,6 +80,7 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.0.2]: https://github.com/BonexP/miniread/releases/tag/v1.0.2
 [1.0.1]: https://github.com/BonexP/miniread/releases/tag/v1.0.1
 [1.0.0]: https://github.com/BonexP/miniread/releases/tag/v1.0.0
 [0.3.4]: https://github.com/BonexP/miniread/releases
