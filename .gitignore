@@ -24,3 +24,6 @@ modules.xml
 *.keystore
 my-release-key.jks
 app/release/
+
+# workbuddy
+.workbuddy/
