@@ -12,9 +12,12 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +49,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -52,6 +60,7 @@ import androidx.navigation.NavController
 import com.i.miniread.MainActivity
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
+import com.i.miniread.util.InterceptionRuntime
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,13 +72,13 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.File
+import java.util.concurrent.TimeUnit
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navController: NavController) {
     Log.d("ArticleDetailScreen", "ArticleDetailScreen: now get entryId is $entryId")
     val selectedEntry by viewModel.selectedEntry.observeAsState()
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -99,7 +108,6 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                 selectedEntry?.content?.let { Log.d("ArticleWebViewContentInject", it) }
                 selectedEntry?.let { entry ->
                     ArticleWebView(
-                        context = context,
                         content = "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}",
                         feedId = entry.feed_id,
                         onScrollToBottom = {
@@ -126,15 +134,30 @@ fun ArticleActionsBar(
     val coroutineScope = rememberCoroutineScope()
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
+    val isEink = com.i.miniread.BuildConfig.IS_EINK
+    val barModifier = if (isEink) {
+        Modifier
+            .height(48.dp)
+            .drawBehind {
+                drawLine(
+                    color = Color.Black,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+    } else {
+        Modifier
+    }
     BottomAppBar(
-        // E-Ink 版本使用纯白背景避免残影
-        containerColor = if (com.i.miniread.BuildConfig.IS_EINK)
-            androidx.compose.ui.graphics.Color.White
-        else
-            androidx.compose.material3.MaterialTheme.colorScheme.surface
+        modifier = barModifier,
+        // E-Ink 版本使用纯白背景并去掉 tonalElevation，避免灰底与残影
+        containerColor = if (isEink) Color.White else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (isEink) 0.dp else BottomAppBarDefaults.ContainerElevation,
+        contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
         // 标记为已读按钮
-        ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read") {
+        ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read", compact = isEink) {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
             coroutineScope.launch {
@@ -142,14 +165,14 @@ fun ArticleActionsBar(
             }
         // 标记为未读按钮
         }
-        ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread") {
+        ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread", compact = isEink) {
             viewModel.markEntryAsUnread(entryId)
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("Marked as unread")
             }
         }
         //分享按钮
-        ActionButton(icon = Icons.Default.Share, description = "Share") {
+        ActionButton(icon = Icons.Default.Share, description = "Share", compact = isEink) {
             Log.d("ArticleDetailScreen", "Share Entry")
             selectedEntry?.let {
                 val shareIntent = Intent.createChooser(
@@ -164,7 +187,7 @@ fun ArticleActionsBar(
             }
         }
         //外部打开按钮
-        ActionButton(icon = Icons.Default.ExitToApp, description = "Open External") {
+        ActionButton(icon = Icons.Default.ExitToApp, description = "Open External", compact = isEink) {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
@@ -173,7 +196,7 @@ fun ArticleActionsBar(
             }
         }
         //上一篇按钮
-        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous") {
+        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous", compact = isEink) {
             viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
                 Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
 
@@ -193,7 +216,7 @@ fun ArticleActionsBar(
             }
         }
         //下一篇按钮
-        ActionButton(icon = Icons.Default.ArrowForward, description = "Next") {
+        ActionButton(icon = Icons.Default.ArrowForward, description = "Next", compact = isEink) {
             viewModel.navigateToNextEntry(entryId)?.let { nextId ->
                 Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
 
@@ -241,27 +264,45 @@ fun ArticleActionsBar(
 }
 
 @Composable
-fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick) {
+fun ActionButton(
+    icon: ImageVector,
+    description: String,
+    compact: Boolean = false,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = if (compact) Modifier.size(40.dp) else Modifier
+    ) {
         Icon(imageVector = icon, contentDescription = description)
     }
 }
 
 private const val isOutputHtmlContent = false
 
+// 拦截请求共用单例：复用连接池并设置超时（原实现每次 new OkHttpClient()，无连接池、无超时）
+private val interceptionHttpClient: OkHttpClient by lazy {
+    OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun ArticleWebView(
-    context: Context,
     content: String?,
     feedId: Int?,
     onScrollToBottom: () -> Unit
 ) {
     val context = LocalContext.current
-    // 在组合期只求值一次，避免每次重组都同步读盘阻塞主线程；判定逻辑与原先完全一致
-    val shouldInterceptByDomain = remember { DomainHelper.isTargetDomain(context) }
-    val shouldInterceptRequests =
-        shouldInterceptByDomain && feedId != null && feedId in InterceptionConfig.ADVANCED_FEED_IDS
+    // 读内存快照判定：不再在组合期 runBlocking 读盘；隐藏设置页改完配置后重新进入文章页即生效
+    val interceptionSettings by InterceptionRuntime.settings.collectAsState()
+    val currentBaseUrl by InterceptionRuntime.baseUrl.collectAsState()
+    val shouldInterceptRequests = remember(interceptionSettings, currentBaseUrl, feedId) {
+        DomainHelper.isTargetDomain(interceptionSettings, currentBaseUrl) &&
+            feedId != null && feedId in interceptionSettings.feedIds
+    }
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
     val contentHeightState = remember { mutableStateOf<Float?>(null) }
@@ -340,7 +381,7 @@ fun ArticleWebView(
                     request: WebResourceRequest?
                 ): WebResourceResponse? {
                     return if (shouldInterceptRequests && request != null) {
-                        interceptWebRequest(request)
+                        interceptWebRequest(request, interceptionSettings.refererRules)
                     } else {
                         super.shouldInterceptRequest(view, request)
                     }
@@ -423,16 +464,18 @@ fun ArticleWebView(
     AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
 }
 
-fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
+fun interceptWebRequest(
+    request: WebResourceRequest,
+    refererRules: List<Pair<String, String>>
+): WebResourceResponse? {
     val tag = "ArticleDetailScreen"
     return try {
         val modifiedRequest = Request.Builder()
             .url(request.url.toString())
-            .header("Referer", InterceptionConfig.refererFor(request.url.host))
+            .header("Referer", InterceptionConfig.refererFor(request.url.host, refererRules))
             .build()
 
-        val client = OkHttpClient()
-        val response: Response = client.newCall(modifiedRequest).execute()
+        val response: Response = interceptionHttpClient.newCall(modifiedRequest).execute()
 
         WebResourceResponse(
             response.header("Content-Type", "text/html"),

@@ -179,8 +179,8 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val appVersionName by extra("1.0.0")
-val appVersionCode by extra(100)
+val appVersionName by extra("1.0.1")
+val appVersionCode by extra(101)
 val debugVersionSuffix by extra("-debug")
 
 android {
@@ -335,10 +335,10 @@ dependencies {
 
 | Build Variant | Application ID | 版本名 | 用途 |
 |--------------|---------------|--------|------|
-| **standardDebug** | `com.i.miniread` | `1.0.0-debug` | 标准版开发 |
-| **standardRelease** | `com.i.miniread` | `1.0.0` | 标准版发布 |
-| **einkDebug** | `com.i.miniread.eink` | `1.0.0-debug` | E-Ink 版开发 |
-| **einkRelease** | `com.i.miniread.eink` | `1.0.0` | E-Ink 版发布 |
+| **standardDebug** | `com.i.miniread` | `1.0.1-debug` | 标准版开发 |
+| **standardRelease** | `com.i.miniread` | `1.0.1` | 标准版发布 |
+| **einkDebug** | `com.i.miniread.eink` | `1.0.1-debug` | E-Ink 版开发 |
+| **einkRelease** | `com.i.miniread.eink` | `1.0.1` | E-Ink 版发布 |
 
 ### 3. BuildConfig 字段使用
 
@@ -354,7 +354,7 @@ public final class BuildConfig {
     public static final String BUILD_TYPE = "debug";
     public static final String FLAVOR = "standard";
     public static final int VERSION_CODE = 100;
-    public static final String VERSION_NAME = "1.0.0-debug";
+    public static final String VERSION_NAME = "1.0.1-debug";
     
     // 自定义字段
     public static final String FLAVOR_TYPE = "standard";
@@ -370,7 +370,7 @@ public final class BuildConfig {
     public static final String BUILD_TYPE = "debug";
     public static final String FLAVOR = "eink";
     public static final int VERSION_CODE = 100;
-    public static final String VERSION_NAME = "1.0.0-debug";
+    public static final String VERSION_NAME = "1.0.1-debug";
     
     // 自定义字段
     public static final String FLAVOR_TYPE = "eink";
@@ -929,8 +929,8 @@ val drawable = ContextCompat.getDrawable(context, R.drawable.icon)
 #### 版本控制
 
 ```kotlin
-// 1. 使用语义化版本（versionName 统一为 1.0.0，无 flavor 后缀；debug 构建附加 -debug）
-versionName = "1.0.0"
+// 1. 使用语义化版本（versionName 统一为 1.0.1，无 flavor 后缀；debug 构建附加 -debug）
+versionName = "1.0.1"
 
 // 2. 每个 flavor 使用不同的 Application ID
 standard: com.i.miniread

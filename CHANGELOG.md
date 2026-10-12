@@ -5,6 +5,24 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-12
+
+在 1.0.0 基础上的首个补丁版本。
+
+### Added
+- 新增面向 AI Agent 的项目文档 `AGENTS.md`：项目结构、模块职责、常见任务定位路径、开发约定与禁区、已知坑。
+- 新增隐藏设置页（**连续点击顶栏标题 7 次**进入），可配置目标域名、feed 白名单与站点 Referer 规则；支持把配置导出到剪贴板 / 从剪贴板导入。
+
+### Changed
+- 定向增强（目标域名拦截、feed 白名单、站点 Referer 规则）从写死的常量改为**用户可配置**，代码默认值中性化：默认关闭且全部为空，公开版本不对任何站点做特殊处理。
+- 拦截判定改为读取内存快照，移除阅读页组合期的同步读盘（`runBlocking`）。
+- 拦截用的 HTTP 客户端改为复用的单例，并显式设置连接 / 读取超时（原实现每次请求新建、无超时）。
+- `res/values/arrays.xml` 修正为合法的 `<item>` 结构（原写法会让 `ListPreference` 拿到空列表）。
+- 根目录历史过程文档归档到 `doc/archive/`。
+
+### Fixed
+- 修复 E-Ink 版本阅读页底部操作栏过高的问题：恢复紧凑高度（48dp）与去除灰调，与列表页底栏高度保持一致。
+
 ## [1.0.0] - 2026-10-12
 
 MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 并升至 1.0.0，同时
@@ -19,7 +37,6 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 - 版本语义修正并升级：`versionCode 100` / `versionName 1.0.0`，取代 0.3.4（33）；移除 `dev`/`alpha` 版本名后缀。
 - 两个产品变体正式定名：`standard`（`com.i.miniread`，应用名 `MiniRead`）与 `eink`（`com.i.miniread.eink`，应用名 `MiniRead E-Ink`），两者可同机共存。
 - `buildTypes` 去重；release 构建启用 R8 代码混淆与资源压缩。
-- 保留并集中管理针对特定 feed 源/域名的定向增强（目标域名定向拦截、特定 feed 白名单、部分站点 Referer 规则），便于统一维护。
 - 清理未使用依赖（volley、work、firebase-messaging、room），移除废弃的 `jcenter()` 仓库。
 - E-Ink 优化：设备检测不再硬编码；同步修复墨水屏音量键翻页。
 - 修复 README 徽章与排版；清理空文件与过时版本号。
@@ -49,5 +66,6 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.0.1]: https://github.com/BonexP/miniread/releases/tag/v1.0.1
 [1.0.0]: https://github.com/BonexP/miniread/releases/tag/v1.0.0
 [0.3.4]: https://github.com/BonexP/miniread/releases

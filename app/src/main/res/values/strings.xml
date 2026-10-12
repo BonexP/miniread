@@ -13,4 +13,26 @@
     <string name="feed_list_move_down">Move Down</string>
     <string name="feed_list_mark_as_read">Mark as Read</string>
     <string name="today_entry_list_empty">No entries to display</string>
+    <string name="settings_hidden_title">Advanced Settings</string>
+    <string name="settings_hidden_enable">Enable targeted interception</string>
+    <string name="settings_hidden_enable_hint">Off by default. When off, no site gets special handling.</string>
+    <string name="settings_hidden_domains">Target domains</string>
+    <string name="settings_hidden_domains_hint">Separate by comma or newline. Multiple allowed; interception applies if any matches.</string>
+    <string name="settings_hidden_feed_ids">Feed whitelist</string>
+    <string name="settings_hidden_feed_ids_hint">Comma-separated numbers. Interception applies only to these feeds.</string>
+    <string name="settings_hidden_referer_rules">Referer rules</string>
+    <string name="settings_hidden_referer_rules_hint">Format: hostKeyword=&gt;RefererValue, separated by semicolons; order matters. Example: example.com=&gt;https://example.com/</string>
+    <string name="settings_hidden_save">Save</string>
+    <string name="settings_hidden_reset">Reset to default</string>
+    <string name="settings_hidden_export">Export to clipboard</string>
+    <string name="settings_hidden_import">Import from clipboard</string>
+    <string name="settings_hidden_saved">Settings saved</string>
+    <string name="settings_hidden_reset_done">Reset to default</string>
+    <string name="settings_hidden_copied">Copied to clipboard</string>
+    <string name="settings_hidden_imported">Imported. Tap Save to apply.</string>
+    <string name="settings_hidden_import_failed">Import failed: no valid settings found</string>
+    <string name="settings_hidden_unlocked">Advanced settings unlocked</string>
+    <string name="settings_hidden_current_base_url">Current server: %1$s</string>
+    <string name="settings_hidden_active">Interception is active</string>
+    <string name="settings_hidden_inactive">Interception is inactive</string>
 </resources>

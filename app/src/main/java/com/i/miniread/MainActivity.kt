@@ -5,10 +5,13 @@ import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -51,6 +55,7 @@ import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
+import com.i.miniread.ui.HiddenSettingsScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
@@ -58,6 +63,7 @@ import com.i.miniread.ui.adaptive.AdaptiveLayoutHelper
 import com.i.miniread.ui.adaptive.AppNavigationRail
 import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.util.DataStoreManager
+import com.i.miniread.util.InterceptionRuntime
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
@@ -82,6 +88,9 @@ class MainActivity : ComponentActivity() {
                 val savedBaseUrl = DataStoreManager.getBaseUrl()
                 val savedAuthToken = DataStoreManager.getApiToken()
                 Log.d("MainActivity", "Loaded: baseUrl=$savedBaseUrl, token=${if(savedAuthToken.isNotEmpty()) "exists" else "empty"}")
+
+                // 初始化定向拦截运行时快照（baseUrl + 4 个 intercept_* key）
+                InterceptionRuntime.load()
 
                 if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
                     // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
@@ -161,6 +170,7 @@ sealed class Screen(val route: String, val label: String) {
     data object ArticleDetail : Screen("articleDetail", "Article Detail")
     data object TodayEntryList : Screen("todayEntryList", "Today")
     data object SubFeedScreen : Screen("subFeed", "Category Feeds")
+    data object HiddenSettings : Screen("hiddenSettings", "Hidden Settings")
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -173,12 +183,18 @@ fun MainContent(
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val unlockedMsg = stringResource(R.string.settings_hidden_unlocked)
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
     var isLoggedIn by remember { mutableStateOf(false) }
     var baseUrl by remember { mutableStateOf("") }
     var authToken by remember { mutableStateOf("") }
+
+    // 隐藏入口：连续点击顶栏标题 7 次解锁高级设置页
+    var titleTapCount by remember { mutableStateOf(0) }
+    var lastTapAt by remember { mutableStateOf(0L) }
 
     // 初始化时读取 DataStore 数据
     LaunchedEffect(Unit) {
@@ -195,6 +211,8 @@ fun MainContent(
             scope.launch {
                 DataStoreManager.setBaseUrl(url)
                 DataStoreManager.setApiToken(token)
+                // baseUrl 变更后刷新定向拦截运行时快照
+                InterceptionRuntime.refreshBaseUrl()
             }
             // 初始化 Retrofit 和 ViewModel
             RetrofitInstance.initialize(baseUrl)
@@ -213,7 +231,8 @@ fun MainContent(
         val currentRoute = navBackStackEntry?.destination?.route
 
         // 判断是否是 ArticleDetailScreen 的路由
-        val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
+        val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false &&
+            currentRoute?.startsWith(Screen.HiddenSettings.route) == false
 
         // 判断是否应该使用侧边导航栏（平板横屏模式）
         val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
@@ -233,7 +252,31 @@ fun MainContent(
                             style = if (BuildConfig.IS_EINK)
                                 androidx.compose.material3.MaterialTheme.typography.titleMedium
                             else
-                                androidx.compose.material3.MaterialTheme.typography.titleLarge
+                                androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                            // 隐藏入口：连续点击 7 次解锁高级设置（indication=null 去掉水波纹）
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastTapAt > 600L) {
+                                    titleTapCount = 1
+                                } else {
+                                    titleTapCount += 1
+                                }
+                                lastTapAt = now
+                                if (titleTapCount >= 7) {
+                                    titleTapCount = 0
+                                    Toast.makeText(
+                                        context,
+                                        unlockedMsg,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate(Screen.HiddenSettings.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
                         )
                     },
                     actions = {
@@ -423,6 +466,9 @@ fun MainContent(
                             composable(Screen.TodayEntryList.route) {
                                 TodayEntryListScreen(viewModel, navController)
                             }
+                            composable(Screen.HiddenSettings.route) {
+                                HiddenSettingsScreen(navController)
+                            }
                             composable(
                                 route = "subFeed?categoryId={categoryId}",
                                 arguments = listOf(navArgument("categoryId") {
@@ -499,6 +545,9 @@ fun MainContent(
                         }
                         composable(Screen.TodayEntryList.route) {
                             TodayEntryListScreen(viewModel, navController)
+                        }
+                        composable(Screen.HiddenSettings.route) {
+                            HiddenSettingsScreen(navController)
                         }
                         composable(
                             route = "subFeed?categoryId={categoryId}",

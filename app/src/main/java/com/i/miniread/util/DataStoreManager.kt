@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -26,6 +27,12 @@ object DataStoreManager {
     private val KEY_BASE_URL = stringPreferencesKey("base_url")
     private val KEY_API_TOKEN = stringPreferencesKey("api_token")
     private val KEY_FEED_ORDER = stringPreferencesKey("feed_order")
+
+    // 定向拦截配置（v1.0.0 新增；默认全部关闭 / 为空，即公开版本不做任何定向处理）
+    private val KEY_INTERCEPT_ENABLED = booleanPreferencesKey("intercept_enabled")
+    private val KEY_INTERCEPT_DOMAINS = stringPreferencesKey("intercept_target_domains")
+    private val KEY_INTERCEPT_FEED_IDS = stringPreferencesKey("intercept_feed_ids")
+    private val KEY_INTERCEPT_REFERER_RULES = stringPreferencesKey("intercept_referer_rules")
 
     fun init(context: Context) {
         this.context = context.applicationContext
@@ -113,7 +120,27 @@ object DataStoreManager {
         }
     }
 
-    // 清除所有数据
+    // 定向拦截配置：一次性读写，避免多次 DataStore 往返
+    suspend fun getInterceptionRaw(): InterceptionRawConfig {
+        val prefs = context.dataStore.data.first()
+        return InterceptionRawConfig(
+            enabled = prefs[KEY_INTERCEPT_ENABLED] ?: InterceptionConfig.DEFAULT_INTERCEPT_ENABLED,
+            domains = prefs[KEY_INTERCEPT_DOMAINS] ?: "",
+            feedIds = prefs[KEY_INTERCEPT_FEED_IDS] ?: "",
+            refererRules = prefs[KEY_INTERCEPT_REFERER_RULES] ?: ""
+        )
+    }
+
+    suspend fun saveInterceptionRaw(config: InterceptionRawConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_INTERCEPT_ENABLED] = config.enabled
+            preferences[KEY_INTERCEPT_DOMAINS] = config.domains
+            preferences[KEY_INTERCEPT_FEED_IDS] = config.feedIds
+            preferences[KEY_INTERCEPT_REFERER_RULES] = config.refererRules
+        }
+    }
+
+    // 清除所有数据（注意：会连定向拦截配置一起清空，回到中性化默认）
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
             preferences.clear()
@@ -122,4 +149,3 @@ object DataStoreManager {
         SecureTokenStore.clear(context)
     }
 }
-

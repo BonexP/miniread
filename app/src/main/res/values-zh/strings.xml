@@ -13,4 +13,26 @@
     <string name="feed_list_move_down">下移</string>
     <string name="feed_list_mark_as_read">标记为已读</string>
     <string name="today_entry_list_empty">无条目可显示</string>
+    <string name="settings_hidden_title">高级设置</string>
+    <string name="settings_hidden_enable">启用定向拦截</string>
+    <string name="settings_hidden_enable_hint">默认关闭。关闭时不对任何站点做特殊处理。</string>
+    <string name="settings_hidden_domains">目标域名</string>
+    <string name="settings_hidden_domains_hint">用逗号或换行分隔，可填多个；命中任一即生效。</string>
+    <string name="settings_hidden_feed_ids">订阅源白名单</string>
+    <string name="settings_hidden_feed_ids_hint">逗号分隔的数字，仅这些订阅源的文章启用拦截。</string>
+    <string name="settings_hidden_referer_rules">Referer 规则</string>
+    <string name="settings_hidden_referer_rules_hint">格式：host关键字=&gt;Referer值，用分号分隔多条，顺序敏感。示例：example.com=&gt;https://example.com/</string>
+    <string name="settings_hidden_save">保存</string>
+    <string name="settings_hidden_reset">恢复默认</string>
+    <string name="settings_hidden_export">导出到剪贴板</string>
+    <string name="settings_hidden_import">从剪贴板导入</string>
+    <string name="settings_hidden_saved">设置已保存</string>
+    <string name="settings_hidden_reset_done">已恢复默认</string>
+    <string name="settings_hidden_copied">已复制到剪贴板</string>
+    <string name="settings_hidden_imported">已导入。请点保存以生效。</string>
+    <string name="settings_hidden_import_failed">导入失败：未找到有效配置</string>
+    <string name="settings_hidden_unlocked">已解锁高级设置</string>
+    <string name="settings_hidden_current_base_url">当前服务器：%1$s</string>
+    <string name="settings_hidden_active">拦截已生效</string>
+    <string name="settings_hidden_inactive">拦截未生效</string>
 </resources>

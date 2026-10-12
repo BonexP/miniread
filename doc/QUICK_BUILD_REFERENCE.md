@@ -86,8 +86,8 @@
 git push origin main
 
 # 创建 tag → 自动构建 Release APK
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 ### 手动触发

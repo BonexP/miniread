@@ -3,8 +3,8 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
 }
-val appVersionName by extra("1.0.0")
-val appVersionCode by extra(100)
+val appVersionName by extra("1.0.1")
+val appVersionCode by extra(101)
 val debugVersionSuffix by extra("-debug")
 
 val keystorePath = System.getenv("KEYSTORE_FILE")

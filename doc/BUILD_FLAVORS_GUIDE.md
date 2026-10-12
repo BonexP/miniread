@@ -236,10 +236,10 @@ app/build/outputs/apk/eink/release/app-eink-release.apk
 
 ### 版本命名规范
 
-- `versionName` 统一为 `1.0.0`，不带 flavor 后缀（debug 构建附加 `-debug` 后缀）。
+- `versionName` 统一为 `1.0.1`，不带 flavor 后缀（debug 构建附加 `-debug` 后缀）。
 - 发布 APK（由 CI 产出）：
-  - 标准版：`MiniRead-standard-v1.0.0.apk`
-  - E-Ink 版：`MiniRead-eink-v1.0.0.apk`
+  - 标准版：`MiniRead-standard-v1.0.1.apk`
+  - E-Ink 版：`MiniRead-eink-v1.0.1.apk`
 
 ## 常见问题
 
