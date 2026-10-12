@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
+   Data extraction rules (Android 12+ / API 31+).
+   排除敏感数据：DataStore 设置文件与加密 token 的 SharedPreferences。
+   注意：DataStore 把 base_url / feed_order / api_token 存于同一个 preferences_pb 文件，
+   无法按 key 排除；为彻底避免 token 经云备份泄漏，此处整体排除该文件，
+   代价是 base_url / feed_order 不随备份恢复（首次启动后 token 会迁移到加密 prefs）。
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <exclude domain="file" path="datastore/miniread_settings.preferences_pb" />
+        <exclude domain="sharedpref" path="miniread_secure_prefs.xml" />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <exclude domain="file" path="datastore/miniread_settings.preferences_pb" />
+        <exclude domain="sharedpref" path="miniread_secure_prefs.xml" />
     </device-transfer>
-    -->
 </data-extraction-rules>

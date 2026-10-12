@@ -1,3 +1,16 @@
 <resources>
-    <string name="app_name">miniread</string>
+    <string name="feed_list_empty_no_feeds">No feeds to display</string>
+    <string name="feed_list_empty_all_read">All read, no unread entries</string>
+    <string name="feed_list_action_save_order">Save order</string>
+    <string name="feed_list_action_edit_order">Edit order</string>
+    <string name="feed_list_dialog_mark_read_title">Mark feed as read</string>
+    <string name="feed_list_dialog_mark_read_message">Are you sure you want to mark all entries in %1$s as read? This action cannot be undone.</string>
+    <string name="feed_list_dialog_confirm">Confirm</string>
+    <string name="feed_list_dialog_cancel">Cancel</string>
+    <string name="feed_list_entry_unread_count">%1$d unread entries</string>
+    <string name="feed_list_entry_all_read">All read</string>
+    <string name="feed_list_move_up">Move Up</string>
+    <string name="feed_list_move_down">Move Down</string>
+    <string name="feed_list_mark_as_read">Mark as Read</string>
+    <string name="today_entry_list_empty">No entries to display</string>
 </resources>

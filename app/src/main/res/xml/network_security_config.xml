@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    显式允许明文流量：自建 Miniflux 服务常以局域网 http 形式部署，
+    必须保留 http 可用，故 base-config 允许 cleartext。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

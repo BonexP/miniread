@@ -33,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -48,14 +49,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
-import com.i.miniread.util.DataStoreManager
+import com.i.miniread.MainActivity
+import com.i.miniread.util.DomainHelper
+import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -246,13 +248,6 @@ fun ActionButton(icon: ImageVector, description: String, onClick: () -> Unit) {
 }
 
 private const val isOutputHtmlContent = false
-private fun Context.isTargetDomain(): Boolean {
-    // 使用 runBlocking 同步读取 DataStore 数据
-    return runBlocking {
-        val baseUrl = DataStoreManager.getBaseUrl()
-        baseUrl.contains("pi.lifeo3.icu", true)
-    }
-}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -263,8 +258,10 @@ fun ArticleWebView(
     onScrollToBottom: () -> Unit
 ) {
     val context = LocalContext.current
-    val shouldInterceptByDomain = context.isTargetDomain()
-    val shouldInterceptRequests = shouldInterceptByDomain && feedId in listOf(26, 38, 52, 51)
+    // 在组合期只求值一次，避免每次重组都同步读盘阻塞主线程；判定逻辑与原先完全一致
+    val shouldInterceptByDomain = remember { DomainHelper.isTargetDomain(context) }
+    val shouldInterceptRequests =
+        shouldInterceptByDomain && feedId != null && feedId in InterceptionConfig.ADVANCED_FEED_IDS
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
     val contentHeightState = remember { mutableStateOf<Float?>(null) }
@@ -413,6 +410,12 @@ fun ArticleWebView(
         }
     }
 
+    // 将 WebView 登记到 MainActivity，供 E-Ink 音量键翻页使用；离开页面时清理，避免泄漏
+    DisposableEffect(webView) {
+        (context as? MainActivity)?.setActiveWebView(webView)
+        onDispose { (context as? MainActivity)?.setActiveWebView(null) }
+    }
+
     // 当HTML内容加载完成后，更新WebView的内容
     htmlContent?.let {
         webView.loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
@@ -421,20 +424,11 @@ fun ArticleWebView(
 }
 
 fun interceptWebRequest(request: WebResourceRequest): WebResourceResponse? {
-    val baseUrl = runBlocking { DataStoreManager.getBaseUrl() }
-    Log.d("Interceptor", "BASE_URL: $baseUrl")
-    Log.d("Interceptor", "Request host: ${request.url.host}")
-
     val tag = "ArticleDetailScreen"
     return try {
         val modifiedRequest = Request.Builder()
             .url(request.url.toString())
-            .header(
-                "Referer",
-                if (request.url.host?.contains("sspai.com") == true) "https://sspai.com/"
-                else if (request.url.host?.contains("sinaimg.cn") == true) "https://weibo.com/"
-                else ""
-            )
+            .header("Referer", InterceptionConfig.refererFor(request.url.host))
             .build()
 
         val client = OkHttpClient()

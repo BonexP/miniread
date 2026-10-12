@@ -179,9 +179,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val versionname by extra("dev")
-val versioncode by extra("0.2.2")
-val versionnumber by extra(26)
+val appVersionName by extra("1.0.0")
+val appVersionCode by extra(100)
+val debugVersionSuffix by extra("-debug")
 
 android {
     namespace = "com.i.miniread"
@@ -191,14 +191,13 @@ android {
         applicationId = "com.i.miniread"
         minSdk = 25
         targetSdk = 34
-        versionCode = versionnumber
-        versionName = versioncode
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
-        versionNameSuffix = versionname
     }
 
     // ===== Build Flavors 配置 =====
@@ -212,7 +211,6 @@ android {
         create("standard") {
             dimension = "version"
             applicationIdSuffix = ""              // com.i.miniread
-            versionNameSuffix = "-standard"       // 0.2.2-standard-dev
 
             // BuildConfig 字段
             buildConfigField("String", "FLAVOR_TYPE", "\"standard\"")
@@ -226,7 +224,6 @@ android {
         create("eink") {
             dimension = "version"
             applicationIdSuffix = ".eink"         // com.i.miniread.eink
-            versionNameSuffix = "-eink"           // 0.2.2-eink-dev
 
             // BuildConfig 字段
             buildConfigField("String", "FLAVOR_TYPE", "\"eink\"")
@@ -241,6 +238,7 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
+            versionNameSuffix = debugVersionSuffix
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -250,7 +248,8 @@ android {
         }
         
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -336,10 +335,10 @@ dependencies {
 
 | Build Variant | Application ID | 版本名 | 用途 |
 |--------------|---------------|--------|------|
-| **standardDebug** | `com.i.miniread` | `0.2.2-standard-dev` | 标准版开发 |
-| **standardRelease** | `com.i.miniread` | `0.2.2-standard` | 标准版发布 |
-| **einkDebug** | `com.i.miniread.eink` | `0.2.2-eink-dev` | E-Ink 版开发 |
-| **einkRelease** | `com.i.miniread.eink` | `0.2.2-eink` | E-Ink 版发布 |
+| **standardDebug** | `com.i.miniread` | `1.0.0-debug` | 标准版开发 |
+| **standardRelease** | `com.i.miniread` | `1.0.0` | 标准版发布 |
+| **einkDebug** | `com.i.miniread.eink` | `1.0.0-debug` | E-Ink 版开发 |
+| **einkRelease** | `com.i.miniread.eink` | `1.0.0` | E-Ink 版发布 |
 
 ### 3. BuildConfig 字段使用
 
@@ -354,8 +353,8 @@ public final class BuildConfig {
     public static final String APPLICATION_ID = "com.i.miniread";
     public static final String BUILD_TYPE = "debug";
     public static final String FLAVOR = "standard";
-    public static final int VERSION_CODE = 26;
-    public static final String VERSION_NAME = "0.2.2-standard-dev";
+    public static final int VERSION_CODE = 100;
+    public static final String VERSION_NAME = "1.0.0-debug";
     
     // 自定义字段
     public static final String FLAVOR_TYPE = "standard";
@@ -370,8 +369,8 @@ public final class BuildConfig {
     public static final String APPLICATION_ID = "com.i.miniread.eink";
     public static final String BUILD_TYPE = "debug";
     public static final String FLAVOR = "eink";
-    public static final int VERSION_CODE = 26;
-    public static final String VERSION_NAME = "0.2.2-eink-dev";
+    public static final int VERSION_CODE = 100;
+    public static final String VERSION_NAME = "1.0.0-debug";
     
     // 自定义字段
     public static final String FLAVOR_TYPE = "eink";
@@ -930,8 +929,8 @@ val drawable = ContextCompat.getDrawable(context, R.drawable.icon)
 #### 版本控制
 
 ```kotlin
-// 1. 使用语义化版本
-versionName = "0.2.2-${flavor}-${buildType}"
+// 1. 使用语义化版本（versionName 统一为 1.0.0，无 flavor 后缀；debug 构建附加 -debug）
+versionName = "1.0.0"
 
 // 2. 每个 flavor 使用不同的 Application ID
 standard: com.i.miniread

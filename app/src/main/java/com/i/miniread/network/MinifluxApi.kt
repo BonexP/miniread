@@ -2,6 +2,7 @@ package com.i.miniread.network
 
 import android.util.Log
 import com.google.gson.annotations.SerializedName
+import com.i.miniread.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Response
@@ -233,8 +234,10 @@ object RetrofitInstance {
     private var retrofit: Retrofit? = null
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        level =
-            HttpLoggingInterceptor.Level.BASIC // Logs request and response lines and their respective headers and bodies (if present)
+        level = if (BuildConfig.DEBUG)
+            HttpLoggingInterceptor.Level.BASIC
+        else
+            HttpLoggingInterceptor.Level.NONE
     }
 
     fun initialize(baseUrl: String) {

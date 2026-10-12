@@ -109,8 +109,8 @@ class MainActivity : ComponentActivity() {
      * 
      * ⚠️ 注意事项：
      * - 此功能仅在 E-Ink 版本中启用
-     * - 需要 WebView 获得焦点才能工作
-     * - 如果焦点不在 WebView 上，音量键将保持默认行为
+     * - 需要文章阅读页通过 setActiveWebView 登记 WebView
+     * - 若未登记 WebView，音量键将保持默认行为
      * - 建议在设置中提供开关选项让用户选择是否启用此功能
      * 
      * 实现细节：
@@ -118,50 +118,38 @@ class MainActivity : ComponentActivity() {
      * - 音量下键：向下滚动 800px（考虑阅读习惯，向下滚动距离更大）
      * - 其他按键：保持默认行为
      */
+    @Volatile
+    private var activeWebView: WebView? = null
+
+    /**
+     * 由文章阅读页在 WebView 创建时登记、销毁时传 null 清理。
+     * 音量键翻页依赖此显式登记，替代原先在 Compose 宿主下恒为 null 的 currentFocus 判断。
+     */
+    fun setActiveWebView(webView: WebView?) {
+        activeWebView = webView
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // 仅在 E-Ink 版本启用音量键翻页
-        if (BuildConfig.IS_EINK) {
-            Log.d("MainActivity", "Key pressed: $keyCode")
-            
-            return when (keyCode) {
-                KeyEvent.KEYCODE_VOLUME_UP -> {
-                    // 尝试获取当前焦点的 WebView
-                    val webView = currentFocus as? WebView
-                    if (webView != null) {
-                        // WebView 有焦点，执行向上滚动
+        // 仅在 E-Ink 版本启用音量键翻页；只处理首次按下，忽略长按重复事件
+        if (BuildConfig.IS_EINK &&
+            event?.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0
+        ) {
+            val webView = activeWebView
+            if (webView != null) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_VOLUME_UP -> {
                         webView.scrollBy(0, -500)
-                        Log.d("MainActivity", "Volume up - scrolled up 500px")
-                        true  // 消费此事件，不再传递
-                    } else {
-                        // WebView 没有焦点，记录警告并保持默认行为
-                        Log.w("MainActivity", "Volume up pressed but WebView not focused")
-                        super.onKeyDown(keyCode, event)
+                        return true
                     }
-                }
-                
-                KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                    // 尝试获取当前焦点的 WebView
-                    val webView = currentFocus as? WebView
-                    if (webView != null) {
-                        // WebView 有焦点，执行向下滚动
+                    KeyEvent.KEYCODE_VOLUME_DOWN -> {
                         webView.scrollBy(0, 800)
-                        Log.d("MainActivity", "Volume down - scrolled down 800px")
-                        true  // 消费此事件，不再传递
-                    } else {
-                        // WebView 没有焦点，记录警告并保持默认行为
-                        Log.w("MainActivity", "Volume down pressed but WebView not focused")
-                        super.onKeyDown(keyCode, event)
+                        return true
                     }
-                }
-                
-                else -> {
-                    // 其他按键保持默认行为
-                    super.onKeyDown(keyCode, event)
                 }
             }
         }
-        
-        // 标准版本保持默认按键行为
+        // WebView 未登记或非 E-Ink 版本：保持系统默认（音量）行为
         return super.onKeyDown(keyCode, event)
     }
 }

@@ -1,0 +1,16 @@
+<resources>
+    <string name="feed_list_empty_no_feeds">无订阅源可显示</string>
+    <string name="feed_list_empty_all_read">全部已读，暂无未读条目</string>
+    <string name="feed_list_action_save_order">保存排序</string>
+    <string name="feed_list_action_edit_order">编辑排序</string>
+    <string name="feed_list_dialog_mark_read_title">标记订阅源为已读</string>
+    <string name="feed_list_dialog_mark_read_message">确定要将%1$s订阅源的所有条目标记为已读吗？此操作不可撤销。</string>
+    <string name="feed_list_dialog_confirm">确认</string>
+    <string name="feed_list_dialog_cancel">取消</string>
+    <string name="feed_list_entry_unread_count">%1$d 未读条目</string>
+    <string name="feed_list_entry_all_read">全部已读</string>
+    <string name="feed_list_move_up">上移</string>
+    <string name="feed_list_move_down">下移</string>
+    <string name="feed_list_mark_as_read">标记为已读</string>
+    <string name="today_entry_list_empty">无条目可显示</string>
+</resources>

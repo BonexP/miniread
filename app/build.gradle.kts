@@ -3,9 +3,12 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.ksp)
 }
-val versionname by extra("dev")
-val versioncode by extra("0.3.4")
-val versionnumber by extra(33)
+val appVersionName by extra("1.0.0")
+val appVersionCode by extra(100)
+val debugVersionSuffix by extra("-debug")
+
+val keystorePath = System.getenv("KEYSTORE_FILE")
+val hasReleaseKeystore = keystorePath?.let { it.isNotBlank() && File(it).exists() } == true
 
 android {
     namespace = "com.i.miniread"
@@ -15,29 +18,22 @@ android {
         applicationId = "com.i.miniread"
         minSdk = 25
         targetSdk = 34
-        versionCode = versionnumber
-        versionName = versioncode
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
-        versionNameSuffix = versionname
     }
     signingConfigs {
         create("release") {
-            val keystoreFile = System.getenv("KEYSTORE_FILE")
-            println("Keystore path: $keystoreFile")
-
-            // 只有在环境变量存在时才配置签名
-            if (!keystoreFile.isNullOrEmpty() && File(keystoreFile).exists()) {
-                storeFile = File(keystoreFile)
+            // 只有在环境变量存在且 keystore 文件存在时才配置正式签名
+            if (hasReleaseKeystore) {
+                storeFile = File(keystorePath!!)
                 storePassword = System.getenv("KEYSTORE_PASSWORD")
                 keyAlias = System.getenv("KEY_ALIAS")
                 keyPassword = System.getenv("KEY_PASSWORD")
-                println("Release signing config is set up with keystore")
-            } else {
-                println("Warning: KEYSTORE_FILE not found or not set. Using debug signing for release build.")
             }
         }
     }
@@ -47,7 +43,6 @@ android {
         create("standard") {
             dimension = "version"
             applicationIdSuffix = ""
-            versionNameSuffix = "-standard"
 
             // 标准版配置
             buildConfigField("String", "FLAVOR_TYPE", "\"standard\"")
@@ -59,7 +54,6 @@ android {
         create("eink") {
             dimension = "version"
             applicationIdSuffix = ".eink"
-            versionNameSuffix = "-eink"
 
             // 电子墨水屏版本配置
             buildConfigField("String", "FLAVOR_TYPE", "\"eink\"")
@@ -72,6 +66,7 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
+            versionNameSuffix = debugVersionSuffix
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             isDebuggable = true
             isJniDebuggable = true
@@ -79,7 +74,8 @@ android {
             isDefault = true
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,16 +83,7 @@ android {
             isDebuggable = false
             isJniDebuggable = false
             isRenderscriptDebuggable = false
-            versionNameSuffix = "alpha"
-            }
-        getByName("debug") {
-            isDebuggable = true
-            isJniDebuggable = true
-            isRenderscriptDebuggable = true
-        }
-        getByName("release") {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseKeystore) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -131,13 +118,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
+    implementation(libs.androidx.material3.window.size)
+    implementation(libs.androidx.security.crypto)
     implementation(libs.adapter.guava)
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
-    implementation(libs.volley)
-    implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.firebase.messaging)
     implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.runtime.android)
     implementation(libs.androidx.preference.ktx)
@@ -157,6 +142,5 @@ dependencies {
 }
 repositories {
     google()
-    mavenCentral()
     mavenCentral()
 }

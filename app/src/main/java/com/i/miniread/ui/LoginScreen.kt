@@ -1,6 +1,5 @@
 package com.i.miniread.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,7 +33,6 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -
             value = baseUrl,
             onValueChange = {
                 baseUrl = it
-                Log.d("LoginScreen", "LoginScreen: BaseURL: $baseUrl")
             },
             label = { Text("Instance Base URL") }
         )
@@ -42,7 +40,6 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -
             value = authToken,
             onValueChange = {
                 authToken = it
-                Log.d("LoginScreen", "API Token input: $authToken")
             },
             label = { Text("API Token") }
         )
