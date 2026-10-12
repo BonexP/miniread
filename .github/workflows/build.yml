@@ -27,7 +27,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
+        # 必须用 v4：v2 内部会执行 `sdkmanager tools`，而 Google 已移除 tools 包
+        # （报 "Failed to find package 'tools'" 并导致构建失败）。v4 不再请求该包。
+        uses: android-actions/setup-android@v4
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
