@@ -14,7 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.i.miniread.R
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.viewmodel.MinifluxViewModel
 @Composable
@@ -22,6 +24,9 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -
     var baseUrl by remember { mutableStateOf("") }
     var authToken by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+
+    // 在 Composable 作用域提前取出：onClick lambda 内不能调用 stringResource
+    val invalidInputMsg = stringResource(R.string.login_error_invalid_input)
 
     Column(
         modifier = Modifier
@@ -34,23 +39,23 @@ fun LoginScreen(viewModel: MinifluxViewModel, onLoginSuccess: (String, String) -
             onValueChange = {
                 baseUrl = it
             },
-            label = { Text("Instance Base URL") }
+            label = { Text(stringResource(R.string.login_base_url)) }
         )
         TextField(
             value = authToken,
             onValueChange = {
                 authToken = it
             },
-            label = { Text("API Token") }
+            label = { Text(stringResource(R.string.login_api_token)) }
         )
         Button(onClick = {
             if (baseUrl.isNotEmpty() && authToken.isNotEmpty()) {
                 onLoginSuccess(baseUrl, authToken)
             } else {
-                errorMessage = "Please enter a valid Base URL and API token."
+                errorMessage = invalidInputMsg
             }
         }) {
-            Text("Login")
+            Text(stringResource(R.string.login_action))
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colorScheme.error)

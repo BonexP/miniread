@@ -54,10 +54,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.i.miniread.MainActivity
+import com.i.miniread.R
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
@@ -81,6 +83,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val markedReadMsg = stringResource(R.string.article_snackbar_marked_read)
 
     LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
@@ -100,7 +103,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
         ) {
             if (selectedEntry == null || selectedEntry?.id != entryId) {
                 Text(
-                    text = "Loading...",
+                    text = stringResource(R.string.article_loading),
                     modifier = Modifier.align(Alignment.Center),
                     style = MaterialTheme.typography.titleLarge
                 )
@@ -114,7 +117,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                             Log.d("ArticleDetailScreen", "Article scrolled to end!")
                             viewModel.markEntryAsRead(entryId)
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Marked as read")
+                                snackbarHostState.showSnackbar(markedReadMsg)
                             }
                         }
                     )
@@ -132,6 +135,12 @@ fun ArticleActionsBar(
     navController: NavController
 ) {
     val coroutineScope = rememberCoroutineScope()
+    val markedReadMsg = stringResource(R.string.article_snackbar_marked_read)
+    val markedUnreadMsg = stringResource(R.string.article_snackbar_marked_unread)
+    val firstEntryMsg = stringResource(R.string.article_snackbar_first_entry)
+    val lastEntryMsg = stringResource(R.string.article_snackbar_last_entry)
+    val bookmarkedMsg = stringResource(R.string.article_snackbar_bookmarked)
+    val unbookmarkedMsg = stringResource(R.string.article_snackbar_unbookmarked)
     val selectedEntry by viewModel.selectedEntry.observeAsState()
     val context = LocalContext.current
     val isEink = com.i.miniread.BuildConfig.IS_EINK
@@ -157,22 +166,22 @@ fun ArticleActionsBar(
         contentPadding = PaddingValues(horizontal = 8.dp)
     ) {
         // 标记为已读按钮
-        ActionButton(icon = Icons.Default.CheckCircle, description = "Mark as Read", compact = isEink) {
+        ActionButton(icon = Icons.Default.CheckCircle, description = stringResource(R.string.article_action_mark_read), compact = isEink) {
             Log.d("ArticleDetailScreen", "Mark Entry as Read")
             viewModel.markEntryAsRead(entryId)
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("Marked as read")
+                snackbarHostState.showSnackbar(markedReadMsg)
             }
         // 标记为未读按钮
         }
-        ActionButton(icon = Icons.Outlined.CheckCircle, description = "Mark as unread", compact = isEink) {
+        ActionButton(icon = Icons.Outlined.CheckCircle, description = stringResource(R.string.article_action_mark_unread), compact = isEink) {
             viewModel.markEntryAsUnread(entryId)
             coroutineScope.launch {
-                snackbarHostState.showSnackbar("Marked as unread")
+                snackbarHostState.showSnackbar(markedUnreadMsg)
             }
         }
         //分享按钮
-        ActionButton(icon = Icons.Default.Share, description = "Share", compact = isEink) {
+        ActionButton(icon = Icons.Default.Share, description = stringResource(R.string.article_action_share), compact = isEink) {
             Log.d("ArticleDetailScreen", "Share Entry")
             selectedEntry?.let {
                 val shareIntent = Intent.createChooser(
@@ -187,7 +196,7 @@ fun ArticleActionsBar(
             }
         }
         //外部打开按钮
-        ActionButton(icon = Icons.Default.ExitToApp, description = "Open External", compact = isEink) {
+        ActionButton(icon = Icons.Default.ExitToApp, description = stringResource(R.string.article_action_open_external), compact = isEink) {
             Log.d("ArticleDetailScreen", "Open Entry External")
             selectedEntry?.let {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
@@ -196,7 +205,7 @@ fun ArticleActionsBar(
             }
         }
         //上一篇按钮
-        ActionButton(icon = Icons.Default.ArrowBack, description = "Previous", compact = isEink) {
+        ActionButton(icon = Icons.Default.ArrowBack, description = stringResource(R.string.article_action_previous), compact = isEink) {
             viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
                 Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
 
@@ -211,12 +220,12 @@ fun ArticleActionsBar(
                 }
             } ?: run {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("已经是第一篇了")
+                    snackbarHostState.showSnackbar(firstEntryMsg)
                 }
             }
         }
         //下一篇按钮
-        ActionButton(icon = Icons.Default.ArrowForward, description = "Next", compact = isEink) {
+        ActionButton(icon = Icons.Default.ArrowForward, description = stringResource(R.string.article_action_next), compact = isEink) {
             viewModel.navigateToNextEntry(entryId)?.let { nextId ->
                 Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
 
@@ -231,7 +240,7 @@ fun ArticleActionsBar(
                 }
             } ?: run {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("已经是最后一篇了")
+                    snackbarHostState.showSnackbar(lastEntryMsg)
                 }
             }
         }
@@ -251,7 +260,7 @@ fun ArticleActionsBar(
                 onCheckedChange = { checked ->
                     viewModel.toggleStarred(entry.id, checked)
                     coroutineScope.launch {
-                        snackbarHostState.showSnackbar(if (checked) "Bookmarked" else "Removed from bookmarks")
+                        snackbarHostState.showSnackbar(if (checked) bookmarkedMsg else unbookmarkedMsg)
                     }
                 },
                 colors = SwitchDefaults.colors(

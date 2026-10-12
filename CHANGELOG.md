@@ -5,6 +5,20 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- 补齐全仓中英文本地化覆盖。此前多个页面的用户可见文案是硬编码的（中英混杂），导致中文设备显示英文、英文设备显示中文：
+  - `ui/CategoryListScreen.kt`（含「标记分类为已读」确认对话框、未读计数）
+  - `ui/LoginScreen.kt`（输入框标签、登录按钮、校验提示）
+  - `ui/EntryListScreen.kt`（空列表占位、「无标题」）
+  - `ui/ArticleDetailScreen.kt`（加载提示、底部操作栏 6 个按钮的无障碍描述、Snackbar 提示）
+  - `MainActivity.kt` 的底部导航栏标签与刷新按钮描述、`ui/adaptive/NavigationRail.kt` 的平板侧边栏标签
+- 修正 `standard` / `eink` 两个变体的字符串资源结构：原先中文被放在默认 `values/` 目录（英文设备也会显示中文），现拆分为 `values/`（英文）+ `values-zh/`（中文）。
+
+### Changed
+- 新增 38 个字符串资源（`nav_*`、`login_*`、`category_list_*`、`entry_list_*`、`article_*`），英文与中文 key 名严格一致（各 74 个）。
+
 ## [1.0.1] - 2026-10-12
 
 在 1.0.0 基础上的首个补丁版本。

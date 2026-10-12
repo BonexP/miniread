@@ -35,4 +35,52 @@
     <string name="settings_hidden_current_base_url">当前服务器：%1$s</string>
     <string name="settings_hidden_active">拦截已生效</string>
     <string name="settings_hidden_inactive">拦截未生效</string>
+
+    <!-- 导航标签（底部导航栏 / 无障碍描述） -->
+    <string name="nav_feeds">订阅源</string>
+    <string name="nav_categories">分类</string>
+    <string name="nav_today">今日</string>
+    <string name="nav_entry_list">条目列表</string>
+    <string name="nav_article_detail">文章详情</string>
+    <string name="nav_sub_feed">分类订阅源</string>
+    <string name="nav_hidden_settings">高级设置</string>
+    <string name="action_refresh">刷新</string>
+
+    <!-- 登录页 -->
+    <string name="login_base_url">实例地址</string>
+    <string name="login_api_token">API 令牌</string>
+    <string name="login_action">登录</string>
+    <string name="login_error_invalid_input">请输入有效的实例地址与 API 令牌。</string>
+
+    <!-- 分类列表页 -->
+    <string name="category_list_empty">暂无分类可显示</string>
+    <string name="category_list_error_unknown">发生未知错误</string>
+    <string name="category_list_dialog_mark_read_title">标记分类为已读</string>
+    <string name="category_list_dialog_mark_read_message">确定要将%1$s分类下的所有条目标记为已读吗？此操作不可撤销。</string>
+    <string name="category_list_dialog_confirm">确认</string>
+    <string name="category_list_dialog_cancel">取消</string>
+    <string name="category_list_entry_unread_count">%1$d 未读条目</string>
+    <string name="category_list_entry_all_read">全部已读</string>
+    <string name="category_list_mark_as_read">标记为已读</string>
+    <string name="category_list_show_subscriptions">查看订阅源</string>
+
+    <!-- 条目列表页 -->
+    <string name="entry_list_empty">无条目可显示</string>
+    <string name="entry_list_untitled">无标题</string>
+    <string name="entry_list_mark_as_read">标记为已读</string>
+
+    <!-- 文章详情页 -->
+    <string name="article_loading">加载中…</string>
+    <string name="article_snackbar_marked_read">已标记为已读</string>
+    <string name="article_snackbar_marked_unread">已标记为未读</string>
+    <string name="article_snackbar_bookmarked">已收藏</string>
+    <string name="article_snackbar_unbookmarked">已取消收藏</string>
+    <string name="article_snackbar_first_entry">已经是第一篇了</string>
+    <string name="article_snackbar_last_entry">已经是最后一篇了</string>
+    <string name="article_action_mark_read">标记为已读</string>
+    <string name="article_action_mark_unread">标记为未读</string>
+    <string name="article_action_share">分享</string>
+    <string name="article_action_open_external">在浏览器打开</string>
+    <string name="article_action_previous">上一篇</string>
+    <string name="article_action_next">下一篇</string>
 </resources>

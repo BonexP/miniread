@@ -26,8 +26,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.i.miniread.BuildConfig
+import com.i.miniread.R
 import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
 import androidx.compose.material3.AlertDialog
@@ -54,7 +56,7 @@ fun CategoryListScreen(
     val unreadCounts by viewModel.categoryUnreadCounts.observeAsState(emptyMap())
     if (error != null) {
         Text(
-            text = error ?: "Unknown error occurred",
+            text = error ?: stringResource(R.string.category_list_error_unknown),
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.padding(16.dp)
         )
@@ -75,7 +77,7 @@ fun CategoryListScreen(
         }
         if (categories.isEmpty()) {
             Text(
-                text = "No categories available",
+                text = stringResource(R.string.category_list_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(16.dp)
             )
@@ -99,8 +101,8 @@ fun CategoryItem(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("标记分类为已读") },
-            text = { Text("确定要将${category.title}分类下的所有条目标记为已读吗？此操作不可撤销。") },
+            title = { Text(stringResource(R.string.category_list_dialog_mark_read_title)) },
+            text = { Text(stringResource(R.string.category_list_dialog_mark_read_message, category.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -108,14 +110,14 @@ fun CategoryItem(
                         onMarkAsRead() // 执行实际标记操作
                     }
                 ) {
-                    Text("确认")
+                    Text(stringResource(R.string.category_list_dialog_confirm))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showConfirmDialog = false }
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.category_list_dialog_cancel))
                 }
             }
         )
@@ -160,7 +162,7 @@ fun CategoryItem(
                         color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text =  if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读" ,
+                        text =  if (unreadCount > 0) stringResource(R.string.category_list_entry_unread_count, unreadCount) else stringResource(R.string.category_list_entry_all_read) ,
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
@@ -170,14 +172,14 @@ fun CategoryItem(
                 IconButton(onClick = { showConfirmDialog = true }) {
                     Icon(
                         imageVector = Icons.Default.Done,
-                        contentDescription = "Mark as Read"
+                        contentDescription = stringResource(R.string.category_list_mark_as_read)
                     )
                 }
                 // Button to show subscriptions with icon
                 IconButton(onClick = onShowSubscriptions) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = "Show Subscriptions"
+                        contentDescription = stringResource(R.string.category_list_show_subscriptions)
                     )
                 }
             }

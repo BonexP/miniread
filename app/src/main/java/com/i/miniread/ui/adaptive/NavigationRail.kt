@@ -14,10 +14,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.annotation.StringRes
 import com.i.miniread.BuildConfig
+import com.i.miniread.R
 import com.i.miniread.Screen
 
 /**
@@ -31,9 +34,9 @@ fun AppNavigationRail(
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     val items = listOf(
-        NavigationItem(Screen.Feeds.route, "Feeds", Icons.Default.List),
-        NavigationItem(Screen.TodayEntryList.route, "Today", Icons.Default.DateRange),
-        NavigationItem(Screen.Categories.route, "Categories", Icons.Default.Menu)
+        NavigationItem(Screen.Feeds.route, R.string.nav_feeds, Icons.Default.List),
+        NavigationItem(Screen.TodayEntryList.route, R.string.nav_today, Icons.Default.DateRange),
+        NavigationItem(Screen.Categories.route, R.string.nav_categories, Icons.Default.Menu)
     )
 
     NavigationRail(
@@ -58,7 +61,7 @@ fun AppNavigationRail(
                 icon = {
                     Icon(
                         imageVector = item.icon,
-                        contentDescription = item.label,
+                        contentDescription = stringResource(item.labelRes),
                         modifier = if (BuildConfig.IS_EINK)
                             Modifier.size(20.dp)
                         else
@@ -68,7 +71,7 @@ fun AppNavigationRail(
                 label = {
                     if (!BuildConfig.IS_EINK) {
                         Text(
-                            text = item.label,
+                            text = stringResource(item.labelRes),
                             style = MaterialTheme.typography.labelSmall
                         )
                     }
@@ -80,7 +83,7 @@ fun AppNavigationRail(
 
 private data class NavigationItem(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector
 )
 

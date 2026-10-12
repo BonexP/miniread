@@ -180,7 +180,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | **加 / 改一条导航路由** | 同上。⚠️ NavHost 有**两份副本**（rail / 手机），**两份都要改** |
 | **改定向拦截参数（域名 / 白名单 / Referer）** | 参数在应用内**隐藏设置页**（`ui/HiddenSettingsScreen.kt`）配置；持久化在 `util/DataStoreManager.kt` 的 4 个 `intercept_*` key（约 L32-35）；生效逻辑在 `util/InterceptionRuntime.kt`（+ `util/InterceptionSettings.kt` 解析、`util/InterceptionConfig.kt` 判定）；消费点在 `ui/ArticleDetailScreen.kt`（约 L262 判定、约 L342 拦截、约 L431 加 Referer） |
 | **改 E-Ink 行为** | 编译期：改 `app/src/eink/...`（同名文件按 flavor 替换）；运行期：判 `BuildConfig.IS_EINK` |
-| **加 / 改界面文案** | `res/values/strings.xml` + `res/values-zh/strings.xml`。**不要**定义 `app_name`——它由 flavor 的 `resValue` 生成 |
+| **加 / 改界面文案** | `res/values/strings.xml`（英文）+ `res/values-zh/strings.xml`（中文），**不要在 Kotlin 里硬编码**。**不要**定义 `app_name`——它由 flavor 的 `resValue` 生成。flavor 专属文案同理：`app/src/{standard,eink}/res/values/`（英文）+ `values-zh/`（中文） |
 | **加依赖** | `gradle/libs.versions.toml` + `app/build.gradle.kts` |
 | **加纯逻辑 + 单测** | 抽到 `util/` 纯函数 → 测试放 `app/src/test/java/com/i/miniread/`（纯 JVM，禁用 `android.*` 与 Robolectric，用 JUnit4） |
 | **改主题 / 配色** | `ui/theme/Color.kt`、`ui/theme/Theme.kt`、`res/values/{colors,themes}.xml`、flavor 的 `res/values/colors.xml` |
@@ -194,7 +194,11 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 - **版本号唯一来源**：`app/build.gradle.kts` 的 `appVersionName` / `appVersionCode`。**不要**给 flavor 或 release buildType 加 `versionNameSuffix`（仅 debug 允许，值 `-debug`）。
 - **签名**：本地无 keystore 时 release **自动回退 debug 签名**（由 `hasReleaseKeystore` 判定，约 L10-11/L86）；正式签名由 CI 处理（`release.yml` 解码 `KEYSTORE_BASE64`）。本地回退签名仅用于回归。
-- **字符串外置**：用户可见文案走 `res/values` / `res/values-zh`；`app_name` **不要**写进 `strings.xml`（由 flavor `resValue` 生成）。
+- **字符串外置（强制）**：**所有**用户可见文案一律走资源文件 —— 包括可见文本、`contentDescription`（无障碍）、`Snackbar`/`Toast` 提示、对话框标题与按钮。**禁止在 Kotlin 里硬编码中/英文字面量**。
+  - 目录约定：`res/values` = **英文**（默认 / fallback），`res/values-zh` = 中文；flavor 专属文案放 `app/src/{standard,eink}/res/values` 与 `values-zh`。新增 key 必须**两个文件同时加**，key 名逐字一致。
+  - `app_name` **不要**写进 `strings.xml` —— 它由 flavor 的 `resValue` 生成，因此**不随语言切换**（品牌名，属预期）。
+  - ⚠️ `stringResource()` **只能在 `@Composable` 作用域调用**。在 `onClick`、`coroutineScope.launch {}`、`AlertDialog` 的 `confirmButton` 等 lambda 里必须先提取成 `val` 再用。
+  - 导航标签不要硬编码：`MainActivity.kt` 的 `sealed class Screen` 用 `@StringRes labelRes`；`ui/adaptive/NavigationRail.kt` 的 `NavigationItem` 同。
 - **纯逻辑抽 `util/` 并配纯 JVM 单测**；两个 workflow 都跑 `testStandardDebugUnitTest` + `testEinkDebugUnitTest`。测试禁止 `android.*` / Robolectric。
 - **token 走 `SecureTokenStore`**（EncryptedSharedPreferences）；`DataStoreManager` 是唯一门面，**公开函数签名保持不变**。
 - **flavor 差异**用**编译期 source set 同名文件替换** + 运行期 `BuildConfig.IS_EINK`；**不要**用运行时反射或字符串判断 flavor。
@@ -228,6 +232,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 8. `ui/ArticleDetailScreen.kt` 的 `BottomAppBar` **必须**在 E-Ink 下显式传 `Modifier.height(48.dp)` + `tonalElevation = 0.dp` + `contentPadding`，否则会落到 Material3 默认的 80dp + 系统栏 inset + Level2 灰底（历史回归点：提交 `3707759`，随 v0.3.4 发布）。
 9. `interceptWebRequest`（约 L470）走 OkHttp **自行重发请求**（复用 `interceptionHttpClient` 单例），异常时返回 `null` 让 WebView 回退默认加载——改动它**必须回归图片加载**。
 10. 启用 R8（`isMinifyEnabled` + `isShrinkResources`，release 默认开启）后**必须回归定向拦截与图片加载**；出问题就把这两项置 `false`。
+11. **i18n 是历史薄弱点**：登录页、分类列表页、条目列表页、文章详情底部栏、底部导航栏与平板侧边栏都曾把中英文字面量**硬编码在 Kotlin 里**（中英混杂 → 中文设备显示英文 / 英文设备显示中文）；`standard`/`eink` 的 `strings.xml` 也曾把**中文放在默认 `values/`** 目录。新增任何 UI 文案时务必走 `stringResource` 并把 key 同时加进 `values` 与 `values-zh`。
 
 ---
 

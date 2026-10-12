@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
@@ -163,14 +164,14 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-sealed class Screen(val route: String, val label: String) {
-    data object Feeds : Screen("feeds", "Feeds")
-    data object Categories : Screen("categories", "Categories")
-    data object EntryList : Screen("entryList", "Entry List")
-    data object ArticleDetail : Screen("articleDetail", "Article Detail")
-    data object TodayEntryList : Screen("todayEntryList", "Today")
-    data object SubFeedScreen : Screen("subFeed", "Category Feeds")
-    data object HiddenSettings : Screen("hiddenSettings", "Hidden Settings")
+sealed class Screen(val route: String, @StringRes val labelRes: Int) {
+    data object Feeds : Screen("feeds", R.string.nav_feeds)
+    data object Categories : Screen("categories", R.string.nav_categories)
+    data object EntryList : Screen("entryList", R.string.nav_entry_list)
+    data object ArticleDetail : Screen("articleDetail", R.string.nav_article_detail)
+    data object TodayEntryList : Screen("todayEntryList", R.string.nav_today)
+    data object SubFeedScreen : Screen("subFeed", R.string.nav_sub_feed)
+    data object HiddenSettings : Screen("hiddenSettings", R.string.nav_hidden_settings)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -380,7 +381,7 @@ fun MainContent(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "刷新",
+                                contentDescription = stringResource(R.string.action_refresh),
                                 // E-Ink 版本使用更小的图标
                                 modifier = if (BuildConfig.IS_EINK)
                                     Modifier.size(18.dp)
@@ -605,7 +606,7 @@ fun BottomNavigationBar(navController: NavController) {
             NavigationBarItem(
                 // E-Ink 版本移除文本标签以节省空间和减少刷新
                 label = if (BuildConfig.IS_EINK) null else {
-                    { Text(screen.label) }
+                    { Text(stringResource(screen.labelRes)) }
                 },
                 selected = currentRoute == screen.route,
                 onClick = {
@@ -628,7 +629,7 @@ fun BottomNavigationBar(navController: NavController) {
 
                     Icon(
                         imageVector = iconVector,
-                        contentDescription = screen.label,
+                        contentDescription = stringResource(screen.labelRes),
                         // E-Ink 版本使用更小的图标
                         modifier = if (BuildConfig.IS_EINK)
                             Modifier.size(20.dp)

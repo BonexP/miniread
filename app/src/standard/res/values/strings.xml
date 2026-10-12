@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Standard flavor specific strings -->
-    <string name="flavor_description">标准版</string>
-    <string name="flavor_welcome">欢迎使用 MiniRead 标准版</string>
+    <!-- Standard flavor specific strings (default locale: English) -->
+    <string name="flavor_description">Standard Edition</string>
+    <string name="flavor_welcome">Welcome to MiniRead Standard Edition</string>
 </resources>
-

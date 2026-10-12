@@ -27,7 +27,7 @@
     <string name="settings_hidden_export">Export to clipboard</string>
     <string name="settings_hidden_import">Import from clipboard</string>
     <string name="settings_hidden_saved">Settings saved</string>
-    <string name="settings_hidden_reset_done">Reset to default</string>
+    <string name="settings_hidden_reset_done">Restored to default</string>
     <string name="settings_hidden_copied">Copied to clipboard</string>
     <string name="settings_hidden_imported">Imported. Tap Save to apply.</string>
     <string name="settings_hidden_import_failed">Import failed: no valid settings found</string>
@@ -35,4 +35,52 @@
     <string name="settings_hidden_current_base_url">Current server: %1$s</string>
     <string name="settings_hidden_active">Interception is active</string>
     <string name="settings_hidden_inactive">Interception is inactive</string>
+
+    <!-- Navigation labels (bottom bar / content descriptions) -->
+    <string name="nav_feeds">Feeds</string>
+    <string name="nav_categories">Categories</string>
+    <string name="nav_today">Today</string>
+    <string name="nav_entry_list">Entry List</string>
+    <string name="nav_article_detail">Article Detail</string>
+    <string name="nav_sub_feed">Category Feeds</string>
+    <string name="nav_hidden_settings">Hidden Settings</string>
+    <string name="action_refresh">Refresh</string>
+
+    <!-- Login screen -->
+    <string name="login_base_url">Instance Base URL</string>
+    <string name="login_api_token">API Token</string>
+    <string name="login_action">Login</string>
+    <string name="login_error_invalid_input">Please enter a valid Base URL and API token.</string>
+
+    <!-- Category list screen -->
+    <string name="category_list_empty">No categories available</string>
+    <string name="category_list_error_unknown">Unknown error occurred</string>
+    <string name="category_list_dialog_mark_read_title">Mark category as read</string>
+    <string name="category_list_dialog_mark_read_message">Are you sure you want to mark all entries in %1$s as read? This action cannot be undone.</string>
+    <string name="category_list_dialog_confirm">Confirm</string>
+    <string name="category_list_dialog_cancel">Cancel</string>
+    <string name="category_list_entry_unread_count">%1$d unread entries</string>
+    <string name="category_list_entry_all_read">All read</string>
+    <string name="category_list_mark_as_read">Mark as Read</string>
+    <string name="category_list_show_subscriptions">Show Subscriptions</string>
+
+    <!-- Entry list screen -->
+    <string name="entry_list_empty">No entries to display</string>
+    <string name="entry_list_untitled">Untitled</string>
+    <string name="entry_list_mark_as_read">Mark as Read</string>
+
+    <!-- Article detail screen -->
+    <string name="article_loading">Loading…</string>
+    <string name="article_snackbar_marked_read">Marked as read</string>
+    <string name="article_snackbar_marked_unread">Marked as unread</string>
+    <string name="article_snackbar_bookmarked">Bookmarked</string>
+    <string name="article_snackbar_unbookmarked">Removed from bookmarks</string>
+    <string name="article_snackbar_first_entry">This is already the first entry</string>
+    <string name="article_snackbar_last_entry">This is already the last entry</string>
+    <string name="article_action_mark_read">Mark as Read</string>
+    <string name="article_action_mark_unread">Mark as unread</string>
+    <string name="article_action_share">Share</string>
+    <string name="article_action_open_external">Open External</string>
+    <string name="article_action_previous">Previous</string>
+    <string name="article_action_next">Next</string>
 </resources>
