@@ -5,6 +5,14 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- 修复阅读页在旋转屏幕或 toggle 收藏后页面重载、阅读进度（滚动位置）重置的问题：
+  - `ui/ArticleDetailScreen.kt`：`loadDataWithBaseURL` 原先在组合体主体中执行，任何重组（如收藏后 `selectedEntry` 更新触发）都会重载页面；现移入 `LaunchedEffect(htmlContent)`，仅在 HTML 内容变化时加载一次。
+  - `AndroidManifest.xml`：MainActivity 声明 `configChanges`（`orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode`），旋转与深色模式切换不再重建 Activity，WebView 实例与滚动位置得以保留。
+  - `MainActivity.kt`：`windowSizeClass` 从 onCreate 单次计算改为在 `MainContent` 内随 `LocalConfiguration` 重算，避免 Activity 不重建后手机横屏失去底部栏 ↔ NavigationRail 自适应切换。
+
 ## [1.0.2] - 2026-10-12
 
 ### Fixed

@@ -466,10 +466,15 @@ fun ArticleWebView(
         onDispose { (context as? MainActivity)?.setActiveWebView(null) }
     }
 
-    // 当HTML内容加载完成后，更新WebView的内容
-    htmlContent?.let {
-        webView.loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
+    // HTML 内容就绪后加载，且仅在 htmlContent 变化时执行一次：
+    // 收藏 toggle / 标记已读等引发的重组不会重载页面，阅读进度得以保留。
+    // ⚠️ 不要把 loadDataWithBaseURL 放在组合体主体里——那样每次重组都会重载页面。
+    LaunchedEffect(htmlContent) {
+        htmlContent?.let {
+            webView.loadDataWithBaseURL(null, it, "text/html", "UTF-8", null)
+        }
     }
+
     AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
 }
 

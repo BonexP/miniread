@@ -1,6 +1,7 @@
 package com.i.miniread
 
 import android.os.Build
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -71,7 +72,6 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val viewModel: MinifluxViewModel by viewModels()
 
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -108,8 +108,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinireadTheme {
-                val windowSizeClass = calculateWindowSizeClass(this)
-                MainContent(viewModel = viewModel, windowSizeClass = windowSizeClass.widthSizeClass)
+                MainContent(viewModel = viewModel)
             }
         }
     }
@@ -175,16 +174,18 @@ sealed class Screen(val route: String, @StringRes val labelRes: Int) {
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-fun MainContent(
-    viewModel: MinifluxViewModel,
-    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-) {
+fun MainContent(viewModel: MinifluxViewModel) {
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    // Activity 已声明 configChanges（见 AndroidManifest.xml），旋转/分屏/深色切换不再重建
+    // Activity，windowSizeClass 不能只在 onCreate 算一次。calculateWindowSizeClass 本身是
+    // @Composable，内部以 LocalConfiguration 为信号重算，可保持手机横屏等场景下
+    // 底部栏 ↔ NavigationRail 的自适应切换。
+    val windowSizeClass = calculateWindowSizeClass(context as Activity).widthSizeClass
     val unlockedMsg = stringResource(R.string.settings_hidden_unlocked)
 
     var currentFeedId by remember { mutableStateOf("") }

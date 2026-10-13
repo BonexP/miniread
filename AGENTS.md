@@ -119,7 +119,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 | 文件 | 说明 |
 | --- | --- |
-| `MainActivity.kt` | Compose 宿主。`class MainActivity`（约 L64）读 DataStore 初始化 Retrofit/ViewModel（约 L80-97）；`onKeyDown`（约 L132）实现 **E-Ink 音量键翻页**（依赖 `activeWebView`，约 L122/L128）；`sealed class Screen`（约 L157）定义路由；`MainContent`（约 L169）里 `CenterAlignedTopAppBar`（约 L228）+ 刷新 action + `BottomNavigationBar`（约 L537）；**两份 NavHost**（rail 约 L368-445、手机约 L451-520）。 |
+| `MainActivity.kt` | Compose 宿主。`class MainActivity`（约 L73）读 DataStore 初始化 Retrofit/ViewModel（约 L80-108）；`onKeyDown`（约 L142）实现 **E-Ink 音量键翻页**（依赖 `activeWebView`，约 L132/L138）；`sealed class Screen`（约 L167）定义路由；`MainContent`（约 L180）里 `CenterAlignedTopAppBar`（约 L252）+ 刷新 action + `BottomNavigationBar`（约 L591）；**两份 NavHost**（rail 约 L416、手机约 L502）。Activity 在 Manifest 声明了 `configChanges`（旋转/分屏/深色切换**不重建**，保阅读进度），`windowSizeClass` 因此在 `MainContent` 内改调 `@Composable` 的 `calculateWindowSizeClass` 实时重算（约 L185-188，勿再挪回 onCreate 单次计算）。 |
 | `SettingsFragment.kt` | `PreferenceFragmentCompat`，读 `res/xml/preferences.xml`（约 L7-11）。**当前无入口**，见 §8。 |
 | `example/FlavorUsageExample.kt` | flavor 用法演示（如何判 `BuildConfig.IS_EINK`、用 `EInkConfig`/`EInkUtils`），可作参考，非运行时主流程。 |
 
@@ -233,6 +233,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 9. `interceptWebRequest`（约 L470）走 OkHttp **自行重发请求**（复用 `interceptionHttpClient` 单例），异常时返回 `null` 让 WebView 回退默认加载——改动它**必须回归图片加载**。
 10. 启用 R8（`isMinifyEnabled` + `isShrinkResources`，release 默认开启）后**必须回归定向拦截与图片加载**；出问题就把这两项置 `false`。
 11. **i18n 是历史薄弱点**：登录页、分类列表页、条目列表页、文章详情底部栏、底部导航栏与平板侧边栏都曾把中英文字面量**硬编码在 Kotlin 里**（中英混杂 → 中文设备显示英文 / 英文设备显示中文）；`standard`/`eink` 的 `strings.xml` 也曾把**中文放在默认 `values/`** 目录。新增任何 UI 文案时务必走 `stringResource` 并把 key 同时加进 `values` 与 `values-zh`。
+12. **MainActivity 声明了 `android:configChanges`**（旋转/分屏/深色切换**不重建** Activity）：这是阅读页保留 WebView 实例与滚动进度（旋转不丢进度）的关键，**不要删**。与之配套，阅读页 `ArticleWebView` 的 `loadDataWithBaseURL` **必须留在 `LaunchedEffect(htmlContent)` 里**（仅在内容变化时加载一次）——放回组合体主体会让每次重组（如收藏 toggle）都重载页面。新增依赖「配置刷新」的非 Compose 代码时，需自行在 `onConfigurationChanged` 处理。
 
 ---
 
