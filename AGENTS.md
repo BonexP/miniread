@@ -241,7 +241,13 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
     - 强制补记（`onPageFinished` / `onRelease`）**不允许用 `scrollY == 0` 覆盖**已保存位置：页面刚加载完或 WebView 被重建时 `scrollY` 本就是 0，会把待恢复的位置抹掉。
     - `measureScrollSnapshot()` 的 `contentHeight` **不乘 `scale`**（写入与恢复必须同口径）；而滚动到底判定里的 `contentHeight * scale` 是**既有且存疑**的口径，两者并存是已知情况，改动其一必须同步另一处。
     另：`resolve()` 的贴底吸附只在 `saved.viewportHeight` 可信（`0 < viewport <= contentHeight`）时生效，规避布局未稳定时的异常测量。
+    另：阅读页视口自 v1.0.3+ 起改为**响应式**（见坑 15），旋转/分屏会**真实重排**（`contentHeight` 随之变化）——这正是文档比例换算恢复机制存在的意义，恢复逻辑**不受影响**；不要因为「旋转必然重排」而新增弱判据或绕过 `needsRestoreAfterLayoutChange`。
 14. **NavHost 子树重建问题**（✅ 2026-10-13 修复，见坑 7）：此前两份 NavHost 分处 `if (useNavigationRail) {...} else {...}` 两分支，手机竖屏↔横屏切换会销毁重建整个内容子树 —— 阅读页 WebView 被重建、页面重载（logcat 表现为每次旋转都出现 `Page finished loading`）、滚动位置丢失、并伴随明显卡顿。已通过**合并为单一 NavHost** 根治。验收判据：旋转后 logcat **不应**再出现 `Page finished loading`，而应出现 `Layout change: native position ok ... skip restore`。
+15. **阅读页响应式渲染红线**（2026-10-13 起）：阅读页由「固定 ~980px 布局视口 + 缩放贴合」改为**真实设备宽度**的响应式渲染，三条红线：
+    - `assets/template.html` **必须**保留 `<meta name="viewport" content="width=device-width, initial-scale=1">` 与 `<style>html { font-size: 6.4px; }</style>` rem 基数（`6.4 = 16 × 0.4`，系数 0.4 即旧模型 WebView 宽 ÷ 980px ≈ 0.399）。⚠️ **删除 rem 基数会让全部 rem 字号整体放大 ~2.5 倍**，删除 viewport meta 会让页面退回固定布局视口、旋转不重排。
+    - **禁止**在 Android 侧按 `screenWidthDp >= 600` 判定后**条件注入** `tablet_styles.css`：`loadHtmlContentAsync` 必须**无条件注入**（读取后走进程级缓存 `cachedTabletCss`）。条件注入会导致旋转后不重排、手机横屏被误按平板限宽。
+    - `assets/tablet_styles.css` 的媒体查询**必须**带高度守卫：`(min-width:600px) and (min-height:480px)`、`(min-width:840px) and (min-height:480px)`（深色块同步）。高度守卫用于排除 WebView 高度通常仅 200~350px 的**手机横屏**。
+    - 是否生效完全交给 CSS 媒体查询，按**真实视口**（宽 = WebView 内容区宽度，CSS px = dp）决定；块内字号已全部改为 `px`，不依赖 rem 基数。
 
 ---
 

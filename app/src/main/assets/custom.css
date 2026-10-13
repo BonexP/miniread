@@ -63,12 +63,14 @@ h1 {
     font-size: 3rem;
 }
 
+/* 标题层级修正：h2/h3 原为 1.75rem / 1.5rem，小于正文（2.2rem）。
+   现调整为大于正文：h2≈1.25×、h3≈1.09×（rem 基数见 template.html 的 6.4px）。 */
 h2 {
-    font-size: 1.75rem;
+    font-size: 2.75rem;
 }
 
 h3 {
-    font-size: 1.5rem;
+    font-size: 2.4rem;
 }
 
 /* 链接样式 */

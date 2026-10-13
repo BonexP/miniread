@@ -25,9 +25,10 @@ data class ScrollSnapshot(
  * 1. **贴底吸附**：保存时已停在底部（或保存时内容本就不满屏），恢复后直接贴到新布局底部。
  * 2. **文档相对比例**：`savedScrollY / savedContentHeight` → 乘以当前 `contentHeight`。
  *    `scrollY` 与 `contentHeight` 同为 view px，其比值即「CSS 文档中的相对位置」，
- *    **与缩放比例无关**；`assets/template.html` 未声明 `<meta name="viewport">`，
- *    CSS 布局宽度固定在约 980px，旋转只改 page scale、不改 CSS 布局，
- *    因此按文档比例换算能精确落回同一段文字。
+ *    **与布局宽度 / 缩放比例无关**。template.html 已改为响应式
+ *    （`<meta name="viewport" content="width=device-width, initial-scale=1">`），
+ *    旋转 / 分屏会触发真实 CSS 重排、`contentHeight` 随之变化，
+ *    但文档比例换算不受影响，仍能落回同一段文字附近。
  */
 object ReadingPositionResolver {
 

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- 阅读页改为**响应式渲染**，修复旋转屏幕后正文贴左、右侧大片留白，以及手机横屏（宽 ≥600dp）被误按平板限宽的问题：
+  - `assets/template.html`：补 `<!DOCTYPE html>`、`<meta charset>` 与 `<meta name="viewport" content="width=device-width, initial-scale=1">`，布局视口由固定约 980px 改为真实设备宽度（旋转后正确重排）；并设 `html{font-size:6.4px}` 作为 rem 基数，保持字号观感与旧版一致。
+  - `ui/ArticleDetailScreen.kt`：移除 `loadHtmlContentAsync` 中按 `screenWidthDp>=600` 一次性判定平板的逻辑；`tablet_styles.css` 改为始终注入并纳入进程级缓存。
+  - `assets/tablet_styles.css`：媒体查询改为 `(min-width:600px) and (min-height:480px)`（高度守卫排除手机横屏），块内 `rem` 统一改为 `px`。
+  - `assets/custom.css` / `customdark.css`：修正标题层级（h2/h3 原先小于正文字号，现调整为大于正文）。
+
 ## [1.0.3] - 2026-10-13
 
 ### Fixed

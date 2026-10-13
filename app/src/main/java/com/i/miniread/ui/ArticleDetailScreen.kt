@@ -698,15 +698,13 @@ fun readAssetFile(context: Context, fileName: String): String {
 
 private var cachedNormalizeCss: String? = null
 private var cachedCustomCss: String? = null
+private var cachedTabletCss: String? = null   // 平板样式：始终注入，是否生效由 CSS 媒体查询决定
 private var cachedHtmlTemplate: String? = null
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
     val isDarkMode = (context.resources.configuration.uiMode and
             Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-
-    // 检测是否为平板设备
-    val isTablet = context.resources.configuration.screenWidthDp >= 600
 
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
@@ -719,18 +717,20 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
             Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
         }
 
-        // 平板设备加载额外的优化CSS
-        val tabletCss = if (isTablet) {
-            readAssetFile(context, "tablet_styles.css")
-        } else {
-            ""
+        // 平板样式「始终注入」：是否生效交给 CSS 媒体查询
+        // （(min-width:600px) and (min-height:480px)，高度守卫排除手机横屏）。
+        // ⚠️ 不要恢复 Android 侧 screenWidthDp 一次性判定：那会让手机横屏被误限宽，
+        //    且页面加载后旋转不会重新判定（正文贴左 / 右侧留白）。
+        if (cachedTabletCss == null) {
+            cachedTabletCss = readAssetFile(context, "tablet_styles.css")
         }
 
         if (cachedHtmlTemplate == null) {
             cachedHtmlTemplate = readAssetFile(context, "template.html")
         }
 
-        // 构建HTML内容，为平板添加额外的CSS
+        // 构建HTML内容（tablet CSS 始终注入，靠媒体查询按真实视口生效）
+        val tabletCss = cachedTabletCss ?: ""
         val htmlContent = cachedHtmlTemplate?.let { template ->
             cachedNormalizeCss?.let { normalizeCss ->
                 cachedCustomCss?.let { customCss ->

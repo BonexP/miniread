@@ -1,7 +1,12 @@
-/* 平板设备专用样式优化 */
+/* 平板设备专用样式优化
+   ⚠️ 生效条件必须同时满足「宽 ≥600px 且 高 ≥480px」——高度守卫用于排除手机横屏
+   （其 WebView 高度通常仅 200~350px），否则手机横屏会被误按平板限宽。
+   ⚠️ 本文件由 loadHtmlContentAsync 无条件注入，是否生效完全交给下面的媒体查询；
+   不要恢复 Android 侧 screenWidthDp 一次性判定（那会导致旋转后不重排、横向误限宽）。
+   ⚠️ 块内字号已全部改为 px，不依赖 template.html 中 html 的 6.4px rem 基数。 */
 
-/* 针对平板设备（屏幕宽度 >= 600dp）的优化 */
-@media (min-width: 600px) {
+/* 针对平板设备（视口宽 ≥600px 且 高 ≥480px）的优化 */
+@media (min-width: 600px) and (min-height: 480px) {
     body {
         max-width: 800px;
         margin: 0 auto;
@@ -11,25 +16,25 @@
     }
 
     h1 {
-        font-size: 2.5rem;
-        margin-bottom: 1.5rem;
+        font-size: 40px;
+        margin-bottom: 24px;
         line-height: 1.2;
     }
 
     h2 {
-        font-size: 2rem;
-        margin-top: 2rem;
-        margin-bottom: 1rem;
+        font-size: 32px;
+        margin-top: 32px;
+        margin-bottom: 16px;
     }
 
     h3 {
-        font-size: 1.5rem;
-        margin-top: 1.5rem;
-        margin-bottom: 0.75rem;
+        font-size: 24px;
+        margin-top: 24px;
+        margin-bottom: 12px;
     }
 
     p {
-        margin-bottom: 1.5rem;
+        margin-bottom: 24px;
         text-align: justify;
     }
 
@@ -37,7 +42,7 @@
         max-width: 100%;
         height: auto;
         display: block;
-        margin: 2rem auto;
+        margin: 32px auto;
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
@@ -45,9 +50,9 @@
     pre {
         background-color: #f5f5f5;
         border-radius: 8px;
-        padding: 1.5rem;
+        padding: 24px;
         overflow-x: auto;
-        margin: 1.5rem 0;
+        margin: 24px 0;
         font-size: 16px;
         line-height: 1.6;
     }
@@ -67,25 +72,25 @@
 
     blockquote {
         border-left: 4px solid #1a73e8;
-        padding-left: 1.5rem;
-        margin: 1.5rem 0;
+        padding-left: 24px;
+        margin: 24px 0;
         color: #555;
         font-style: italic;
     }
 
     ul, ol {
-        margin-left: 2rem;
-        margin-bottom: 1.5rem;
+        margin-left: 32px;
+        margin-bottom: 24px;
     }
 
     li {
-        margin-bottom: 0.5rem;
+        margin-bottom: 8px;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
-        margin: 1.5rem 0;
+        margin: 24px 0;
         font-size: 0.95em;
     }
 
@@ -112,8 +117,8 @@
     }
 }
 
-/* 超大屏幕（>= 840dp）优化 */
-@media (min-width: 840px) {
+/* 超大屏幕（视口宽 ≥840px 且 高 ≥480px）优化 */
+@media (min-width: 840px) and (min-height: 480px) {
     body {
         max-width: 900px;
         padding: 48px;
@@ -121,12 +126,12 @@
     }
 
     h1 {
-        font-size: 3rem;
+        font-size: 48px;
     }
 }
 
 /* 深色模式适配 */
-@media (prefers-color-scheme: dark) and (min-width: 600px) {
+@media (prefers-color-scheme: dark) and (min-width: 600px) and (min-height: 480px) {
     pre {
         background-color: #2d2d2d;
         color: #d1d1d1;
@@ -158,4 +163,3 @@
         border-bottom-color: #8ab4f8;
     }
 }
-
