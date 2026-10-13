@@ -1,9 +1,9 @@
-# MiniRead v1.0.2
+# MiniRead v1.0.3
 
 MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS 服务 Android 客户端。
 
-- **版本**：v1.0.2（versionCode 102）
-- **Tag**：`v1.0.2`
+- **版本**：v1.0.3（versionCode 103）
+- **Tag**：`v1.0.3`
 - **渠道**：GitHub Releases（仅此渠道分发）
 
 ## 下载
@@ -12,10 +12,19 @@ MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS �
 
 | 变体 | APK 文件 | applicationId | 适用设备 |
 |------|----------|---------------|----------|
-| Standard（标准版） | `MiniRead-standard-v1.0.2.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
-| E-Ink（墨水屏版） | `MiniRead-eink-v1.0.2.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
+| Standard（标准版） | `MiniRead-standard-v1.0.3.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
+| E-Ink（墨水屏版） | `MiniRead-eink-v1.0.3.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
 
-## 本版修复（1.0.2）
+## 本版修复（1.0.3）
+
+- **阅读进度不再丢失**：修复旋转屏幕、切换收藏后阅读页重载、滚动位置重置的问题：
+  - 收藏切换不再触发页面刷新；旋转 / 分屏 / 深色模式切换不再重建界面。
+  - 合并导航图中两份重复实现，根治了旋转时整个阅读页被重建的隐患，旋转后停留在原处。
+- **阅读位置记忆**：按文章记录滚动位置（最近 50 篇），重新进入同一篇文章时自动回到上次位置；旋转后的位置恢复更精确。
+- **性能优化**：移除多处每次重组都会执行的浪费操作（重复打印整篇正文、大字符串重复拼接、网络客户端重复创建），修复阅读页 WebView 资源泄漏，滚动与切换更流畅。
+- 单元测试扩充至 110+ 个纯 JVM 用例（新增阅读位置换算等纯函数覆盖）。
+
+## 1.0.2 内容
 
 - **中英文覆盖补全**：修复多个页面把用户可见文案硬编码在代码中造成的语言错乱（中文设备显示英文、英文设备显示中文）：
   - 登录页（输入框标签、登录按钮、校验提示）

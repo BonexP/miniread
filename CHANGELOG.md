@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-13
+
 ### Fixed
 - 修复阅读页在旋转屏幕或 toggle 收藏后页面重载、阅读进度（滚动位置）重置的问题：
   - `ui/ArticleDetailScreen.kt`：`loadDataWithBaseURL` 原先在组合体主体中执行，任何重组（如收藏后 `selectedEntry` 更新触发）都会重载页面；现移入 `LaunchedEffect(htmlContent)`，仅在 HTML 内容变化时加载一次。
@@ -100,6 +102,7 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.0.3]: https://github.com/BonexP/miniread/releases/tag/v1.0.3
 [1.0.2]: https://github.com/BonexP/miniread/releases/tag/v1.0.2
 [1.0.1]: https://github.com/BonexP/miniread/releases/tag/v1.0.1
 [1.0.0]: https://github.com/BonexP/miniread/releases/tag/v1.0.0
