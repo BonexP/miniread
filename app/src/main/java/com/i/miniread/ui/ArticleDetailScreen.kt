@@ -114,10 +114,15 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                     style = MaterialTheme.typography.titleLarge
                 )
             } else {
-                selectedEntry?.content?.let { Log.d("ArticleWebViewContentInject", it) }
                 selectedEntry?.let { entry ->
+                    // 大字符串拼接用 remember 缓存：仅当标题/正文变化时重建，避免每次重组重复拼接整篇文章。
+                    // key 只取这两个字段（不用 entry 对象——收藏 toggle 会产生新实例但内容相同，白重算）。
+                    // 值相等 → LaunchedEffect(content) 不会重启 → 不重载，语义不变。
+                    val webViewHtml = remember(entry.title, entry.content) {
+                        "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}"
+                    }
                     ArticleWebView(
-                        content = "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}",
+                        content = webViewHtml,
                         feedId = entry.feed_id,
                         onScrollToBottom = {
                             Log.d("ArticleDetailScreen", "Article scrolled to end!")
@@ -325,7 +330,6 @@ fun ArticleWebView(
     }
     val coroutineScope = rememberCoroutineScope()
     val hasMarkedAsRead = remember { mutableStateOf(false) }
-    val contentHeightState = remember { mutableStateOf<Float?>(null) }
     var scrollDebounceJob by remember { mutableStateOf<Job?>(null) }
     val updatedOnScrollToBottom by rememberUpdatedState(onScrollToBottom)
 
@@ -335,6 +339,10 @@ fun ArticleWebView(
     val updatedOnPositionChanged by rememberUpdatedState(onPositionChanged)
     // 每次 onPageFinished 自增；> 0 表示页面至少完成过一次加载（恢复的前置条件）
     var pageLoadTick by remember { mutableIntStateOf(0) }
+    // 上次已处理的 pageLoadTick：区分「真·页面加载事件」与「纯布局变化（旋转/分屏）」
+    var lastHandledPageLoadTick by remember { mutableIntStateOf(-1) }
+    // WebView 是否已被 onRelease 销毁：防止 postDelayed 回调对已销毁的 WebView 调用 JS
+    var released by remember { mutableStateOf(false) }
     // 程序化滚动后的抑制时间窗（SystemClock.uptimeMillis 基准）：防止恢复被误判为「滚到底」
     var scrollGuardUntil by remember { mutableLongStateOf(0L) }
     // 滚动写入节流状态
@@ -454,12 +462,13 @@ fun ArticleWebView(
 
                     // 延迟执行，确保资源加载完毕
                     view?.postDelayed({
+                        // WebView 可能已被 onRelease 销毁（快速离开页面）→ 回调里先防御
+                        if (released) return@postDelayed
                         view.evaluateJavascript(
                             "(function() { return document.body.scrollHeight; })();"
                         ) { result ->
                             val contentHeight = result?.toFloatOrNull()
                             if (contentHeight != null) {
-                                contentHeightState.value = contentHeight
                                 val webViewHeight = view.height.toFloat()
 
                                 if (contentHeight <= webViewHeight) {
@@ -524,9 +533,9 @@ fun ArticleWebView(
     DisposableEffect(webView) {
         (context as? MainActivity)?.setActiveWebView(webView)
         onDispose {
+            // 只做解登记，不碰 view：落盘与销毁统一由 AndroidView.onRelease 负责，
+            // 两者执行顺序无官方保证，解耦后无论谁先谁后都安全。
             (context as? MainActivity)?.setActiveWebView(null)
-            // 离开页面前补记一次阅读位置（覆盖返回列表 / 上一篇 / 下一篇）
-            recordScrollPosition(webView, force = true)
         }
     }
 
@@ -540,9 +549,12 @@ fun ArticleWebView(
     }
 
     // ===== 恢复阅读位置 =====
-    // key 只有两个，覆盖两条丢失路径：
-    //   · pageLoadTick —— 页面加载完成（首次进入 / WebView 被重建后重新加载）
-    //   · sizeSignature —— 窗口尺寸变化（旋转 / 分屏：页面**没有**重新加载，但缩放重排丢了滚动位置）
+    // key 只有两个：
+    //   · pageLoadTick —— 真·页面加载完成（首次进入 / 从列表重进 / 进程恢复 / WebView 被重建）
+    //   · sizeSignature —— 窗口尺寸变化（旋转 / 分屏；页面通常**没有**重新加载）
+    // 两类事件的处理不同：加载事件直接走比例恢复兜底；纯布局变化先用
+    // ReadingPositionResolver.needsRestoreAfterLayoutChange 判断原生落点是否已正确，
+    // 正确则绝不 scrollTo（WebView 原生保留的位置比比例换算更准）。
     // ⚠️ 绝不能把 content / savedPosition / entryId 加入 key：
     //    收藏 toggle 等「仅重组、不重载」的场景会误触发恢复，造成位置跳动。
     val configuration = LocalConfiguration.current
@@ -550,6 +562,32 @@ fun ArticleWebView(
 
     LaunchedEffect(pageLoadTick, sizeSignature) {
         if (pageLoadTick == 0) return@LaunchedEffect   // 页面尚未 onPageFinished
+
+        val isPageLoadEvent = pageLoadTick != lastHandledPageLoadTick
+        if (isPageLoadEvent) {
+            lastHandledPageLoadTick = pageLoadTick     // 真·加载事件 → 走下面的恢复兜底
+        } else {
+            // 纯布局变化（旋转/分屏，页面未重载）：先等一次重排，再判断原生落点是否已正确。
+            // 旋转会引发 CSS 重排（width/height 对调），Chromium 可能只保留像素偏移而没做滚动锚定；
+            // 判据用「文档比例偏差」：偏差小 → 原生已正确，绝不 scrollTo（多动一次反而把位置挪走）；
+            // 偏差大 / 位置丢失 → 交给下面的比例映射兜底纠正。
+            delay(SCROLL_LAYOUT_SETTLE_DELAY_MS)
+            val native = measureScrollSnapshot(webView)
+            if (!ReadingPositionResolver.needsRestoreAfterLayoutChange(
+                    native, currentRequestSavedPosition()
+                )
+            ) {
+                scrollDebounceJob?.cancel()
+                recordScrollPosition(webView, force = true) // 归一化落盘（新布局下的真实位置）
+                Log.d(
+                    "ArticleWebView",
+                    "Layout change: native position ok (y=${native.scrollY}), skip restore"
+                )
+                return@LaunchedEffect
+            }
+            Log.d("ArticleWebView", "Layout change: native position off, restoring by ratio")
+        }
+
         val saved = currentRequestSavedPosition() ?: return@LaunchedEffect
         if (saved.scrollY <= 0) return@LaunchedEffect    // 无需恢复（零开销早退）
 
@@ -586,9 +624,25 @@ fun ArticleWebView(
         )
     }
 
-    AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
+    AndroidView(
+        factory = { webView },
+        modifier = Modifier.fillMaxSize(),
+        onRelease = { view ->
+            // 离开阅读页：先补记最终阅读位置，再彻底销毁 WebView（顺序不可颠倒——
+            // 先 destroy 的话最后一次位置就白丢了）。WebView 持有 native 资源，
+            // 不显式 destroy 会随每次重建泄漏。
+            released = true
+            recordScrollPosition(view, force = true)
+            view.stopLoading()
+            view.loadUrl("about:blank") // 中断残留 JS / 请求回调
+            (view.parent as? android.view.ViewGroup)?.removeView(view)
+            view.destroy()
+        }
+    )
 }
 
+/** 纯布局变化（旋转/分屏、页面未重载）后，观察原生落点前的等待时间：一次重排的余量。 */
+private const val SCROLL_LAYOUT_SETTLE_DELAY_MS = 150L
 /** 恢复前等待 WebView 按新视口完成重排的时间：2~3 帧重排 + 一次 JS 往返的余量。 */
 private const val SCROLL_RESTORE_SETTLE_DELAY_MS = 250L
 /** 内容高度尚未稳定时的重试间隔与最大次数。 */

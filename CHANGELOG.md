@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `viewmodel/MinifluxViewModel.kt`：新增 `saveReadingPosition` / `getReadingPosition` / `clearReadingPosition`，使用普通 `LinkedHashMap`（非可观察容器，避免滚动时每帧重组）。
   - `ui/ArticleDetailScreen.kt`：滚动中 / 页面加载完成 / 离开页面三处写入（节流），恢复前用 300ms 时间窗抑制「滚到底」误判，避免重复标记已读与弹出 Snackbar。
   - 新增单测 `ReadingPositionResolverTest`（17 个用例，纯 JVM），总用例数 93 → 110。
+- **根治旋转重建**：`MainActivity.kt` 中两份完全相同的 NavHost 原先分处 `if (useNavigationRail) {...} else {...}` 两侧，手机竖屏（Compact）↔ 横屏（Expanded）切换时 `useNavigationRail` 翻转，导致整个内容子树被销毁重建——阅读页 WebView 每次旋转都被重建、页面重新加载（此前只能靠按比例恢复勉强兜住，落点必然偏移）。现合并为**单一 NavHost**，`if` 仅切换侧边栏，旋转时不再重建内容子树、不再重载，滚动位置由 WebView 原生保留（严格同一段文字）。
+- 阅读页新增**布局变化守卫**：纯布局变化（旋转/分屏，页面未重载）时不再无条件按比例恢复——先用 `ReadingPositionResolver.needsRestoreAfterLayoutChange`（文档比例偏差判据）判断原生落点是否已正确，正确则不做任何 `scrollTo`；仅当原生位置丢失或偏差过大时才走比例兜底。
+- `ReadingPositionResolver.resolve` 的贴底吸附增加 `viewportHeight` 可信性守卫（`0 < viewport <= contentHeight`），规避布局未稳定时异常测量导致的误贴底。
+
+### Performance
+- `ui/ArticleDetailScreen.kt`：移除每次重组都打印整篇文章的调试日志；正文 HTML 拼接改为 `remember(title, content)` 缓存；`AndroidView` 增加 `onRelease`（`stopLoading` / `loadUrl("about:blank")` / `destroy`），修复 WebView 从未被销毁导致的资源泄漏；删除无读取的死状态 `contentHeightState`。
+- `network/MinifluxApi.kt`：`RetrofitInstance.initialize(baseUrl)` 幂等化（相同 baseUrl 直接返回），避免组合体每帧重建 Retrofit / GsonConverterFactory；`api` getter 改为缓存动态代理对象。
 
 ## [1.0.2] - 2026-10-12
 

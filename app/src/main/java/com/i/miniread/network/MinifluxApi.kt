@@ -231,7 +231,6 @@ data class Icon(
 
 object RetrofitInstance {
     private const val TAG = "MinifluxApi"
-    private var retrofit: Retrofit? = null
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = if (BuildConfig.DEBUG)
@@ -240,24 +239,41 @@ object RetrofitInstance {
             HttpLoggingInterceptor.Level.NONE
     }
 
-    fun initialize(baseUrl: String) {
-        Log.d(TAG, "Initializing Retrofit with base URL: $baseUrl")
-        retrofit = Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(httpClient)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
     private val httpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .build()
 
+    // 调用点均在主线程（onCreate 的 lifecycleScope、登录回调、组合体），@Volatile 仅作可见性保险
+    @Volatile
+    private var retrofit: Retrofit? = null
+
+    @Volatile
+    private var initializedBaseUrl: String? = null
+
+    @Volatile
+    private var cachedApi: MinifluxApi? = null
+
+    /**
+     * 幂等初始化：baseUrl 与上次相同且已构建过则直接返回。
+     * ⚠️ 该函数会被 MainActivity 的组合体每帧调用，不能无条件重建 Retrofit / GsonConverterFactory
+     * （曾导致每次旋转/重组都重建一次并刷日志）。
+     */
+    fun initialize(baseUrl: String) {
+        if (retrofit != null && initializedBaseUrl == baseUrl) return
+        Log.d(TAG, "Initializing Retrofit with base URL: $baseUrl")
+        val created = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        retrofit = created
+        cachedApi = created.create(MinifluxApi::class.java)
+        initializedBaseUrl = baseUrl
+    }
+
     val api: MinifluxApi
-        get() {
-            checkNotNull(retrofit) { "RetrofitInstance is not initialized. Call initialize(baseUrl) first." }
-            return retrofit!!.create(MinifluxApi::class.java)
-        }
+        get() = cachedApi
+            ?: error("RetrofitInstance is not initialized. Call initialize(baseUrl) first.")
 
     init {
         Log.d(TAG, "RetrofitInstance initialized!")

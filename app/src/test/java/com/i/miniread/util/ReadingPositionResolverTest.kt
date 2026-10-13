@@ -69,11 +69,28 @@ class ReadingPositionResolverTest {
     }
 
     @Test
-    fun contentDidNotFillViewportAtSaveTime_snapsToNewBottom() {
-        // savedMaxScroll = 0（保存时内容不满屏）→ 贴底吸附
+    fun contentDidNotFillViewportAtSaveTime_usesRatio() {
+        // saved.viewportHeight(2000) > saved.contentHeight(1500) → viewport 不可信 → 跳过贴底吸附，
+        // 落到文档相对比例：ratio = 5/1500 → 5/1500 * 9000 = 30
         val saved = snap(5, 1500, 2000)
         val current = snap(0, 9000, 1200)
-        assertEquals(7800, ReadingPositionResolver.resolve(saved, current))
+        assertEquals(30, ReadingPositionResolver.resolve(saved, current))
+    }
+
+    @Test
+    fun corruptSavedViewport_largerThanContent_usesRatio() {
+        // viewport 异常测量（大于内容高度）不得触发贴底，应走比例：0.2 * 9000 = 1800
+        val saved = snap(1000, 5000, 6000)
+        val current = snap(0, 9000, 1200)
+        assertEquals(1800, ReadingPositionResolver.resolve(saved, current))
+    }
+
+    @Test
+    fun corruptSavedViewport_zero_usesRatio() {
+        // viewport 为 0（布局未稳定）不得触发贴底（savedMaxScroll 会失真），应走比例
+        val saved = snap(1000, 5000, 0)
+        val current = snap(0, 9000, 1200)
+        assertEquals(1800, ReadingPositionResolver.resolve(saved, current))
     }
 
     @Test
@@ -141,5 +158,65 @@ class ReadingPositionResolverTest {
         val saved = snap(2900, 5000, 2000)
         val current = snap(0, 9000, 1200)
         assertEquals(7800, ReadingPositionResolver.resolve(saved, current, bottomEpsilonPx = 500f))
+    }
+
+    // ===== needsRestoreAfterLayoutChange：纯布局变化（旋转/分屏，页面未重载）的守卫判据 =====
+
+    @Test
+    fun layoutUnchanged_noRestore() {
+        // 布局与位置都没变：原生落点即正确，不打扰
+        val s = snap(1000, 5000, 2000)
+        assertEquals(false, ReadingPositionResolver.needsRestoreAfterLayoutChange(s, s))
+    }
+
+    @Test
+    fun layoutChange_anchorPreserved_noRestore() {
+        // 文档重排（5000 → 9000）但原生把同一段落留在了视口（比例一致 0.2）
+        val native = snap(1800, 9000, 1200)
+        val saved = snap(1000, 5000, 2000)
+        assertEquals(false, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, saved))
+    }
+
+    @Test
+    fun layoutChange_pixelOffsetOnly_restores() {
+        // 文档重排但原生只保留了像素偏移（scrollY 仍是 1000），
+        // 比例映射目标 = 0.2 * 9000 = 1800，偏差 800 > 容差 0.5*1200=600 → 需要纠正
+        val native = snap(1000, 9000, 1200)
+        val saved = snap(1000, 5000, 2000)
+        assertEquals(true, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, saved))
+    }
+
+    @Test
+    fun layoutChange_withinTolerance_noRestore() {
+        // saved 比例 4000/5000 = 0.8；映射目标 = 0.8 * 9000 = 7200，原生 7100，偏差 100 < 600
+        val native = snap(7100, 9000, 1200)
+        val saved = snap(4000, 5000, 2000)
+        assertEquals(false, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, saved))
+    }
+
+    @Test
+    fun layoutChange_nativeScrollLost_restores() {
+        // 原生位置丢失（scrollY == 0）而保存位置非零 → 需要兜底恢复
+        val native = snap(0, 9000, 1200)
+        val saved = snap(1000, 5000, 2000)
+        assertEquals(true, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, saved))
+    }
+
+    @Test
+    fun layoutChange_nativeNotMeasurable_restores() {
+        // 原生测量不可用（高度为 0）→ 交给上层重试兜底
+        val native = snap(0, 0, 0)
+        val saved = snap(1000, 5000, 2000)
+        assertEquals(true, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, saved))
+    }
+
+    @Test
+    fun layoutChange_noSavedOrAtTop_noRestore() {
+        val native = snap(500, 9000, 1200)
+        assertEquals(false, ReadingPositionResolver.needsRestoreAfterLayoutChange(native, null))
+        assertEquals(
+            false,
+            ReadingPositionResolver.needsRestoreAfterLayoutChange(native, snap(0, 5000, 2000))
+        )
     }
 }

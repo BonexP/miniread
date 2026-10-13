@@ -119,7 +119,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 | 文件 | 说明 |
 | --- | --- |
-| `MainActivity.kt` | Compose 宿主。`class MainActivity`（约 L73）读 DataStore 初始化 Retrofit/ViewModel（约 L80-108）；`onKeyDown`（约 L142）实现 **E-Ink 音量键翻页**（依赖 `activeWebView`，约 L132/L138）；`sealed class Screen`（约 L167）定义路由；`MainContent`（约 L180）里 `CenterAlignedTopAppBar`（约 L252）+ 刷新 action + `BottomNavigationBar`（约 L591）；**两份 NavHost**（rail 约 L416、手机约 L502）。Activity 在 Manifest 声明了 `configChanges`（旋转/分屏/深色切换**不重建**，保阅读进度），`windowSizeClass` 因此在 `MainContent` 内改调 `@Composable` 的 `calculateWindowSizeClass` 实时重算（约 L185-188，勿再挪回 onCreate 单次计算）。 |
+| `MainActivity.kt` | Compose 宿主。`class MainActivity`（约 L73）读 DataStore 初始化 Retrofit/ViewModel（约 L80-108）；`onKeyDown`（约 L142）实现 **E-Ink 音量键翻页**（依赖 `activeWebView`，约 L132/L138）；`sealed class Screen`（约 L167）定义路由；`MainContent`（约 L180）里 `CenterAlignedTopAppBar`（约 L252）+ 刷新 action + `BottomNavigationBar`（约 L555）；**单一 NavHost**（约 L419；`if (useNavigationRail)` 只切换 `AppNavigationRail`，rail/手机共用同一份 NavHost，见 §8 坑 7/14）。Activity 在 Manifest 声明了 `configChanges`（旋转/分屏/深色切换**不重建**，保阅读进度），`windowSizeClass` 因此在 `MainContent` 内改调 `@Composable` 的 `calculateWindowSizeClass` 实时重算（约 L185-188，勿再挪回 onCreate 单次计算）。 |
 | `SettingsFragment.kt` | `PreferenceFragmentCompat`，读 `res/xml/preferences.xml`（约 L7-11）。**当前无入口**，见 §8。 |
 | `example/FlavorUsageExample.kt` | flavor 用法演示（如何判 `BuildConfig.IS_EINK`、用 `EInkConfig`/`EInkUtils`），可作参考，非运行时主流程。 |
 
@@ -177,8 +177,8 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 | 我要做 X | 改哪几个文件 |
 | --- | --- |
-| **加一个新页面** | `MainActivity.kt` 的 `sealed class Screen`（约 L166）+ **两处 NavHost**（rail 布局一份、手机布局一份，均在 `MainActivity.kt` 内）+ 新增 `ui/XxxScreen.kt` |
-| **加 / 改一条导航路由** | 同上。⚠️ NavHost 有**两份副本**（rail / 手机），**两份都要改** |
+| **加一个新页面** | `MainActivity.kt` 的 `sealed class Screen`（约 L166）+ **单一 NavHost**（`MainActivity.kt` 内，rail/手机共用一份）+ 新增 `ui/XxxScreen.kt` |
+| **加 / 改一条导航路由** | 同上。NavHost 只有**一份**（rail 与手机共用；`if (useNavigationRail)` 只切换 `AppNavigationRail`，不切换 NavHost） |
 | **改定向拦截参数（域名 / 白名单 / Referer）** | 参数在应用内**隐藏设置页**（`ui/HiddenSettingsScreen.kt`）配置；持久化在 `util/DataStoreManager.kt` 的 4 个 `intercept_*` key（约 L32-35）；生效逻辑在 `util/InterceptionRuntime.kt`（+ `util/InterceptionSettings.kt` 解析、`util/InterceptionConfig.kt` 判定）；消费点在 `ui/ArticleDetailScreen.kt`（约 L262 判定、约 L342 拦截、约 L431 加 Referer） |
 | **改 E-Ink 行为** | 编译期：改 `app/src/eink/...`（同名文件按 flavor 替换）；运行期：判 `BuildConfig.IS_EINK` |
 | **加 / 改界面文案** | `res/values/strings.xml`（英文）+ `res/values-zh/strings.xml`（中文），**不要在 Kotlin 里硬编码**。**不要**定义 `app_name`——它由 flavor 的 `resValue` 生成。flavor 专属文案同理：`app/src/{standard,eink}/res/values/`（英文）+ `values-zh/`（中文） |
@@ -229,17 +229,19 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 4. `network/MinifluxApi.kt` 有**两个 `deleteFeed` 重载**（约 L40 `Int` 返回 `Void`、约 L141 `Long` **无返回类型**）。改动时注意区别。
 5. `viewmodel/MinifluxViewModel.kt` 末尾的 `FeedListViewModel`（约 L592）**疑似死代码**：`async` 结果未被使用，且未被任何 UI 引用。
 6. `app/src/androidTest/` 为**空目录**——本项目测试**全部**在 `app/src/test/`（纯 JVM）。
-7. **NavHost 有两份副本**（rail 布局一份、手机布局一份，均在 `MainActivity.kt` 内），加路由**必须两处都改**。
+7. **NavHost 已合并为一份**（✅ 2026-10-13 修复）：此前 rail 布局与手机布局各有一份**逐字相同的副本**，且分处 `if (useNavigationRail) {...} else {...}` 两个分支内，导致手机竖屏↔横屏切换时整个内容子树被销毁重建（阅读页 WebView 被重建 → 页面重载、滚动位置丢失、卡顿）。现为**单一 NavHost**，`if` 只切换 `AppNavigationRail`。⚠️ **不要改回 if/else 两份 NavHost**；加路由只需改一处。
 8. `ui/ArticleDetailScreen.kt` 的 `BottomAppBar` **必须**在 E-Ink 下显式传 `Modifier.height(48.dp)` + `tonalElevation = 0.dp` + `contentPadding`，否则会落到 Material3 默认的 80dp + 系统栏 inset + Level2 灰底（历史回归点：提交 `3707759`，随 v0.3.4 发布）。
 9. `interceptWebRequest`（约 L470）走 OkHttp **自行重发请求**（复用 `interceptionHttpClient` 单例），异常时返回 `null` 让 WebView 回退默认加载——改动它**必须回归图片加载**。
 10. 启用 R8（`isMinifyEnabled` + `isShrinkResources`，release 默认开启）后**必须回归定向拦截与图片加载**；出问题就把这两项置 `false`。
 11. **i18n 是历史薄弱点**：登录页、分类列表页、条目列表页、文章详情底部栏、底部导航栏与平板侧边栏都曾把中英文字面量**硬编码在 Kotlin 里**（中英混杂 → 中文设备显示英文 / 英文设备显示中文）；`standard`/`eink` 的 `strings.xml` 也曾把**中文放在默认 `values/`** 目录。新增任何 UI 文案时务必走 `stringResource` 并把 key 同时加进 `values` 与 `values-zh`。
 12. **MainActivity 声明了 `android:configChanges`**（旋转/分屏/深色切换**不重建** Activity）：这是阅读页保留 WebView 实例与滚动进度（旋转不丢进度）的关键，**不要删**。与之配套，阅读页 `ArticleWebView` 的 `loadDataWithBaseURL` **必须留在 `LaunchedEffect(htmlContent)` 里**（仅在内容变化时加载一次）——放回组合体主体会让每次重组（如收藏 toggle）都重载页面。新增依赖「配置刷新」的非 Compose 代码时，需自行在 `onConfigurationChanged` 处理。
-13. **阅读位置持久化与恢复**（旋转不丢进度的兜底机制，改动前务必读完）：滚动快照由 `ArticleWebView.recordScrollPosition()` 写入 ViewModel（`saveReadingPosition`），恢复由 `LaunchedEffect(pageLoadTick, sizeSignature)` 执行（`pageLoadTick` 在 `onPageFinished` 自增；`sizeSignature` 取 `LocalConfiguration` 的 `screenWidthDp/screenHeightDp`）。三条红线：
+13. **阅读位置持久化与恢复**（旋转不丢进度的兜底机制，改动前务必读完）：滚动快照由 `ArticleWebView.recordScrollPosition()` 写入 ViewModel（`saveReadingPosition`），恢复由 `LaunchedEffect(pageLoadTick, sizeSignature)` 执行（`pageLoadTick` 在 `onPageFinished` 自增；`sizeSignature` 取 `LocalConfiguration` 的 `screenWidthDp/screenHeightDp`）。四条红线：
     - 该 Effect 的 **key 只能是 `pageLoadTick` 与 `sizeSignature`**，**不得**加入 `content` / `savedPosition` / `entryId`——否则收藏 toggle 等「仅重组、不重载」场景会误触发恢复、造成位置跳动（与坑 12 同源的回归）。
-    - 强制补记（`onPageFinished` / `onDispose`）**不允许用 `scrollY == 0` 覆盖**已保存位置：页面刚加载完或 WebView 因旋转重建时 `scrollY` 本就是 0，会把待恢复的位置抹掉。
+    - **两类触发要分开处理**：`pageLoadTick` 变化 = 真·页面加载 → 直接走比例恢复兜底；仅 `sizeSignature` 变化 = 纯布局变化（旋转/分屏）→ 必须先用 `ReadingPositionResolver.needsRestoreAfterLayoutChange`（文档**比例偏差**判据）判断原生落点是否已正确，正确则**绝不 `scrollTo`**（WebView 原生保留的位置比比例换算更准，多动一次反而挪走）。⚠️ 不要用「`scrollY > 0` 就放过」这种弱判据：旋转会触发 CSS 重排，Chromium 可能只保留像素偏移而没做滚动锚定。
+    - 强制补记（`onPageFinished` / `onRelease`）**不允许用 `scrollY == 0` 覆盖**已保存位置：页面刚加载完或 WebView 被重建时 `scrollY` 本就是 0，会把待恢复的位置抹掉。
     - `measureScrollSnapshot()` 的 `contentHeight` **不乘 `scale`**（写入与恢复必须同口径）；而滚动到底判定里的 `contentHeight * scale` 是**既有且存疑**的口径，两者并存是已知情况，改动其一必须同步另一处。
-14. **`MainActivity.kt` 里 NavHost 有两份完全相同的副本**（坑 7 已记），而它们位于 `if (useNavigationRail) {...} else {...}` 两个分支内（`Scaffold` 内容区）。手机竖屏 Compact → 横屏 Medium 会让 `useNavigationRail` 由 false 翻 true，从而**重建整个内容子树**：`ArticleWebView` 的 WebView 被销毁重建，且 `NavHost` 会重设 `navController.graph` → **清空 back stack 并弹回「今日」列表**。目前实测机型未触发（旋转后仍停在同一篇），但换机型 / 多窗口 resize 可能触发。根治办法是**把两份 NavHost 合并为一份**（内容逐字相同，属纯冗余）。
+    另：`resolve()` 的贴底吸附只在 `saved.viewportHeight` 可信（`0 < viewport <= contentHeight`）时生效，规避布局未稳定时的异常测量。
+14. **NavHost 子树重建问题**（✅ 2026-10-13 修复，见坑 7）：此前两份 NavHost 分处 `if (useNavigationRail) {...} else {...}` 两分支，手机竖屏↔横屏切换会销毁重建整个内容子树 —— 阅读页 WebView 被重建、页面重载（logcat 表现为每次旋转都出现 `Page finished loading`）、滚动位置丢失、并伴随明显卡顿。已通过**合并为单一 NavHost** 根治。验收判据：旋转后 logcat **不应**再出现 `Page finished loading`，而应出现 `Layout change: native position ok ... skip restore`。
 
 ---
 

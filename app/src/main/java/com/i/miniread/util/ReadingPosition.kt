@@ -63,10 +63,16 @@ object ReadingPositionResolver {
         // 4. 保存时内容高度不可信（写入侧已过滤，这里兜底，避免除零）
         if (saved.contentHeight <= 0) return 0
 
-        // 5. 贴底吸附：保存时已到底 / 本就滚不动 → 恢复后也贴底
+        // 5. 贴底吸附：保存时已到底 / 本就滚不动 → 恢复后也贴底。
+        //    守卫：仅当 saved.viewportHeight 可信（0 < viewport <= contentHeight）才允许贴底判定——
+        //    布局未稳定时的异常测量会让 savedMaxScroll 失真并误触发贴底；
+        //    viewport 不可信时跳过贴底，落到第 6 步「文档相对比例」（只用 scrollY/contentHeight，
+        //    天然免疫 viewport 损坏）。
+        val viewportTrustworthy = saved.viewportHeight in 1..saved.contentHeight
         val savedMaxScroll = (saved.contentHeight - saved.viewportHeight).coerceAtLeast(0)
-        if (savedMaxScroll <= bottomEpsilonPx ||
-            saved.scrollY >= savedMaxScroll - bottomEpsilonPx
+        if (viewportTrustworthy &&
+            (savedMaxScroll <= bottomEpsilonPx ||
+                saved.scrollY >= savedMaxScroll - bottomEpsilonPx)
         ) {
             return currentMaxScroll
         }
@@ -75,5 +81,37 @@ object ReadingPositionResolver {
         val ratio = (saved.scrollY.toDouble() / saved.contentHeight).coerceIn(0.0, 1.0)
         val target = (ratio * current.contentHeight).roundToInt()
         return target.coerceIn(0, currentMaxScroll)
+    }
+
+    /**
+     * 纯布局变化（旋转 / 分屏 resize，页面**未重新加载**）后，判断是否需要按保存快照重新定位。
+     *
+     * 背景：合并 NavHost 后旋转不再重建 WebView，滚动位置主要由 Chromium 原生保留；但旋转会
+     * 触发 CSS 重排（width/height 对调），原生可能只保留「像素偏移」而没有做滚动锚定，此时
+     * 落点会偏离到文章后段。本函数用「文档相对比例」判断原生落点是否已在正确位置附近：
+     *
+     *  - 保存位置在顶部 / 无快照            → false（无需恢复，不打扰）
+     *  - 原生位置丢失（scrollY <= 0）       → true（交给比例映射兜底）
+     *  - 原生测量不可用（高度为 0）         → true（交给上层重试）
+     *  - 原生落点与「比例映射目标」偏差小于容差 → false（原生已正确，不要多动一次 scrollTo）
+     *  - 偏差过大（仅保留了像素偏移）        → true（按比例纠正）
+     *
+     * @param native 布局变化并稳定后 WebView 的当前快照。
+     * @param saved 布局变化前保存的快照；null 表示从未读过。
+     * @param toleranceViewports 容差（单位：视口高度倍数），默认半屏。
+     */
+    fun needsRestoreAfterLayoutChange(
+        native: ScrollSnapshot,
+        saved: ScrollSnapshot?,
+        toleranceViewports: Float = 0.5f
+    ): Boolean {
+        if (saved == null || saved.scrollY <= 0) return false
+        if (native.contentHeight <= 0 || native.viewportHeight <= 0) return true
+        if (native.scrollY <= 0) return true
+
+        val savedFraction = saved.scrollY.toDouble() / saved.contentHeight
+        val expected = (savedFraction * native.contentHeight).roundToInt()
+        val tolerancePx = (native.viewportHeight * toleranceViewports).roundToInt()
+        return kotlin.math.abs(native.scrollY - expected) > tolerancePx
     }
 }

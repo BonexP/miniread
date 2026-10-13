@@ -15,6 +15,8 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -405,97 +407,15 @@ fun MainContent(viewModel: MinifluxViewModel) {
                 }
             }
         ) { innerPadding ->
-            // 平板横屏模式：使用侧边导航栏 + 内容区域
-            if (useNavigationRail) {
-                Row(modifier = Modifier.padding(innerPadding)) {
+            // 单一 NavHost：调用位置恒定为 Row → Surface → NavHost，if 只切换 AppNavigationRail；
+            // 旋转导致 useNavigationRail 翻转时 NavHost 的组合位置不变，内容子树（含阅读页
+            // WebView）不被重建 —— 页面不重新加载，滚动位置由 WebView 原生保留（严格同一段文字）。
+            // ⚠️ 不要改回 if/else 两份 NavHost —— 那会让每次旋转都重建整个内容子树。
+            Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                if (useNavigationRail) {
                     AppNavigationRail(navController = navController)
-                    Surface(modifier = Modifier.weight(1f)) {
-                        NavHost(
-                            navController = navController,
-                            startDestination = Screen.TodayEntryList.route
-                        ) {
-                            composable(Screen.Feeds.route) {
-                                FeedListScreen(viewModel) { feedId ->
-                                    currentFeedId = feedId.toString()
-                                    currentCategoryId = ""
-                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                                }
-                            }
-                            composable(Screen.Categories.route) {
-                                CategoryListScreen(viewModel = viewModel, { categoryId ->
-                                    currentCategoryId = categoryId.toString()
-                                    currentFeedId = ""
-                                    navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
-                                }, { categoryId ->
-                                    navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
-                                })
-                            }
-                            composable(
-                                route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
-                                arguments = listOf(
-                                    navArgument("feedId") {
-                                        type = NavType.StringType; nullable = true
-                                    },
-                                    navArgument("categoryId") {
-                                        type = NavType.StringType; nullable = true
-                                    }
-                                )) { backStackEntry ->
-                                currentFeedId =
-                                    backStackEntry.arguments?.getString("feedId").toString()
-                                val feedId =
-                                    backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
-                                val categoryId =
-                                    backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-                                EntryListScreen(viewModel, navController, feedId, categoryId)
-                            }
-                            composable(
-                                route = Screen.ArticleDetail.route + "?entryId={entryId}",
-                                arguments = listOf(navArgument("entryId") {
-                                    type = NavType.IntType
-                                })
-                            ) { backStackEntry ->
-                                val entryId = backStackEntry.arguments?.getInt("entryId")
-                                if (entryId != null) {
-                                    selectedScreen = Screen.ArticleDetail.route
-                                    ArticleDetailScreen(viewModel, entryId, navController)
-                                } else {
-                                    Log.d(
-                                        "MainActivity",
-                                        "MainContent: Error while getting entryId"
-                                    )
-                                }
-                            }
-                            composable(Screen.TodayEntryList.route) {
-                                TodayEntryListScreen(viewModel, navController)
-                            }
-                            composable(Screen.HiddenSettings.route) {
-                                HiddenSettingsScreen(navController)
-                            }
-                            composable(
-                                route = "subFeed?categoryId={categoryId}",
-                                arguments = listOf(navArgument("categoryId") {
-                                    type = NavType.IntType
-                                })
-                            ) { backStackEntry ->
-                                val categoryId = backStackEntry.arguments?.getInt("categoryId")
-                                categoryId?.let {
-                                    SubFeedScreen(
-                                        viewModel = viewModel,
-                                        categoryId = it,
-                                        onFeedSelected = { feedId ->
-                                            currentFeedId = feedId.toString()
-                                            currentCategoryId = ""
-                                            navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
-            } else {
-                // 手机模式：传统布局
-                Surface(modifier = Modifier.padding(innerPadding)) {
+                Surface(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     NavHost(
                         navController = navController,
                         startDestination = Screen.TodayEntryList.route
