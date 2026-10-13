@@ -7,13 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- 阅读页改为**响应式渲染**，修复旋转屏幕后正文贴左、右侧大片留白，以及手机横屏（宽 ≥600dp）被误按平板限宽的问题：
-  - `assets/template.html`：补 `<!DOCTYPE html>`、`<meta charset>` 与 `<meta name="viewport" content="width=device-width, initial-scale=1">`，布局视口由固定约 980px 改为真实设备宽度（旋转后正确重排）；并设 `html{font-size:6.4px}` 作为 rem 基数，保持字号观感与旧版一致。
-  - `ui/ArticleDetailScreen.kt`：移除 `loadHtmlContentAsync` 中按 `screenWidthDp>=600` 一次性判定平板的逻辑；`tablet_styles.css` 改为始终注入并纳入进程级缓存。
-  - `assets/tablet_styles.css`：媒体查询改为 `(min-width:600px) and (min-height:480px)`（高度守卫排除手机横屏），块内 `rem` 统一改为 `px`。
-  - `assets/custom.css` / `customdark.css`：修正标题层级（h2/h3 原先小于正文字号，现调整为大于正文）。
-
 ## [1.0.3] - 2026-10-13
 
 ### Fixed
@@ -29,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **根治旋转重建**：`MainActivity.kt` 中两份完全相同的 NavHost 原先分处 `if (useNavigationRail) {...} else {...}` 两侧，手机竖屏（Compact）↔ 横屏（Expanded）切换时 `useNavigationRail` 翻转，导致整个内容子树被销毁重建——阅读页 WebView 每次旋转都被重建、页面重新加载（此前只能靠按比例恢复勉强兜住，落点必然偏移）。现合并为**单一 NavHost**，`if` 仅切换侧边栏，旋转时不再重建内容子树、不再重载，滚动位置由 WebView 原生保留（严格同一段文字）。
 - 阅读页新增**布局变化守卫**：纯布局变化（旋转/分屏，页面未重载）时不再无条件按比例恢复——先用 `ReadingPositionResolver.needsRestoreAfterLayoutChange`（文档比例偏差判据）判断原生落点是否已正确，正确则不做任何 `scrollTo`；仅当原生位置丢失或偏差过大时才走比例兜底。
 - `ReadingPositionResolver.resolve` 的贴底吸附增加 `viewportHeight` 可信性守卫（`0 < viewport <= contentHeight`），规避布局未稳定时异常测量导致的误贴底。
+- 阅读页改为**响应式渲染**，修复旋转屏幕后正文贴左、右侧大片留白，以及手机横屏（宽 ≥600dp）被误按平板限宽的问题：
+  - `assets/template.html`：补 `<!DOCTYPE html>`、`<meta charset>` 与 `<meta name="viewport" content="width=device-width, initial-scale=1">`，布局视口由固定约 980px 改为真实设备宽度（旋转后正确重排）；并设 `html{font-size:6.4px}` 作为 rem 基数，保持字号观感与旧版一致。
+  - `ui/ArticleDetailScreen.kt`：移除 `loadHtmlContentAsync` 中按 `screenWidthDp>=600` 一次性判定平板的逻辑；`tablet_styles.css` 改为始终注入并纳入进程级缓存。
+  - `assets/tablet_styles.css`：媒体查询改为 `(min-width:600px) and (min-height:480px)`（高度守卫排除手机横屏），块内 `rem` 统一改为 `px`。
+  - `assets/custom.css` / `customdark.css`：修正标题层级（h2/h3 原先小于正文字号，现调整为大于正文）。
 
 ### Performance
 - `ui/ArticleDetailScreen.kt`：移除每次重组都打印整篇文章的调试日志；正文 HTML 拼接改为 `remember(title, content)` 缓存；`AndroidView` 增加 `onRelease`（`stopLoading` / `loadUrl("about:blank")` / `destroy`），修复 WebView 从未被销毁导致的资源泄漏；删除无读取的死状态 `contentHeightState`。
