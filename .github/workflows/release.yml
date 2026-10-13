@@ -84,6 +84,6 @@ jobs:
             - **应用 ID**: com.i.miniread.eink
             - **特性**: 高对比度黑白 UI，无动画，专为墨水屏优化
             
-            > 💡 两个版本可以同时安��在同一设备上
+            > 💡 两个版本可以同时安装在同一设备上
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
