@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ui/ArticleDetailScreen.kt`：`loadDataWithBaseURL` 原先在组合体主体中执行，任何重组（如收藏后 `selectedEntry` 更新触发）都会重载页面；现移入 `LaunchedEffect(htmlContent)`，仅在 HTML 内容变化时加载一次。
   - `AndroidManifest.xml`：MainActivity 声明 `configChanges`（`orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode`），旋转与深色模式切换不再重建 Activity，WebView 实例与滚动位置得以保留。
   - `MainActivity.kt`：`windowSizeClass` 从 onCreate 单次计算改为在 `MainContent` 内随 `LocalConfiguration` 重算，避免 Activity 不重建后手机横屏失去底部栏 ↔ NavigationRail 自适应切换。
+- 修复旋转屏幕后阅读位置仍归零的问题：`configChanges` 只保证了 Activity 不重建，但 WebView 在视图尺寸变化时缩放重排仍会丢失内部滚动位置。现新增阅读位置持久化与恢复机制——滚动快照按 `entryId` 存入 ViewModel（LRU 上限 50 篇），在「页面加载完成」与「窗口尺寸变化」两个时机按文档相对比例换算并恢复，兜住 WebView 内部丢失 / 重建 / Activity 重建等全部路径：
+  - 新增 `util/ReadingPosition.kt`：`ScrollSnapshot` + `ReadingPositionResolver.resolve()` 纯函数（顶部早退 → 未布局保护 → 布局一致原样返回 → 贴底吸附 → 文档相对比例换算 + clamp）。
+  - `viewmodel/MinifluxViewModel.kt`：新增 `saveReadingPosition` / `getReadingPosition` / `clearReadingPosition`，使用普通 `LinkedHashMap`（非可观察容器，避免滚动时每帧重组）。
+  - `ui/ArticleDetailScreen.kt`：滚动中 / 页面加载完成 / 离开页面三处写入（节流），恢复前用 300ms 时间窗抑制「滚到底」误判，避免重复标记已读与弹出 Snackbar。
+  - 新增单测 `ReadingPositionResolverTest`（17 个用例，纯 JVM），总用例数 93 → 110。
 
 ## [1.0.2] - 2026-10-12
 

@@ -81,7 +81,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `main` | 共享代码与资源；26 个 `.kt`（含 `util/InterceptionSettings.kt`、`util/InterceptionRuntime.kt`、`ui/HiddenSettingsScreen.kt`）+ `res/` + `assets/` |
 | `standard` | 2 个 `.kt`（`eink/EInkConfig.kt`、`eink/EInkUtils.kt` 的标准版空实现）+ 2 个 `res/values/*.xml` |
 | `eink` | 2 个 `.kt`（同名文件的墨水屏实现）+ 2 个 `res/values/*.xml` |
-| `test` | 纯 JVM 单测（7 个文件 / 93 个用例，见下） |
+| `test` | 纯 JVM 单测（8 个文件 / 110 个用例，见下） |
 | `androidTest` | **空目录**（仅 `java/` 空壳）；本项目测试全部在 `test/` |
 
 ### `app/src/main/java/com/i/miniread/` 包职责
@@ -93,7 +93,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/example/` | 见 `example/FlavorUsageExample.kt`（flavor 用法示例，非主流程） |
 | `viewmodel/` | `MinifluxViewModel.kt`（唯一 ViewModel） |
 | `network/` | `MinifluxApi.kt`（Retrofit 接口 + 数据类 + `RetrofitInstance`） |
-| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig`、`InterceptionSettings`、`InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow` |
+| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig`、`InterceptionSettings`、`InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow`、`ReadingPosition` |
 | `eink/` | flavor 专属：`EInkConfig.kt`、`EInkUtils.kt`（在 `standard/` 与 `eink/` 各有一份同名文件） |
 
 ### 「去哪找什么」索引
@@ -133,7 +133,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/EntryListScreen.kt` | 文章列表（按 feed 或 category）（约 L53）；`EntryItem`（约 L103）；`localizePublishTime`（约 L221）。 |
 | `ui/TodayEntryListScreen.kt` | 「今天」列表，复用 EntryList 思路、只取最近 24h（约 L27）。 |
 | `ui/SubFeedScreen.kt` | 某分类下的订阅源列表（约 L17）。 |
-| `ui/ArticleDetailScreen.kt` | 阅读页。`ArticleDetailScreen`（约 L69）→ WebView 容器；`ArticleActionsBar`（约 L120，`BottomAppBar` 约 L129）；`ArticleWebView`（约 L254）注入 `assets/` 的 HTML/CSS，含 `shouldInterceptRequest` 拦截点（约 L338-347）；`interceptWebRequest`（约 L426）用 OkHttp 自行重发请求。 |
+| `ui/ArticleDetailScreen.kt` | 阅读页。`ArticleDetailScreen`（约 L81）→ WebView 容器；`ArticleActionsBar`（约 L131，`BottomAppBar` 约 L161）；`ArticleWebView`（约 L310）注入 `assets/` 的 HTML/CSS，含 `shouldInterceptRequest` 拦截点、**阅读位置写入与恢复**（见 §8 已知坑 12/13）；`interceptWebRequest`（约 L600）用 OkHttp 自行重发请求。 |
 
 ### `ui/adaptive/`、`ui/theme/`
 
@@ -162,6 +162,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `util/DomainHelper.kt` | `object`（约 L9）：`isTargetDomain(settings, baseUrl)`（纯判定）/ 无参重载走内存快照。 |
 | `util/FeedSorter.kt` | `object`（约 L21）：`sort`（约 L32）纯排序函数（列表排序逻辑抽取，便于单测）。 |
 | `util/TimeWindow.kt` | `object`（约 L15）：`publishedAfterForLast24h`（约 L29）「最近 24h」时间戳纯函数。 |
+| `util/ReadingPosition.kt` | `ScrollSnapshot`（阅读位置快照，`scrollY`/`contentHeight`/`viewportHeight`，**均为 view px、不乘 scale**）+ `object ReadingPositionResolver.resolve(saved, current)`（约 L42）位置换算纯函数：顶部早退 → 未布局保护 → 布局一致原样返回 → 贴底吸附 → 文档相对比例换算 + clamp。配套 `ReadingPositionResolverTest`（17 个用例）。 |
 
 ### flavor 专属
 
@@ -234,6 +235,11 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 10. 启用 R8（`isMinifyEnabled` + `isShrinkResources`，release 默认开启）后**必须回归定向拦截与图片加载**；出问题就把这两项置 `false`。
 11. **i18n 是历史薄弱点**：登录页、分类列表页、条目列表页、文章详情底部栏、底部导航栏与平板侧边栏都曾把中英文字面量**硬编码在 Kotlin 里**（中英混杂 → 中文设备显示英文 / 英文设备显示中文）；`standard`/`eink` 的 `strings.xml` 也曾把**中文放在默认 `values/`** 目录。新增任何 UI 文案时务必走 `stringResource` 并把 key 同时加进 `values` 与 `values-zh`。
 12. **MainActivity 声明了 `android:configChanges`**（旋转/分屏/深色切换**不重建** Activity）：这是阅读页保留 WebView 实例与滚动进度（旋转不丢进度）的关键，**不要删**。与之配套，阅读页 `ArticleWebView` 的 `loadDataWithBaseURL` **必须留在 `LaunchedEffect(htmlContent)` 里**（仅在内容变化时加载一次）——放回组合体主体会让每次重组（如收藏 toggle）都重载页面。新增依赖「配置刷新」的非 Compose 代码时，需自行在 `onConfigurationChanged` 处理。
+13. **阅读位置持久化与恢复**（旋转不丢进度的兜底机制，改动前务必读完）：滚动快照由 `ArticleWebView.recordScrollPosition()` 写入 ViewModel（`saveReadingPosition`），恢复由 `LaunchedEffect(pageLoadTick, sizeSignature)` 执行（`pageLoadTick` 在 `onPageFinished` 自增；`sizeSignature` 取 `LocalConfiguration` 的 `screenWidthDp/screenHeightDp`）。三条红线：
+    - 该 Effect 的 **key 只能是 `pageLoadTick` 与 `sizeSignature`**，**不得**加入 `content` / `savedPosition` / `entryId`——否则收藏 toggle 等「仅重组、不重载」场景会误触发恢复、造成位置跳动（与坑 12 同源的回归）。
+    - 强制补记（`onPageFinished` / `onDispose`）**不允许用 `scrollY == 0` 覆盖**已保存位置：页面刚加载完或 WebView 因旋转重建时 `scrollY` 本就是 0，会把待恢复的位置抹掉。
+    - `measureScrollSnapshot()` 的 `contentHeight` **不乘 `scale`**（写入与恢复必须同口径）；而滚动到底判定里的 `contentHeight * scale` 是**既有且存疑**的口径，两者并存是已知情况，改动其一必须同步另一处。
+14. **`MainActivity.kt` 里 NavHost 有两份完全相同的副本**（坑 7 已记），而它们位于 `if (useNavigationRail) {...} else {...}` 两个分支内（`Scaffold` 内容区）。手机竖屏 Compact → 横屏 Medium 会让 `useNavigationRail` 由 false 翻 true，从而**重建整个内容子树**：`ArticleWebView` 的 WebView 被销毁重建，且 `NavHost` 会重设 `navController.graph` → **清空 back stack 并弹回「今日」列表**。目前实测机型未触发（旋转后仍停在同一篇），但换机型 / 多窗口 resize 可能触发。根治办法是**把两份 NavHost 合并为一份**（内容逐字相同，属纯冗余）。
 
 ---
 

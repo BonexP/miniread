@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
+import android.os.SystemClock
 import android.util.Log
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -42,6 +43,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,6 +56,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -63,6 +67,8 @@ import com.i.miniread.R
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
+import com.i.miniread.util.ReadingPositionResolver
+import com.i.miniread.util.ScrollSnapshot
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -119,7 +125,10 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(markedReadMsg)
                             }
-                        }
+                        },
+                        // 阅读进度：旋转 / resize / WebView 重建后恢复（见 AGENTS.md §8 已知坑 13）
+                        onRequestSavedPosition = { viewModel.getReadingPosition(entryId) },
+                        onPositionChanged = { viewModel.saveReadingPosition(entryId, it) }
                     )
                 }
             }
@@ -302,7 +311,9 @@ private val interceptionHttpClient: OkHttpClient by lazy {
 fun ArticleWebView(
     content: String?,
     feedId: Int?,
-    onScrollToBottom: () -> Unit
+    onScrollToBottom: () -> Unit,
+    onRequestSavedPosition: () -> ScrollSnapshot? = { null },
+    onPositionChanged: (ScrollSnapshot) -> Unit = {}
 ) {
     val context = LocalContext.current
     // 读内存快照判定：不再在组合期 runBlocking 读盘；隐藏设置页改完配置后重新进入文章页即生效
@@ -317,6 +328,46 @@ fun ArticleWebView(
     val contentHeightState = remember { mutableStateOf<Float?>(null) }
     var scrollDebounceJob by remember { mutableStateOf<Job?>(null) }
     val updatedOnScrollToBottom by rememberUpdatedState(onScrollToBottom)
+
+    // ===== 阅读位置：写入与恢复所需状态 =====
+    // 用 rememberUpdatedState 包装，避免下方 remember{} 内创建的 webViewClient 闭包捕获过期 lambda
+    val currentRequestSavedPosition by rememberUpdatedState(onRequestSavedPosition)
+    val updatedOnPositionChanged by rememberUpdatedState(onPositionChanged)
+    // 每次 onPageFinished 自增；> 0 表示页面至少完成过一次加载（恢复的前置条件）
+    var pageLoadTick by remember { mutableIntStateOf(0) }
+    // 程序化滚动后的抑制时间窗（SystemClock.uptimeMillis 基准）：防止恢复被误判为「滚到底」
+    var scrollGuardUntil by remember { mutableLongStateOf(0L) }
+    // 滚动写入节流状态
+    var lastSavedScrollY by remember { mutableIntStateOf(0) }
+    var lastSavedAtMs by remember { mutableLongStateOf(0L) }
+
+    /**
+     * 记录当前滚动位置（节流）。
+     * 只触碰上面这些 remember 出来的稳定对象，因此被 remember{} 内 webViewClient 的旧闭包
+     * 调用也安全（读写拿到的都是当前值）。
+     *
+     * @param force 强制补记（onPageFinished / onDispose）。强制路径**不允许用 0 覆盖**已保存的
+     * 位置：页面刚加载完、或 WebView 因旋转重建时 scrollY 本就是 0；用户真正「手动滚回顶部」
+     * 已由滚动监听（非 force）写入。
+     */
+    fun recordScrollPosition(view: WebView, force: Boolean = false) {
+        val snapshot = measureScrollSnapshot(view)
+        if (snapshot.contentHeight <= 0 || snapshot.viewportHeight <= 0) return
+        if (force && snapshot.scrollY <= 0) return
+
+        val nowMs = SystemClock.uptimeMillis()
+        if (!force) {
+            if (snapshot.scrollY == lastSavedScrollY) return
+            val deltaPx = kotlin.math.abs(snapshot.scrollY - lastSavedScrollY)
+            if (deltaPx < SCROLL_SAVE_MIN_DELTA_PX &&
+                nowMs - lastSavedAtMs < SCROLL_SAVE_MAX_INTERVAL_MS
+            ) return
+        }
+
+        lastSavedScrollY = snapshot.scrollY
+        lastSavedAtMs = nowMs
+        updatedOnPositionChanged(snapshot)
+    }
 
     val webView = remember {
         WebView(context).apply {
@@ -399,6 +450,7 @@ fun ArticleWebView(
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     Log.d("ArticleWebView", "Page finished loading")
+                    pageLoadTick += 1 // 驱动阅读位置恢复 Effect（页面加载完成的信号）
 
                     // 延迟执行，确保资源加载完毕
                     view?.postDelayed({
@@ -421,10 +473,18 @@ fun ArticleWebView(
                                     }
                                 }
                             }
+                            // 页面稳定后回写一次真实位置（force：不会用 0 覆盖已保存位置）
+                            recordScrollPosition(view, force = true)
                         }
                     }, 500) // 延迟 500ms 执行
 
                     view?.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
+                        // ⚠️ 必须先记录位置、再判抑制窗口：恢复后的真实落点要立刻回写
+                        recordScrollPosition(view)
+                        // 程序化恢复滚动期间不判定「滚到底」（避免重复标记已读 + 弹 Snackbar）
+                        if (SystemClock.uptimeMillis() < scrollGuardUntil) {
+                            return@setOnScrollChangeListener
+                        }
                         if (hasMarkedAsRead.value) return@setOnScrollChangeListener
 
                         val remainingScroll =
@@ -463,7 +523,11 @@ fun ArticleWebView(
     // 将 WebView 登记到 MainActivity，供 E-Ink 音量键翻页使用；离开页面时清理，避免泄漏
     DisposableEffect(webView) {
         (context as? MainActivity)?.setActiveWebView(webView)
-        onDispose { (context as? MainActivity)?.setActiveWebView(null) }
+        onDispose {
+            (context as? MainActivity)?.setActiveWebView(null)
+            // 离开页面前补记一次阅读位置（覆盖返回列表 / 上一篇 / 下一篇）
+            recordScrollPosition(webView, force = true)
+        }
     }
 
     // HTML 内容就绪后加载，且仅在 htmlContent 变化时执行一次：
@@ -475,8 +539,78 @@ fun ArticleWebView(
         }
     }
 
+    // ===== 恢复阅读位置 =====
+    // key 只有两个，覆盖两条丢失路径：
+    //   · pageLoadTick —— 页面加载完成（首次进入 / WebView 被重建后重新加载）
+    //   · sizeSignature —— 窗口尺寸变化（旋转 / 分屏：页面**没有**重新加载，但缩放重排丢了滚动位置）
+    // ⚠️ 绝不能把 content / savedPosition / entryId 加入 key：
+    //    收藏 toggle 等「仅重组、不重载」的场景会误触发恢复，造成位置跳动。
+    val configuration = LocalConfiguration.current
+    val sizeSignature = configuration.screenWidthDp to configuration.screenHeightDp
+
+    LaunchedEffect(pageLoadTick, sizeSignature) {
+        if (pageLoadTick == 0) return@LaunchedEffect   // 页面尚未 onPageFinished
+        val saved = currentRequestSavedPosition() ?: return@LaunchedEffect
+        if (saved.scrollY <= 0) return@LaunchedEffect    // 无需恢复（零开销早退）
+
+        Log.d("ArticleWebView", "Restoring position: $saved, size=$sizeSignature")
+        delay(SCROLL_RESTORE_SETTLE_DELAY_MS)           // 等 WebView 按新视口完成重排
+
+        var resolved = 0
+        var latest = measureScrollSnapshot(webView)
+        for (attempt in 0..SCROLL_RESTORE_MAX_ATTEMPTS) {
+            latest = measureScrollSnapshot(webView)
+            if (latest.contentHeight > 0 && latest.viewportHeight > 0) {
+                resolved = ReadingPositionResolver.resolve(saved, latest)
+                if (resolved > 0) break
+            }
+            // 图片 / 字体晚到会改变内容高度，重试吸收；E-Ink 无需更长等待
+            if (attempt < SCROLL_RESTORE_MAX_ATTEMPTS) delay(SCROLL_RESTORE_RETRY_DELAY_MS)
+        }
+        if (resolved <= 0) {
+            Log.w("ArticleWebView", "Restore aborted: layout not ready, saved=$saved")
+            return@LaunchedEffect
+        }
+
+        scrollDebounceJob?.cancel()                     // 清掉可能残留的「滚到底」防抖任务
+        scrollGuardUntil = SystemClock.uptimeMillis() + SCROLL_GUARD_MS
+        webView.scrollTo(0, resolved)                   // 每次恢复只滚动一次（E-Ink 少一次屏刷）
+        Log.d("ArticleWebView", "Restored scrollY=$resolved")
+        // 归一化落盘：存实际落点（scrollTo 后立刻读 scrollY 可能还是旧值，故直接写 resolved）
+        updatedOnPositionChanged(
+            ScrollSnapshot(
+                scrollY = resolved,
+                contentHeight = latest.contentHeight,
+                viewportHeight = latest.viewportHeight
+            )
+        )
+    }
+
     AndroidView(factory = { webView }, modifier = Modifier.fillMaxSize())
 }
+
+/** 恢复前等待 WebView 按新视口完成重排的时间：2~3 帧重排 + 一次 JS 往返的余量。 */
+private const val SCROLL_RESTORE_SETTLE_DELAY_MS = 250L
+/** 内容高度尚未稳定时的重试间隔与最大次数。 */
+private const val SCROLL_RESTORE_RETRY_DELAY_MS = 150L
+private const val SCROLL_RESTORE_MAX_ATTEMPTS = 3
+/** 程序化滚动后抑制「滚到底」误判的时间窗。 */
+private const val SCROLL_GUARD_MS = 300L
+/** 滚动写入节流：位移闸 / 时间闸（慢速拖动也能落盘）。 */
+private const val SCROLL_SAVE_MIN_DELTA_PX = 64
+private const val SCROLL_SAVE_MAX_INTERVAL_MS = 300L
+
+/**
+ * 读取 WebView 当前滚动快照。
+ * ⚠️ 三者同为 **view px**，contentHeight **不乘 scale**——写入与恢复必须走同一口径，
+ * 否则比例换算会引入 scale 比值的系统偏差。
+ * （注意：下方滚动到底判定里的 `contentHeight * scale` 是既有口径，本轮按约定未改动。）
+ */
+private fun measureScrollSnapshot(webView: WebView): ScrollSnapshot = ScrollSnapshot(
+    scrollY = webView.scrollY,
+    contentHeight = webView.contentHeight,
+    viewportHeight = webView.height
+)
 
 fun interceptWebRequest(
     request: WebResourceRequest,

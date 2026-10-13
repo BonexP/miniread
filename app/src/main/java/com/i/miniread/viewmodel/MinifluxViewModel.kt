@@ -17,6 +17,7 @@ import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
 import com.i.miniread.util.DataStoreManager
 import com.i.miniread.util.FeedSorter
+import com.i.miniread.util.ScrollSnapshot
 import com.i.miniread.util.TimeWindow
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
@@ -58,6 +59,40 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     val feedUnreadCounts: LiveData<Map<Int, Int>> get() = _feedUnreadCounts
 
     private val currentEntryList = mutableStateListOf<Entry>()
+
+    // ===== 阅读进度（entryId -> 滚动快照）=====
+    // 刻意使用普通 LinkedHashMap 而非 Compose 可观察容器：滚动是高频事件，
+    // 可观察容器每帧 put 都会触发 ArticleDetailScreen 重组（连带 ArticleActionsBar
+    // 与 AndroidView.update），在 E-Ink 上尤其糟。沿用 currentEntryList 的既有模式。
+    // ⚠️ 所有读写均发生在主线程（WebView 回调 + Compose 事件），非线程安全，勿跨线程调用。
+    private val readingPositions: LinkedHashMap<Int, ScrollSnapshot> =
+        object : LinkedHashMap<Int, ScrollSnapshot>(16, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<Int, ScrollSnapshot>?
+            ): Boolean = size > MAX_TRACKED_READING_POSITIONS
+        }
+
+    /**
+     * 记录某篇文章的阅读位置；布局未就绪（内容高度或视口高度为 0）的快照直接丢弃，
+     * 避免加载中的 0 值污染存储。
+     */
+    fun saveReadingPosition(entryId: Int, position: ScrollSnapshot) {
+        if (position.contentHeight <= 0 || position.viewportHeight <= 0) return
+        readingPositions[entryId] = position
+    }
+
+    /** 读取某篇文章保存的阅读位置；从未读过返回 null。 */
+    fun getReadingPosition(entryId: Int): ScrollSnapshot? = readingPositions[entryId]
+
+    /** 清除某篇文章的阅读位置（下次进入从顶部开始）。 */
+    fun clearReadingPosition(entryId: Int) {
+        readingPositions.remove(entryId)
+    }
+
+    companion object {
+        /** 内存中最多保留多少篇文章的阅读位置，超出按 LRU 淘汰。 */
+        private const val MAX_TRACKED_READING_POSITIONS = 50
+    }
 
     fun loadEntryById(entryId: Int) {
         viewModelScope.launch {
