@@ -78,6 +78,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.json.JSONObject
 import okhttp3.Response
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -560,6 +561,22 @@ fun ArticleWebView(
     val configuration = LocalConfiguration.current
     val sizeSignature = configuration.screenWidthDp to configuration.screenHeightDp
 
+    // ===== 主题样式表随深色模式切换刷新 =====
+    // uiMode 已在 Manifest 的 configChanges 中声明 → 切换深浅色不会重建 Activity、页面也不会重载，
+    // 页面里内联的主题 CSS 仍是旧主题（且 loadHtmlContentAsync 的主题缓存按明/暗分别保存）。
+    // 处理：只就地替换 <style id="miniread-theme-css"> 的 textContent，**不**走 loadDataWithBaseURL，
+    // 因此阅读位置、滚动状态都不受影响（正文内容与布局尺寸均未变）。
+    // ⚠️ key 用 pageLoadTick（新页面按当前主题构建，需覆盖一次）与 uiModeNight（切换时刷新）。
+    val uiModeNight = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+    LaunchedEffect(pageLoadTick, uiModeNight) {
+        if (pageLoadTick == 0 || released) return@LaunchedEffect
+        val css = withContext(Dispatchers.IO) {
+            themeCssFor(context, uiModeNight == Configuration.UI_MODE_NIGHT_YES)
+        }
+        if (released) return@LaunchedEffect
+        applyThemeCss(webView, css)
+    }
+
     LaunchedEffect(pageLoadTick, sizeSignature) {
         if (pageLoadTick == 0) return@LaunchedEffect   // 页面尚未 onPageFinished
 
@@ -697,9 +714,37 @@ fun readAssetFile(context: Context, fileName: String): String {
 
 
 private var cachedNormalizeCss: String? = null
-private var cachedCustomCss: String? = null
+private var cachedThemeCssLight: String? = null
+private var cachedThemeCssDark: String? = null
 private var cachedTabletCss: String? = null   // 平板样式：始终注入，是否生效由 CSS 媒体查询决定
 private var cachedHtmlTemplate: String? = null
+
+/**
+ * 读取主题样式表（明 / 暗**各缓存一份**）。
+ *
+ * ⚠️ 不要退回「只缓存一份」的写法：那样首次读取的主题会被进程级缓存钉死，
+ * 之后无论系统切到哪一侧都会注入同一份 CSS（深浅色切换不生效）。
+ */
+fun themeCssFor(context: Context, isDarkMode: Boolean): String {
+    val cached = if (isDarkMode) cachedThemeCssDark else cachedThemeCssLight
+    if (cached != null) return cached
+
+    val loaded = readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
+    if (isDarkMode) cachedThemeCssDark = loaded else cachedThemeCssLight = loaded
+    return loaded
+}
+
+/**
+ * 就地替换页面内的主题样式表（`<style id="miniread-theme-css">`）。
+ *
+ * 只改样式文本、不触发页面重载 —— 阅读位置、滚动状态与已读判定都不受影响。
+ * CSS 通过 JSON 字符串字面量注入，避免引号 / 换行破坏脚本。
+ */
+private fun applyThemeCss(webView: WebView, css: String) {
+    val script = "(function(){var e=document.getElementById('miniread-theme-css');" +
+        "if(e){e.textContent=${JSONObject.quote(css)};}return true;})()"
+    webView.evaluateJavascript(script, null)
+}
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
@@ -711,11 +756,8 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
             cachedNormalizeCss = readAssetFile(context, "normalize.css")
         }
 
-        if (cachedCustomCss == null) {
-            cachedCustomCss =
-                readAssetFile(context, if (isDarkMode) "customdark.css" else "custom.css")
-            Log.d("mycachedCustomCss", "loadHtmlContentAsync: $cachedCustomCss")
-        }
+        // 主题样式表：按当前 uiMode 取对应那一份（明/暗分别缓存）
+        val themeCss = themeCssFor(context, isDarkMode)
 
         // 平板样式「始终注入」：是否生效交给 CSS 媒体查询
         // （(min-width:600px) and (min-height:480px)，高度守卫排除手机横屏）。
@@ -729,16 +771,15 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
             cachedHtmlTemplate = readAssetFile(context, "template.html")
         }
 
-        // 构建HTML内容（tablet CSS 始终注入，靠媒体查询按真实视口生效）
+        // 构建HTML内容（主题 CSS 与 tablet CSS 分开注入，便于 uiMode 切换时只刷新主题块）
         val tabletCss = cachedTabletCss ?: ""
         val htmlContent = cachedHtmlTemplate?.let { template ->
             cachedNormalizeCss?.let { normalizeCss ->
-                cachedCustomCss?.let { customCss ->
-                    template
-                        .replace("\$normalize_css", normalizeCss)
-                        .replace("\$custom_css", "$customCss\n$tabletCss")
-                        .replace("\$content", content)
-                }
+                template
+                    .replace("\$normalize_css", normalizeCss)
+                    .replace("\$custom_css", themeCss)
+                    .replace("\$tablet_css", tabletCss)
+                    .replace("\$content", content)
             }
         } ?: run {
             Log.e("ArticleWebView", "Failed to load HTML template or CSS")

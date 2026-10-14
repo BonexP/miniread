@@ -19,9 +19,15 @@ data class InterceptionSettings(
     val feedIds: Set<Int> = InterceptionConfig.DEFAULT_ADVANCED_FEED_IDS,
     val refererRules: List<Pair<String, String>> = InterceptionConfig.DEFAULT_REFERER_RULES
 ) {
-    /** 总开关打开**且**至少配置了一个目标域名，才算真正生效。 */
+    /**
+     * 总开关打开、且**目标域名与 feed 白名单都非空**，才算真正生效。
+     *
+     * ⚠️ 必须与运行时判定 [InterceptionRuntime.isInterceptionActiveFor] 对齐：那里要求
+     * feedId 命中白名单，而空白名单意味着「没有任何 feed 会被拦截」。若这里只看域名，
+     * 隐藏设置页会显示「已生效」，实际却一篇文章都不拦截。
+     */
     val isActive: Boolean
-        get() = enabled && targetDomains.isNotEmpty()
+        get() = enabled && targetDomains.isNotEmpty() && feedIds.isNotEmpty()
 
     companion object {
         /** 中性化默认配置（公开版本的初始状态）。 */

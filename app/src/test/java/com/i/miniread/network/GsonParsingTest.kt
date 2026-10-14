@@ -10,8 +10,14 @@ import org.junit.Test
 /**
  * MinifluxApi.kt 中数据类的 Gson 反序列化纯 JVM 测试。
  *
- * 覆盖 @SerializedName 映射（snake_case -> camelCase）、不可变 + 可空字段的缺省/null 容错。
+ * 覆盖 @SerializedName 映射（snake_case -> camelCase）与**不完整响应**下 Gson 的落值行为。
  * 不使用任何 android.* / Robolectric。
+ *
+ * ⚠️ 命名约定：`*_yieldsNull` / `*_yieldsNulls` 系列描述的是「**非受支持**响应」下 Gson
+ * 绕过构造器直接赋值的结果 —— 这些字段在数据类里是非空类型，缺字段时会留下 null。
+ * 它们**不是**应用层的容错承诺：消费方（MinifluxViewModel 读 `entries.size` / `unreads.size`、
+ * EntryListScreen 读 `entry.feed.title`）假定 Miniflux 返回完整字段，上游契约破坏时会抛
+ * NPE 而不是静默降级。需要真正容错时应先给消费方补空值处理，再把这里改成契约测试。
  */
 class GsonParsingTest {
 
@@ -151,7 +157,11 @@ class GsonParsingTest {
     }
 
     @Test
-    fun parseEntry_missingOptionalFields_tolerated() {
+    fun parseEntry_optionalFieldsAbsent_yieldsNull() {
+        // Entry.title / url / content / published_at / status 在数据类中本就是可空类型，
+        // 缺失即落 null，消费方（EntryListScreen）已有 `?:` 兜底。
+        // ⚠️ 其中 `feed` 是**非空**字段（Entry.feed: Feed），这里一并落 null 只说明
+        //    Gson 不校验非空契约 —— 该输入属非受支持响应，不是容错承诺。
         val json = """{ "id": 1, "feed_id": 2, "starred": false }"""
 
         val entry = gson.fromJson(json, Entry::class.java)
@@ -179,7 +189,9 @@ class GsonParsingTest {
     }
 
     @Test
-    fun parseEntriesResponse_missingEntriesTolerated() {
+    fun parseEntriesResponse_missingEntries_yieldsNull() {
+        // entries: List<Entry> 在数据类中是非空类型；缺字段时 Gson 落 null。
+        // 消费方 MinifluxViewModel 直接读 `response.entries.size` → 属非受支持响应。
         val json = """{ "total": 0 }"""
 
         val response = gson.fromJson(json, EntriesResponse::class.java)
@@ -189,7 +201,9 @@ class GsonParsingTest {
     }
 
     @Test
-    fun parseFeedCountersResponse_nullMapsTolerated() {
+    fun parseFeedCountersResponse_nullMaps_yieldsNull() {
+        // reads / unreads 在数据类中是非空 Map；显式传 null 时 Gson 原样落 null。
+        // 消费方 MinifluxViewModel 读 `response.unreads.size` → 属非受支持响应。
         val json = """{ "reads": null, "unreads": null }"""
 
         val response = gson.fromJson(json, MinifluxApi.FeedCountersResponse::class.java)

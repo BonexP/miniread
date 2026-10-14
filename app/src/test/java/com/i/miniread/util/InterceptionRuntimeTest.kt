@@ -100,6 +100,8 @@ class InterceptionRuntimeTest {
     }
 
     // --- InterceptionSettings.isActive ---
+    // 语义：enabled && targetDomains 非空 && feedIds 非空 —— 与 isInterceptionActiveFor
+    // 一致（空白名单 = 没有 feed 会被拦截，不能对外显示「已生效」）。
 
     @Test
     fun defaultSettings_isActiveFalse() {
@@ -113,11 +115,34 @@ class InterceptionRuntimeTest {
 
     @Test
     fun enabledButNoDomains_isActiveFalse() {
-        assertFalse(InterceptionSettings(enabled = true, targetDomains = emptyList()).isActive)
+        assertFalse(
+            InterceptionSettings(
+                enabled = true,
+                targetDomains = emptyList(),
+                feedIds = setOf(1)
+            ).isActive
+        )
     }
 
     @Test
-    fun enabledWithDomains_isActiveTrue() {
-        assertTrue(InterceptionSettings(enabled = true, targetDomains = listOf(target)).isActive)
+    fun enabledWithDomainsButNoFeedIds_isActiveFalse() {
+        assertFalse(
+            InterceptionSettings(
+                enabled = true,
+                targetDomains = listOf(target),
+                feedIds = emptySet()
+            ).isActive
+        )
+    }
+
+    @Test
+    fun enabledWithDomainsAndFeedIds_isActiveTrue() {
+        assertTrue(
+            InterceptionSettings(
+                enabled = true,
+                targetDomains = listOf(target),
+                feedIds = setOf(1)
+            ).isActive
+        )
     }
 }

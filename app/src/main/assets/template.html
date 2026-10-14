@@ -15,8 +15,16 @@
         $normalize_css
     </style>
 
-    <style>
+    <!-- 主题样式表：明 / 暗两套，由 Android 侧按当前 uiMode 注入。
+         ⚠️ id 是刷新入口：uiMode 变化时不重载页面，只就地替换本 <style> 的 textContent
+         （见 ArticleDetailScreen 的 applyThemeCss / themeCssFor），改了 id 会导致深浅色切换失效。 -->
+    <style id="miniread-theme-css">
         $custom_css
+    </style>
+
+    <!-- 平板样式：与主题无关，独立成块，避免刷新主题时被覆盖 -->
+    <style id="miniread-tablet-css">
+        $tablet_css
     </style>
 
 
