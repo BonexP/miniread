@@ -2,7 +2,7 @@
 
 > 本文件是本仓库对 AI Agent 的**唯一权威指令**。
 > 这里**只写机制与路径**：所有"具体取值"（真实实例地址、真实 feed id、Referer 规则等）都已改为**用户可配置**，不在文档中记录；需要时请按文中指引「在哪配、怎么改」。
-> 路径一律为**仓库相对路径**；行号对应 `release/1.0.0` 分支当前工作区，标注 `约 Lx` 的为近似值。
+> 路径一律为**仓库相对路径**；行号对应 `main` 分支当前工作区（原 `release/1.0.0` 发布线已于 2026-10-16 清理，其提交全部已合入 `main`，勿再引用），标注 `约 Lx` 的为近似值。
 
 ---
 
@@ -205,6 +205,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 - **flavor 差异**用**编译期 source set 同名文件替换** + 运行期 `BuildConfig.IS_EINK`；**不要**用运行时反射或字符串判断 flavor。
 - **无 DI、无 Repository**：ViewModel 直接调用 `RetrofitInstance.api`；**不要**引入 Hilt/Koin/Dagger，除非用户明确要求。
 - 明文流量由 `res/xml/network_security_config.xml` 显式允许（自建 Miniflux 常为局域网 http）；云备份排除见 `res/xml/backup_rules.xml` / `res/xml/data_extraction_rules.xml`。
+- **版本控制**：本仓库已启用 jj（colocated 模式，见 §10）。凡涉及提交 / 改写历史 / tag / 分支 / 回退，**先读 §10 的纪律**，不要凭 git 习惯直接操作。
 
 ---
 
@@ -218,6 +219,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | flavor 的 `EInkConfig.kt`（`standard/` 与 `eink/` 两份） | 两 flavor API 必须同名同签名 |
 | `SettingsFragment.kt` + `res/xml/preferences.xml` | 保留现状（当前无入口），不要据此新建设置入口 |
 | `.workbuddy/` | 本机私有目录，已被 `.gitignore` 忽略 |
+| `.jj/` | jj 的工作目录（colocated）。**不要删除、也不要写进 `.gitignore`**（jj 自动生成 `.jj/.gitignore`，git 已能忽略）。⚠️ 仓库级配置**不在**这里，删 `.jj` 也不会删配置（见 §10.1 第 1 条）；确需回退见 §10.3 |
 
 ---
 
@@ -254,11 +256,86 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 ## 9. 发布流程
 
 1. 确认 `main` 上版本号（`app/build.gradle.kts` 的 `appVersionName` / `appVersionCode`）已更新。
-2. 打 tag：`v*`（如 `v1.0.0`）并推送 → 触发 `.github/workflows/release.yml`。
+2. 打 tag 并推送（`v*`，如 `v1.0.0`）→ 触发 `.github/workflows/release.yml`。该 workflow 只用 `github.ref_name`，**不依赖附注 tag**，故轻量 tag 同样有效。
+   ⚠️ 用 jj 推送 tag **必须先 `jj git fetch`**，否则报 `stale info` 并失败（让 CI 重跑的「移动 tag」同样受此约束）；命令见 §10.2。
 3. CI 产出 `MiniRead-standard-<tag>.apk` / `MiniRead-eink-<tag>.apk` 并发布 GitHub Release。
 4. 本地无 keystore 时 release 回退 debug 签名，**仅用于本地回归**；正式发布走 CI（由 secrets 提供 keystore）。
 
 > 🚫 **推送远程 / 打 tag 前必须获得用户明确授权。**
+
+---
+
+## 10. 版本控制工作流（Git + jj）与纪律
+
+本仓库自 **2026-10-16** 起以 **colocated 模式**同时使用 git 与 **jj（Jujutsu 0.46.0）**：`.jj/` 与 `.git/` 同级共存，两类命令都可用。引入前已按「换行符 / 性能 / 发布链路 / 回退」四道闸门实测，结论为**适合本项目**（数据见 `.workbuddy/reports/jj-pilot-report-2026-10-16.html`，本机私有，不随仓库分发）。
+
+**为什么本仓库能用**：jj 官方**不支持**的 submodule / Git LFS / git hooks / `.gitattributes` / partial clone / `git worktree`，本仓库**一个都没用到**。⚠️ 将来若引入其中任意一项，需重新评估 jj 的适用性。
+
+### 10.1 硬性纪律
+
+1. ⚠️ **必须保留仓库级配置 `working-copy.eol-conversion = "input-output"`**（**不在 `.jj/` 内**：jj 0.38 起仓库级配置因安全原因移出仓库，实际存于 `%APPDATA%\jj\repos\<config-id>\config.toml`，其中 `<config-id>` 就是 `.jj/repo/config-id` 的内容，本仓库当前为 `56a476adacc04af8cabf`）。
+   自查两条：`jj config path --repo` 应打印上述路径；`jj config list --repo` 应含 `working-copy.eol-conversion = "input-output"`。改配置用 `jj config edit --repo`，**不要**去 `.jj/repo/` 下找 `config.toml`（那里没有）。
+   本机 `core.autocrlf=true`（磁盘 CRLF / 仓库 LF），而该项**默认 `none`**：缺失时 `jj st` 会把 **115 个文件**全部判为已修改（实测 21628 增 / 21628 删，纯行尾差异），且 `gradlew` 有被写成 CRLF 的风险（会破坏 Linux CI）。**重建 `.jj` 会生成新的 config-id，旧配置目录随即成为孤儿、新仓库读不到它 —— 配置必然丢失**；换机器同理。因此必须重设并强制重读一次：
+
+   ```bash
+   jj config set --repo working-copy.eol-conversion input-output
+   jj restore        # 仅需一次，强制 jj 重读工作副本
+   ```
+
+   修复后磁盘字节**零改动**（115 个 CRLF 文件与 `gradlew` 哈希均保持不变）。**不要**试图用 `git add --renormalize` 或新增 `.gitattributes` 绕过这个问题（jj 不读 `.gitattributes`）。
+2. ⚠️ **推送 tag 前必须先 `jj git fetch`**。jj 不认远程已存在的 tag，直接推会失败：
+   `Warning: ... refs/tags/vX (reason: stale info)` → `Error: Failed to push some bookmarks`。
+   `--force` **不是**合法参数（会报 `unexpected argument`）——先 fetch 再推即可成功。
+   不对称提示：**bookmark 重写后会自动 force-push，tag 不会**。
+3. ⚠️ **jj 会让 git 的 HEAD 变为 detached** → 既有的 `git fetch && git merge --ff-only origin/main` 会**静默失效**（只移动 detached 的 HEAD，`refs/heads/main` 不前进）。
+   **凡要执行写操作的 git 命令，先 `git switch main`**；`git log/diff/show/status` 等只读命令不受影响。
+4. **jj 只能建轻量 tag**，建不了附注 tag。发布链路只用轻量 tag 即可（`release.yml` 不依赖附注 tag，见 §9）；若将来确实需要附注 tag（例如要把发布说明写进注记），只能用 git 打并推。
+5. **推送远程、打 / 移动 / 删除 tag、创建 Release 属公开不可逆动作**，每次均需用户明确授权（同 §9）。清理上游已消失的本地分支同理，且**必须先确认已完全合并**（见 10.3）。
+
+### 10.2 常用命令
+
+| 目的 | 命令 |
+| --- | --- |
+| 状态 / 日志 / diff | `jj st` / `jj log` / `jj diff` |
+| 提交（无暂存区，改完即自动快照） | `jj commit -m "..."`（等价 describe + new） |
+| 开新工作（≈ 建分支） | `jj new main -m "意图"` |
+| 撤销上一步 / 跳到任意历史状态 | `jj undo` / `jj op log` / `jj op restore <op-id>` |
+| 发版打 tag | `jj git fetch` → `jj tag set vX -r <rev>` → `jj git push --tag vX` |
+| 移动 tag 让 CI 重跑 | `jj git fetch` → `jj tag set vX -r <rev> --allow-move` → `jj git push --tag vX` |
+| 同步远端（≈ git pull） | `jj git fetch` → `jj rebase -d main` |
+
+> `jj tag set` 默认**拒绝移动**已有 tag，必须显式加 `--allow-move`。
+
+### 10.3 回退 jj（完全退回纯 git）
+
+```bash
+rm -rf .jj
+git for-each-ref --format='%(refname)' refs/jj | while read -r r; do git update-ref -d "$r"; done
+git switch main
+```
+
+三行缺一不可：第二行清除实测 **82 个** `refs/jj/*` 残留引用（49 个 `keep` + 33 个 `remote-tags`），第三行修掉 detached HEAD。执行后 **git 侧**的 refs / index / `git status` / git 本地配置 / 文件哈希与引入前基线**完全一致**（已实测）。
+
+⚠️ **但「完全一致」仅限 git 侧**：`%APPDATA%\jj\repos\<config-id>\`（本仓库为 `56a476adacc04af8cabf`，即 `.jj/repo/config-id` 的内容）不会随 `.jj` 删除而消失，其中的 `config.toml` 仍留在磁盘上。它不再被任何仓库读取，但会永久占位（本机现有 5 个，其中 4 个是试点实验遗留）。确认不再使用 jj 后可定向清理：
+
+```bash
+ls "$APPDATA/jj/repos/"                          # 先确认目录（Git Bash 下 $APPDATA 可用）
+rm -rf "$APPDATA/jj/repos/56a476adacc04af8cabf"  # 只删本仓库这一份；其余按需
+```
+
+清理陈旧分支的安全做法（**先校验已合并，再删**）：
+
+```bash
+git fetch --all --prune
+git rev-list --count origin/main..<branch>   # 必须为 0 才可删
+git branch -d <branch>                       # 用 -d 而非 -D
+```
+
+### 10.4 其它已核实的坑
+
+1. **本地 tag 与远端不一致**时，`git fetch --tags` 会报 `would clobber existing tag` 并跳过该 tag。确认以远端为准后 `git tag -f <tag> <远端 commit>` 对齐即可（本地旧对象不会丢失）。
+2. **colocated 下不要用 git 做提交 / 改写历史 / 切工作副本**（会造成 divergent change）。提交一律走 jj；git 只用于只读查看与 tag / 分支清理。
+3. **性能预期**：jj 每条命令都会走一次工作区快照，`jj st` 实测约 **991ms** vs `git status` 约 748ms（工作区含 625MB / 7240 个已忽略的构建文件）。属预期行为，不是故障。
 
 ---
 
