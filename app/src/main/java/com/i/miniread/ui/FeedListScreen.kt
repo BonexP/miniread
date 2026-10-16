@@ -44,8 +44,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.i.miniread.BuildConfig
+import com.i.miniread.R
 import com.i.miniread.network.Feed
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
@@ -106,7 +108,7 @@ fun FeedListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (isEditMode) "无订阅源可显示" else "全部已读，暂无未读条目",
+                    text = if (isEditMode) stringResource(R.string.feed_list_empty_no_feeds) else stringResource(R.string.feed_list_empty_all_read),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.Gray
                 )
@@ -198,7 +200,7 @@ fun FeedListScreen(
         ) {
             Icon(
                 imageVector = if (isEditMode) Icons.Default.Done else Icons.Default.Edit,
-                contentDescription = if (isEditMode) "保存排序" else "编辑排序"
+                contentDescription = if (isEditMode) stringResource(R.string.feed_list_action_save_order) else stringResource(R.string.feed_list_action_edit_order)
             )
         }
     }
@@ -220,8 +222,8 @@ fun FeedItem(
     if (showConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showConfirmDialog = false },
-            title = { Text("标记订阅源为已读") },
-            text = { Text("确定要将${feed.title}订阅源的所有条目标记为已读吗？此操作不可撤销。") },
+            title = { Text(stringResource(R.string.feed_list_dialog_mark_read_title)) },
+            text = { Text(stringResource(R.string.feed_list_dialog_mark_read_message, feed.title)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -229,14 +231,14 @@ fun FeedItem(
                         onMarkAsRead()
                     }
                 ) {
-                    Text("确认")
+                    Text(stringResource(R.string.feed_list_dialog_confirm))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showConfirmDialog = false }
                 ) {
-                    Text("取消")
+                    Text(stringResource(R.string.feed_list_dialog_cancel))
                 }
             }
         )
@@ -282,7 +284,7 @@ fun FeedItem(
                             IconButton(onClick = onMoveUp) {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowUp,
-                                    contentDescription = "Move Up"
+                                    contentDescription = stringResource(R.string.feed_list_move_up)
                                 )
                             }
                         }
@@ -290,7 +292,7 @@ fun FeedItem(
                             IconButton(onClick = onMoveDown) {
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = "Move Down"
+                                    contentDescription = stringResource(R.string.feed_list_move_down)
                                 )
 
                             }
@@ -305,7 +307,7 @@ fun FeedItem(
                         style = MaterialTheme.typography.titleLarge
                     )
                     Text(
-                        text = if (unreadCount > 0) "$unreadCount 未读条目" else "全部已读",
+                        text = if (unreadCount > 0) stringResource(R.string.feed_list_entry_unread_count, unreadCount) else stringResource(R.string.feed_list_entry_all_read),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 4.dp)
@@ -317,7 +319,7 @@ fun FeedItem(
                     IconButton(onClick = { showConfirmDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Done,
-                            contentDescription = "Mark as Read"
+                            contentDescription = stringResource(R.string.feed_list_mark_as_read)
                         )
                     }
                 }

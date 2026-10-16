@@ -14,13 +14,21 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Miniread"
-        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Miniread">
+            android:theme="@style/Theme.Miniread"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode">
+            <!--
+            configChanges 说明：声明后旋转 / 分屏 / 深色模式切换不再重建 Activity。
+            阅读页（ArticleDetailScreen）的 WebView 实例与滚动位置由 remember 持有，
+            Activity 不重建即可保留阅读进度；Compose 会自动用新 Configuration 重组，
+            且 AndroidView 内的 View 不会被重建。
+            ⚠️ 依赖配置刷新的非 Compose 代码（若有）需自行在 onConfigurationChanged 处理。
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

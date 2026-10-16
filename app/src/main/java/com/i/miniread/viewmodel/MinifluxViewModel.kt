@@ -16,6 +16,9 @@ import com.i.miniread.network.FeedCreationRequest
 import com.i.miniread.network.RetrofitInstance
 import com.i.miniread.network.UserInfo
 import com.i.miniread.util.DataStoreManager
+import com.i.miniread.util.FeedSorter
+import com.i.miniread.util.ScrollSnapshot
+import com.i.miniread.util.TimeWindow
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +60,40 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     private val currentEntryList = mutableStateListOf<Entry>()
 
+    // ===== 阅读进度（entryId -> 滚动快照）=====
+    // 刻意使用普通 LinkedHashMap 而非 Compose 可观察容器：滚动是高频事件，
+    // 可观察容器每帧 put 都会触发 ArticleDetailScreen 重组（连带 ArticleActionsBar
+    // 与 AndroidView.update），在 E-Ink 上尤其糟。沿用 currentEntryList 的既有模式。
+    // ⚠️ 所有读写均发生在主线程（WebView 回调 + Compose 事件），非线程安全，勿跨线程调用。
+    private val readingPositions: LinkedHashMap<Int, ScrollSnapshot> =
+        object : LinkedHashMap<Int, ScrollSnapshot>(16, 0.75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<Int, ScrollSnapshot>?
+            ): Boolean = size > MAX_TRACKED_READING_POSITIONS
+        }
+
+    /**
+     * 记录某篇文章的阅读位置；布局未就绪（内容高度或视口高度为 0）的快照直接丢弃，
+     * 避免加载中的 0 值污染存储。
+     */
+    fun saveReadingPosition(entryId: Int, position: ScrollSnapshot) {
+        if (position.contentHeight <= 0 || position.viewportHeight <= 0) return
+        readingPositions[entryId] = position
+    }
+
+    /** 读取某篇文章保存的阅读位置；从未读过返回 null。 */
+    fun getReadingPosition(entryId: Int): ScrollSnapshot? = readingPositions[entryId]
+
+    /** 清除某篇文章的阅读位置（下次进入从顶部开始）。 */
+    fun clearReadingPosition(entryId: Int) {
+        readingPositions.remove(entryId)
+    }
+
+    companion object {
+        /** 内存中最多保留多少篇文章的阅读位置，超出按 LRU 淘汰。 */
+        private const val MAX_TRACKED_READING_POSITIONS = 50
+    }
+
     fun loadEntryById(entryId: Int) {
         viewModelScope.launch {
             try {
@@ -85,13 +122,13 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setAuthToken(token: String) {
-        Log.d("MinifluxViewModel", "Auth token set: $token")
+        Log.d("MinifluxViewModel", "Auth token set")
         _authToken.value = token
     }
 
     fun markEntryAsRead(entryId: Int) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
+            Log.d("MinifluxViewModel", "Mark Entry Read")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.markEntryAsUnread(
@@ -112,7 +149,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun markEntryAsUnread(entryId: Int) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Mark Entry Unread with token: $token")
+            Log.d("MinifluxViewModel", "Mark Entry Unread")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.markEntryAsUnread(
@@ -135,7 +172,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     fun toggleStarred(entryId: Int, b: Boolean) {
 
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Toggle entry mark with token: $token")
+            Log.d("MinifluxViewModel", "Toggle entry mark")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.toggleEntryBookMark(token, entryId)
@@ -156,7 +193,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchFeeds() {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching feeds with token: $token")
+            Log.d("MinifluxViewModel", "Fetching feeds")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getFeeds(token)
@@ -174,7 +211,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchCategories() {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching categories with token: $token")
+            Log.d("MinifluxViewModel", "Fetching categories")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getCategories(token)
@@ -198,7 +235,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Fetching entries with token: $token, status: $status, categoryId: $categoryId"
+                "Fetching entries, status: $status, categoryId: $categoryId"
             )
             viewModelScope.launch {
                 try {
@@ -227,7 +264,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Fetching entries with token: $token, status: $status"
+                "Fetching entries, status: $status"
             )
             viewModelScope.launch {
                 try {
@@ -284,7 +321,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Creating feed with token: $token, feedUrl: $feedUrl, categoryId: $categoryId"
+                "Creating feed, feedUrl: $feedUrl, categoryId: $categoryId"
             )
             viewModelScope.launch {
                 try {
@@ -302,7 +339,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun deleteFeed(feedId: Int) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Deleting feed with token: $token, feedId: $feedId")
+            Log.d("MinifluxViewModel", "Deleting feed, feedId: $feedId")
             viewModelScope.launch {
                 try {
                     RetrofitInstance.api.deleteFeed(token, feedId)
@@ -317,7 +354,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchUserInfo() {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching user info with token: $token")
+            Log.d("MinifluxViewModel", "Fetching user info")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getUserInfo(token)
@@ -343,12 +380,11 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
         _authToken.value?.let { token ->
             Log.d(
                 "MinifluxViewModel",
-                "Fetching today's entries with token: $token, status: $status"
+                "Fetching today's entries, status: $status"
             )
             viewModelScope.launch {
                 try {
-                    val unixTime = System.currentTimeMillis() / 1000
-                    val befeore24h = unixTime - 86400
+                    val befeore24h = TimeWindow.publishedAfterForLast24h(System.currentTimeMillis())
                     Log.d("Time", "unixtimestamp before 24h is $befeore24h")
                     val response =
                         RetrofitInstance.api.getTodayEntries(token, published_after = befeore24h)
@@ -370,7 +406,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun markCategoryAsRead(id: Int) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Mark Entry Read with token: $token")
+            Log.d("MinifluxViewModel", "Mark Entry Read")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.markCategoryAsRead(
@@ -389,7 +425,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchCategoriesUnreadCount() {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching unread entry counts by category with token: $token")
+            Log.d("MinifluxViewModel", "Fetching unread entry counts by category")
             viewModelScope.launch {
                 try {
                     val categories = RetrofitInstance.api.getCategories(token)
@@ -415,7 +451,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun fetchFeedsUnreadCount() {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching unread entry counts by feed with token: $token")
+            Log.d("MinifluxViewModel", "Fetching unread entry counts by feed")
             viewModelScope.launch {
                 try {
                     val unreadCounterList = RetrofitInstance.api.getFeedCounters(token).unreads
@@ -440,7 +476,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     }
     fun fetchCategoryFeeds(categoryId: Int){
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching category $categoryId feeds with token: $token")
+            Log.d("MinifluxViewModel", "Fetching category $categoryId feeds")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getCategoryFeeds(categoryId = categoryId, authToken = token)
@@ -457,7 +493,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
     fun markFeedAsRead(feedid: Int) {
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Mark feed as  Read with token: $token")
+            Log.d("MinifluxViewModel", "Mark feed as  Read")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.markFeedAsRead(
@@ -532,7 +568,7 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
 
         var unreadCount= mutableMapOf<String,Int>()
         _authToken.value?.let { token ->
-            Log.d("MinifluxViewModel", "Fetching feed counters with token: $token")
+            Log.d("MinifluxViewModel", "Fetching feed counters")
             viewModelScope.launch {
                 try {
                     val response = RetrofitInstance.api.getFeedCounters(token)
@@ -568,13 +604,8 @@ class MinifluxViewModel(application: Application) : AndroidViewModel(application
     suspend fun loadCustomFeedOrder(feeds: List<Feed>): List<Feed> {
         return try {
             val feedOrderMap = DataStoreManager.getFeedOrder()
-            if (feedOrderMap.isEmpty()) {
-                // 如果没有保存的排序，返回按标题排序的列表
-                feeds.sortedBy { it.title }
-            } else {
-                // 按照保存的顺序排列
-                feeds.sortedBy { feed -> feedOrderMap[feed.id] ?: Int.MAX_VALUE }
-            }
+            // 排序逻辑已抽取为纯函数 FeedSorter.sort（行为与原先完全一致），便于单元测试
+            FeedSorter.sort(feeds, feedOrderMap, idOf = { it.id }, titleOf = { it.title })
         } catch (e: Exception) {
             Log.e("MinifluxViewModel", "Error loading feed order", e)
             feeds.sortedBy { it.title }

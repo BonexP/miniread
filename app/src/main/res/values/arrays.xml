@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="sync_frequency_entries">array</string-array>
-    <string-array name="sync_frequency_values">sync_freq_v</string-array>
+    <string-array name="sync_frequency_entries">
+        <item>Every 15 minutes</item>
+        <item>Every 30 minutes</item>
+        <item>Every hour</item>
+    </string-array>
+    <string-array name="sync_frequency_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+    </string-array>
 </resources>

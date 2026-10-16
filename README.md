@@ -1,7 +1,9 @@
 # MiniRead
 
-![Build Debug](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20Debug%20APKs/badge.svg)
-![Release](https://github.com/YOUR_USERNAME/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
+![Build Debug](https://github.com/BonexP/miniread/workflows/Build%20Debug%20APKs/badge.svg)
+![Release](https://github.com/BonexP/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
+
+**当前版本：v1.0.3**
 
 ### 项目简介
 
@@ -61,22 +63,26 @@
     - 通过注入自定义 CSS 和 JavaScript，提升文章在移动设备上的阅读体验。
 
 
-#### 快速开始
+### 快速开始
 
+1. **克隆仓库**：
+   ```bash
+   git clone <repository-url>
    cd miniread
+   ```
+2. **打开 Android Studio**：导入项目，并等待依赖加载完成。
+3. **配置 API Token**：在应用首次启动时，输入 Miniflux API Token 并保存。
+4. **运行应用**：点击 `Run` 按钮，在模拟器或物理设备上调试应用。
+
 ### 部署与运行
 
-3. **选择构建变体**：
+1. **选择构建变体**：
    - 在 Android Studio 左侧打开 **Build Variants** 面板
    - 选择你想要的变体：
      - `standardDebug` - 标准版 Debug（推荐日常开发）
      - `einkDebug` - E-Ink 版 Debug
      - `standardRelease` - 标准版 Release
      - `einkRelease` - E-Ink 版 Release
-
-1. **克隆仓库**：
-   ```bash
-5. **配置 API Token**：在应用首次启动时，输入 Miniflux API Token 并保存。
 
 #### 构建所有变体
 
@@ -107,12 +113,6 @@ app/build/outputs/apk/
 ```
 
 📖 **详细构建指南**: [BUILD_GUIDE.md](./doc/BUILD_GUIDE.md)
-
-   git clone <repository-url>
-   ```
-2. **打开 Android Studio**：导入项目，并等待依赖加载完成。
-3. **配置 API Token**：在应用首次启动时，输入 Miniflux API Token 并保存。
-4. **运行应用**：点击 `Run` 按钮，在模拟器或物理设备上调试应用。
 
 ### 注意事项
 

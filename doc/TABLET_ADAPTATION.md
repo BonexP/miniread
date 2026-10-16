@@ -83,31 +83,13 @@ implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 
 ### 4. 阅读器 WebView 优化
 
-**文件**: `ArticleDetailScreen.kt`
+**文件**: `ArticleDetailScreen.kt`（`loadHtmlContentAsync`）
 
 #### 改动要点：
 
-1. **平板检测逻辑**:
-   ```kotlin
-   val isTablet = context.resources.configuration.screenWidthDp >= 600
-   ```
-
-2. **动态加载 CSS**:
-   ```kotlin
-   val tabletCss = if (isTablet) {
-       readAssetFile(context, "tablet_styles.css")
-   } else {
-       ""
-   }
-   ```
-
-3. **CSS 注入**:
-   ```kotlin
-   template
-       .replace("$normalize_css", normalizeCss)
-       .replace("$custom_css", "$customCss\n$tabletCss")
-       .replace("$content", content)
-   ```
+- **不再在 Android 侧判定平板**：`tablet_styles.css` 由 `loadHtmlContentAsync` **无条件注入**（读取后走进程级缓存 `cachedTabletCss`），注入管道与其它 CSS 一致（在 `$custom_css` 里拼上 `tabletCss`）。
+- **是否生效完全交给 CSS 媒体查询**：媒体查询按 WebView 的**真实视口**（宽 = WebView 内容区宽度，CSS px = dp）匹配；宽度达标但高度不足的（手机横屏）会被高度守卫排除。因此旋转 / 分屏后页面会重新排版，样式自动跟随，无需 Android 侧参与。
+- 阅读页响应式渲染的另一半在 `assets/template.html`：补 `<meta name="viewport" content="width=device-width, initial-scale=1">` 把布局视口从固定约 980px 改为真实设备宽度，并以 `html { font-size: 6.4px; }` 作为 rem 基数保持字号观感。
 
 ### 5. 平板专用 CSS 样式
 
@@ -115,16 +97,17 @@ implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 
 #### 优化内容：
 
-- **文章内容居中**: 最大宽度 800dp，自动居中
+- **文章内容居中**: 最大宽度 800px（CSS px），自动居中
 - **增大字体**: 18px，行高 1.8
 - **优化间距**: 更大的 padding 和 margin
 - **图片优化**: 圆角、阴影效果
 - **代码块优化**: 更好的背景色和字体
 - **表格优化**: 更好的边框和间距
-- **响应式断点**:
-  - `@media (min-width: 600px)` - 平板
-  - `@media (min-width: 840px)` - 超大屏幕
-  - 深色模式适配
+- **响应式断点**（均带高度守卫，排除手机横屏）:
+  - `@media (min-width: 600px) and (min-height: 480px)` - 平板
+  - `@media (min-width: 840px) and (min-height: 480px)` - 超大屏幕
+  - 深色模式适配（`prefers-color-scheme: dark` 下同步这对断点）
+- **字号单位**: 块内 `rem` 已全部改为 `px`（如 h1 40px / h2 32px / h3 24px / 段距 24px），不再依赖 `template.html` 的 rem 基数，避免受基础字号变化影响。
 
 ## 🎯 核心特性
 
@@ -148,8 +131,10 @@ implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 |---------|---------|---------|---------|
 | < 600dp | 手机 | 底部导航栏 | 填充全屏 |
 | 600-839dp (竖屏) | 平板竖屏 | 底部导航栏 | 填充全屏 |
-| 600-839dp (横屏) | 平板横屏 | 侧边导航栏 | 最大 800dp |
-| ≥ 840dp | 超大屏幕 | 侧边导航栏 | 最大 900dp |
+| 600-839dp (横屏) | 平板横屏 | 侧边导航栏 | 最大 800px |
+| ≥ 840dp | 超大屏幕 | 侧边导航栏 | 最大 900px |
+
+> 说明：**导航方式**由 WindowSizeClass（按宽度）决定，属 `ui/adaptive/`；**内容宽度**由 `tablet_styles.css` 的媒体查询决定，除宽度外**还要求高度 ≥480px**（排除 WebView 高度仅 200~350px 的手机横屏）。两套判据相互独立。
 
 ## 🔍 技术亮点
 
@@ -164,9 +149,9 @@ implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 - 易于维护和扩展
 
 ### 3. 性能优化
-- CSS 文件缓存机制
-- 动态加载，只在平板设备加载额外样式
-- 不影响手机版本的性能
+- CSS 文件缓存机制：`tablet_styles.css` 读取后走**进程级缓存** `cachedTabletCss`，避免重复读盘
+- `tablet_styles.css` **始终注入**，但由 CSS 媒体查询按真实视口决定是否生效——避免 Android 侧 `screenWidthDp` 条件判定导致的「旋转不重排 / 手机横屏误限宽」
+- 媒体查询不匹配时不应用任何规则，手机端渲染性能不受额外影响
 
 ## 🚀 使用方式
 
@@ -246,7 +231,7 @@ gradlew assemble
 1. **依赖同步**: 首次构建需要下载 WindowSizeClass 库
 2. **最低 SDK**: 保持 minSdk = 25，所有设备兼容
 3. **E-Ink 兼容**: 所有改动都兼容 E-Ink 版本
-4. **性能**: 不影响现有性能，仅在平板设备加载额外 CSS
+4. **性能**: 不影响现有性能；`tablet_styles.css` 始终注入但走进程级缓存，是否生效由 CSS 媒体查询按真实视口决定
 
 ## 🔄 后续优化建议
 

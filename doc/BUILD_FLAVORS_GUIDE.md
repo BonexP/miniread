@@ -236,8 +236,10 @@ app/build/outputs/apk/eink/release/app-eink-release.apk
 
 ### 版本命名规范
 
-- 标准版：`MiniRead-v1.0.0-standard.apk`
-- E-Ink 版：`MiniRead-v1.0.0-eink.apk`
+- `versionName` 统一为 `1.0.3`，不带 flavor 后缀（debug 构建附加 `-debug` 后缀）。
+- 发布 APK（由 CI 产出）：
+  - 标准版：`MiniRead-standard-v1.0.3.apk`
+  - E-Ink 版：`MiniRead-eink-v1.0.3.apk`
 
 ## 常见问题
 
@@ -258,46 +260,8 @@ Flavor 特定的资源会覆盖 main 中的同名资源。确保资源 ID 一致
 2. 创建对应的源集目录
 3. 实现必要的 flavor 特定代码
 
-### Q5: E-Ink 版如何集成设备 SDK？
-在 `eink/` 目录下添加设备厂商的 SDK（如 ONYX SDK），并在 EInkUtils 中调用。
-
-## E-Ink 设备适配建议
-
-### 主流 E-Ink 设备 SDK
-
-1. **ONYX BOOX**
-   - SDK: ONYX SDK
-   - 支持：局部刷新、全局刷新、手写笔交互
-
-2. **iReader**
-   - SDK: iReader SDK
-   - 支持：刷新模式控制、前光调节
-
-3. **Boyue**
-   - SDK: Boyue SDK
-   - 支持：屏幕刷新控制
-
-### 集成示例
-
-```kotlin
-// 在 eink/java/com/i/miniread/eink/EInkUtils.kt 中
-import android.onyx.sdk.api.device.epd.EpdController
-
-fun refreshScreen(fullRefresh: Boolean = false) {
-    try {
-        if (fullRefresh) {
-            // 使用 ONYX SDK 执行全屏刷新
-            EpdController.invalidate(null, EpdController.MODE_GC16)
-        } else {
-            // 使用 ONYX SDK 执行快速刷新
-            EpdController.invalidate(null, EpdController.MODE_A2)
-        }
-    } catch (e: Exception) {
-        // 如果不是 ONYX 设备，忽略错误
-        Log.w("EInkUtils", "Not running on supported E-Ink device", e)
-    }
-}
-```
+### Q5: E-Ink 版如何集成设备厂商 SDK？
+v1.0 未接入厂商墨水屏 SDK（ONYX / 博阅等）。E-Ink 版本通过高对比配色与禁用动画进行显示优化；`EInkUtils.refreshScreen()` 当前为占位实现，后续如需接入厂商 SDK，可在 `eink/` 源集的 `EInkUtils` 中扩展。
 
 ## 维护清单
 
@@ -319,6 +283,6 @@ fun refreshScreen(fullRefresh: Boolean = false) {
 ---
 
 **文档版本**: 1.0  
-**最后更新**: 2025-10-26  
+**最后更新**: 2026-10-12  
 **维护者**: MiniRead 开发团队
 

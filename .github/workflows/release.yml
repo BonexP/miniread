@@ -21,7 +21,9 @@ jobs:
           distribution: 'temurin'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v2
+        # 必须用 v4：v2 内部会执行 `sdkmanager tools`，而 Google 已移除 tools 包
+        # （报 "Failed to find package 'tools'" 并导致构建失败）。v4 不再请求该包。
+        uses: android-actions/setup-android@v4
 
       - name: Decode keystore
         run: |
@@ -32,6 +34,9 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
+
+      - name: Run unit tests
+        run: ./gradlew testStandardDebugUnitTest testEinkDebugUnitTest
 
       - name: Build all flavor Release APKs
         run: |
@@ -79,6 +84,6 @@ jobs:
             - **应用 ID**: com.i.miniread.eink
             - **特性**: 高对比度黑白 UI，无动画，专为墨水屏优化
             
-            > 💡 两个版本可以同时安��在同一设备上
+            > 💡 两个版本可以同时安装在同一设备上
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

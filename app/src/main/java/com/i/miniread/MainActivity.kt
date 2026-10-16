@@ -1,15 +1,22 @@
 package com.i.miniread
 
 import android.os.Build
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
+import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -36,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
@@ -51,6 +59,7 @@ import com.i.miniread.ui.ArticleDetailScreen
 import com.i.miniread.ui.CategoryListScreen
 import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
+import com.i.miniread.ui.HiddenSettingsScreen
 import com.i.miniread.ui.LoginScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
@@ -58,13 +67,13 @@ import com.i.miniread.ui.adaptive.AdaptiveLayoutHelper
 import com.i.miniread.ui.adaptive.AppNavigationRail
 import com.i.miniread.ui.theme.MinireadTheme
 import com.i.miniread.util.DataStoreManager
+import com.i.miniread.util.InterceptionRuntime
 import com.i.miniread.viewmodel.MinifluxViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MinifluxViewModel by viewModels()
 
-    @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +92,9 @@ class MainActivity : ComponentActivity() {
                 val savedAuthToken = DataStoreManager.getApiToken()
                 Log.d("MainActivity", "Loaded: baseUrl=$savedBaseUrl, token=${if(savedAuthToken.isNotEmpty()) "exists" else "empty"}")
 
+                // 初始化定向拦截运行时快照（baseUrl + 4 个 intercept_* key）
+                InterceptionRuntime.load()
+
                 if (savedBaseUrl.isNotEmpty() && savedAuthToken.isNotEmpty()) {
                     // 如果存在已保存的 baseUrl 和 authToken，则初始化 Retrofit 和 ViewModel
                     RetrofitInstance.initialize(savedBaseUrl)
@@ -98,8 +110,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MinireadTheme {
-                val windowSizeClass = calculateWindowSizeClass(this)
-                MainContent(viewModel = viewModel, windowSizeClass = windowSizeClass.widthSizeClass)
+                MainContent(viewModel = viewModel)
             }
         }
     }
@@ -109,8 +120,8 @@ class MainActivity : ComponentActivity() {
      * 
      * ⚠️ 注意事项：
      * - 此功能仅在 E-Ink 版本中启用
-     * - 需要 WebView 获得焦点才能工作
-     * - 如果焦点不在 WebView 上，音量键将保持默认行为
+     * - 需要文章阅读页通过 setActiveWebView 登记 WebView
+     * - 若未登记 WebView，音量键将保持默认行为
      * - 建议在设置中提供开关选项让用户选择是否启用此功能
      * 
      * 实现细节：
@@ -118,79 +129,76 @@ class MainActivity : ComponentActivity() {
      * - 音量下键：向下滚动 800px（考虑阅读习惯，向下滚动距离更大）
      * - 其他按键：保持默认行为
      */
+    @Volatile
+    private var activeWebView: WebView? = null
+
+    /**
+     * 由文章阅读页在 WebView 创建时登记、销毁时传 null 清理。
+     * 音量键翻页依赖此显式登记，替代原先在 Compose 宿主下恒为 null 的 currentFocus 判断。
+     */
+    fun setActiveWebView(webView: WebView?) {
+        activeWebView = webView
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // 仅在 E-Ink 版本启用音量键翻页
-        if (BuildConfig.IS_EINK) {
-            Log.d("MainActivity", "Key pressed: $keyCode")
-            
-            return when (keyCode) {
-                KeyEvent.KEYCODE_VOLUME_UP -> {
-                    // 尝试获取当前焦点的 WebView
-                    val webView = currentFocus as? WebView
-                    if (webView != null) {
-                        // WebView 有焦点，执行向上滚动
+        // 仅在 E-Ink 版本启用音量键翻页；只处理首次按下，忽略长按重复事件
+        if (BuildConfig.IS_EINK &&
+            event?.action == KeyEvent.ACTION_DOWN &&
+            event.repeatCount == 0
+        ) {
+            val webView = activeWebView
+            if (webView != null) {
+                when (keyCode) {
+                    KeyEvent.KEYCODE_VOLUME_UP -> {
                         webView.scrollBy(0, -500)
-                        Log.d("MainActivity", "Volume up - scrolled up 500px")
-                        true  // 消费此事件，不再传递
-                    } else {
-                        // WebView 没有焦点，记录警告并保持默认行为
-                        Log.w("MainActivity", "Volume up pressed but WebView not focused")
-                        super.onKeyDown(keyCode, event)
+                        return true
                     }
-                }
-                
-                KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                    // 尝试获取当前焦点的 WebView
-                    val webView = currentFocus as? WebView
-                    if (webView != null) {
-                        // WebView 有焦点，执行向下滚动
+                    KeyEvent.KEYCODE_VOLUME_DOWN -> {
                         webView.scrollBy(0, 800)
-                        Log.d("MainActivity", "Volume down - scrolled down 800px")
-                        true  // 消费此事件，不再传递
-                    } else {
-                        // WebView 没有焦点，记录警告并保持默认行为
-                        Log.w("MainActivity", "Volume down pressed but WebView not focused")
-                        super.onKeyDown(keyCode, event)
+                        return true
                     }
-                }
-                
-                else -> {
-                    // 其他按键保持默认行为
-                    super.onKeyDown(keyCode, event)
                 }
             }
         }
-        
-        // 标准版本保持默认按键行为
+        // WebView 未登记或非 E-Ink 版本：保持系统默认（音量）行为
         return super.onKeyDown(keyCode, event)
     }
 }
 
-sealed class Screen(val route: String, val label: String) {
-    data object Feeds : Screen("feeds", "Feeds")
-    data object Categories : Screen("categories", "Categories")
-    data object EntryList : Screen("entryList", "Entry List")
-    data object ArticleDetail : Screen("articleDetail", "Article Detail")
-    data object TodayEntryList : Screen("todayEntryList", "Today")
-    data object SubFeedScreen : Screen("subFeed", "Category Feeds")
+sealed class Screen(val route: String, @StringRes val labelRes: Int) {
+    data object Feeds : Screen("feeds", R.string.nav_feeds)
+    data object Categories : Screen("categories", R.string.nav_categories)
+    data object EntryList : Screen("entryList", R.string.nav_entry_list)
+    data object ArticleDetail : Screen("articleDetail", R.string.nav_article_detail)
+    data object TodayEntryList : Screen("todayEntryList", R.string.nav_today)
+    data object SubFeedScreen : Screen("subFeed", R.string.nav_sub_feed)
+    data object HiddenSettings : Screen("hiddenSettings", R.string.nav_hidden_settings)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
-fun MainContent(
-    viewModel: MinifluxViewModel,
-    windowSizeClass: androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
-) {
+fun MainContent(viewModel: MinifluxViewModel) {
     val navController = rememberNavController()
     var selectedScreen by remember { mutableStateOf(Screen.Feeds.route) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    // Activity 已声明 configChanges（见 AndroidManifest.xml），旋转/分屏/深色切换不再重建
+    // Activity，windowSizeClass 不能只在 onCreate 算一次。calculateWindowSizeClass 本身是
+    // @Composable，内部以 LocalConfiguration 为信号重算，可保持手机横屏等场景下
+    // 底部栏 ↔ NavigationRail 的自适应切换。
+    val windowSizeClass = calculateWindowSizeClass(context as Activity).widthSizeClass
+    val unlockedMsg = stringResource(R.string.settings_hidden_unlocked)
 
     var currentFeedId by remember { mutableStateOf("") }
     var currentCategoryId by remember { mutableStateOf("") }
     var isLoggedIn by remember { mutableStateOf(false) }
     var baseUrl by remember { mutableStateOf("") }
     var authToken by remember { mutableStateOf("") }
+
+    // 隐藏入口：连续点击顶栏标题 7 次解锁高级设置页
+    var titleTapCount by remember { mutableStateOf(0) }
+    var lastTapAt by remember { mutableStateOf(0L) }
 
     // 初始化时读取 DataStore 数据
     LaunchedEffect(Unit) {
@@ -207,6 +215,8 @@ fun MainContent(
             scope.launch {
                 DataStoreManager.setBaseUrl(url)
                 DataStoreManager.setApiToken(token)
+                // baseUrl 变更后刷新定向拦截运行时快照
+                InterceptionRuntime.refreshBaseUrl()
             }
             // 初始化 Retrofit 和 ViewModel
             RetrofitInstance.initialize(baseUrl)
@@ -225,7 +235,8 @@ fun MainContent(
         val currentRoute = navBackStackEntry?.destination?.route
 
         // 判断是否是 ArticleDetailScreen 的路由
-        val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false
+        val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false &&
+            currentRoute?.startsWith(Screen.HiddenSettings.route) == false
 
         // 判断是否应该使用侧边导航栏（平板横屏模式）
         val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
@@ -245,7 +256,31 @@ fun MainContent(
                             style = if (BuildConfig.IS_EINK)
                                 androidx.compose.material3.MaterialTheme.typography.titleMedium
                             else
-                                androidx.compose.material3.MaterialTheme.typography.titleLarge
+                                androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                            // 隐藏入口：连续点击 7 次解锁高级设置（indication=null 去掉水波纹）
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+                                val now = System.currentTimeMillis()
+                                if (now - lastTapAt > 600L) {
+                                    titleTapCount = 1
+                                } else {
+                                    titleTapCount += 1
+                                }
+                                lastTapAt = now
+                                if (titleTapCount >= 7) {
+                                    titleTapCount = 0
+                                    Toast.makeText(
+                                        context,
+                                        unlockedMsg,
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    navController.navigate(Screen.HiddenSettings.route) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
                         )
                     },
                     actions = {
@@ -349,7 +384,7 @@ fun MainContent(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "刷新",
+                                contentDescription = stringResource(R.string.action_refresh),
                                 // E-Ink 版本使用更小的图标
                                 modifier = if (BuildConfig.IS_EINK)
                                     Modifier.size(18.dp)
@@ -372,94 +407,15 @@ fun MainContent(
                 }
             }
         ) { innerPadding ->
-            // 平板横屏模式：使用侧边导航栏 + 内容区域
-            if (useNavigationRail) {
-                Row(modifier = Modifier.padding(innerPadding)) {
+            // 单一 NavHost：调用位置恒定为 Row → Surface → NavHost，if 只切换 AppNavigationRail；
+            // 旋转导致 useNavigationRail 翻转时 NavHost 的组合位置不变，内容子树（含阅读页
+            // WebView）不被重建 —— 页面不重新加载，滚动位置由 WebView 原生保留（严格同一段文字）。
+            // ⚠️ 不要改回 if/else 两份 NavHost —— 那会让每次旋转都重建整个内容子树。
+            Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                if (useNavigationRail) {
                     AppNavigationRail(navController = navController)
-                    Surface(modifier = Modifier.weight(1f)) {
-                        NavHost(
-                            navController = navController,
-                            startDestination = Screen.TodayEntryList.route
-                        ) {
-                            composable(Screen.Feeds.route) {
-                                FeedListScreen(viewModel) { feedId ->
-                                    currentFeedId = feedId.toString()
-                                    currentCategoryId = ""
-                                    navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                                }
-                            }
-                            composable(Screen.Categories.route) {
-                                CategoryListScreen(viewModel = viewModel, { categoryId ->
-                                    currentCategoryId = categoryId.toString()
-                                    currentFeedId = ""
-                                    navController.navigate(Screen.EntryList.route + "?categoryId=$categoryId")
-                                }, { categoryId ->
-                                    navController.navigate(Screen.SubFeedScreen.route + "?categoryId=$categoryId")
-                                })
-                            }
-                            composable(
-                                route = Screen.EntryList.route + "?feedId={feedId}&categoryId={categoryId}",
-                                arguments = listOf(
-                                    navArgument("feedId") {
-                                        type = NavType.StringType; nullable = true
-                                    },
-                                    navArgument("categoryId") {
-                                        type = NavType.StringType; nullable = true
-                                    }
-                                )) { backStackEntry ->
-                                currentFeedId =
-                                    backStackEntry.arguments?.getString("feedId").toString()
-                                val feedId =
-                                    backStackEntry.arguments?.getString("feedId")?.toIntOrNull()
-                                val categoryId =
-                                    backStackEntry.arguments?.getString("categoryId")?.toIntOrNull()
-                                EntryListScreen(viewModel, navController, feedId, categoryId)
-                            }
-                            composable(
-                                route = Screen.ArticleDetail.route + "?entryId={entryId}",
-                                arguments = listOf(navArgument("entryId") {
-                                    type = NavType.IntType
-                                })
-                            ) { backStackEntry ->
-                                val entryId = backStackEntry.arguments?.getInt("entryId")
-                                if (entryId != null) {
-                                    selectedScreen = Screen.ArticleDetail.route
-                                    ArticleDetailScreen(viewModel, entryId, navController)
-                                } else {
-                                    Log.d(
-                                        "MainActivity",
-                                        "MainContent: Error while getting entryId"
-                                    )
-                                }
-                            }
-                            composable(Screen.TodayEntryList.route) {
-                                TodayEntryListScreen(viewModel, navController)
-                            }
-                            composable(
-                                route = "subFeed?categoryId={categoryId}",
-                                arguments = listOf(navArgument("categoryId") {
-                                    type = NavType.IntType
-                                })
-                            ) { backStackEntry ->
-                                val categoryId = backStackEntry.arguments?.getInt("categoryId")
-                                categoryId?.let {
-                                    SubFeedScreen(
-                                        viewModel = viewModel,
-                                        categoryId = it,
-                                        onFeedSelected = { feedId ->
-                                            currentFeedId = feedId.toString()
-                                            currentCategoryId = ""
-                                            navController.navigate(Screen.EntryList.route + "?feedId=$feedId")
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
-            } else {
-                // 手机模式：传统布局
-                Surface(modifier = Modifier.padding(innerPadding)) {
+                Surface(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     NavHost(
                         navController = navController,
                         startDestination = Screen.TodayEntryList.route
@@ -511,6 +467,9 @@ fun MainContent(
                         }
                         composable(Screen.TodayEntryList.route) {
                             TodayEntryListScreen(viewModel, navController)
+                        }
+                        composable(Screen.HiddenSettings.route) {
+                            HiddenSettingsScreen(navController)
                         }
                         composable(
                             route = "subFeed?categoryId={categoryId}",
@@ -568,7 +527,7 @@ fun BottomNavigationBar(navController: NavController) {
             NavigationBarItem(
                 // E-Ink 版本移除文本标签以节省空间和减少刷新
                 label = if (BuildConfig.IS_EINK) null else {
-                    { Text(screen.label) }
+                    { Text(stringResource(screen.labelRes)) }
                 },
                 selected = currentRoute == screen.route,
                 onClick = {
@@ -591,7 +550,7 @@ fun BottomNavigationBar(navController: NavController) {
 
                     Icon(
                         imageVector = iconVector,
-                        contentDescription = screen.label,
+                        contentDescription = stringResource(screen.labelRes),
                         // E-Ink 版本使用更小的图标
                         modifier = if (BuildConfig.IS_EINK)
                             Modifier.size(20.dp)

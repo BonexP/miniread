@@ -237,19 +237,6 @@ Log.d("Flavor", """
 - [ ] 检查 APK 大小
 - [ ] 更新 CHANGELOG
 
-## 完整示例代码
-
-查看实际使用示例：[FlavorUsageExample.kt](../app/src/main/java/com/i/miniread/example/FlavorUsageExample.kt)
-
-该文件包含以下示例：
-- ✅ 基础 Flavor 检测
-- ✅ 自适应动画
-- ✅ E-Ink 优化包装器使用
-- ✅ 条件渲染
-- ✅ E-Ink 设备功能
-- ✅ 自适应颜色方案
-- ✅ 构建时配置
-
 ## 需要帮助？
 
 查看完整文档：[BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)

@@ -37,10 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.i.miniread.BuildConfig
+import com.i.miniread.R
 import com.i.miniread.network.Entry
 import com.i.miniread.viewmodel.MinifluxViewModel
 import java.time.OffsetDateTime
@@ -78,7 +80,7 @@ fun EntryListScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "无条目可显示",
+                text = stringResource(R.string.entry_list_empty),
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.Gray
             )
@@ -138,7 +140,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                 )  {
                     Icon(
                         imageVector = Icons.Default.Done,
-                        contentDescription = "Mark as Read",
+                        contentDescription = stringResource(R.string.entry_list_mark_as_read),
                         tint = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp)
                     )
@@ -193,7 +195,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = entry.title ?: "Untitled",
+                        text = entry.title ?: stringResource(R.string.entry_list_untitled),
                         style = MaterialTheme.typography.titleLarge,
                         color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
                     )

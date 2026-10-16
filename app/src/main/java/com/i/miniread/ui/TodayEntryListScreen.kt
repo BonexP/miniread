@@ -16,8 +16,10 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.i.miniread.R
 import com.i.miniread.viewmodel.MinifluxViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -44,7 +46,7 @@ fun TodayEntryListScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "无条目可显示",
+                text = stringResource(R.string.today_entry_list_empty),
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.Gray
             )

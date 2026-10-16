@@ -18,3 +18,12 @@ local.properties
 # IntelliJ IDEA
 .idea/
 modules.xml
+
+# Signing / keystores
+*.jks
+*.keystore
+my-release-key.jks
+app/release/
+
+# workbuddy
+.workbuddy/

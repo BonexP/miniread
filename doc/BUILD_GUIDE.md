@@ -200,7 +200,7 @@ adb install -r app/build/outputs/apk/eink/debug/app-eink-debug.apk
 #### 2. Release 构建 (`.github/workflows/release.yml`)
 
 **触发条件：**
-- 推送带 `v*` 前缀的 tag（例如 `v1.0.0`）
+- 推送带 `v*` 前缀的 tag（例如 `v1.0.3`）
 
 **构建内容：**
 - Standard Release APK（已签名）
@@ -221,10 +221,10 @@ adb install -r app/build/outputs/apk/eink/debug/app-eink-debug.apk
 
 ```bash
 # 1. 打上版本标签
-git tag v1.0.0
+git tag v1.0.3
 
 # 2. 推送标签到 GitHub
-git push origin v1.0.0
+git push origin v1.0.3
 
 # 3. GitHub Actions 会自动：
 #    - 构建 Standard 和 E-Ink 的 Release APK
@@ -399,8 +399,8 @@ find app/build/outputs/apk -name "*.apk" -type f
 
 ### GitHub
 ```bash
-git tag v1.0.0                        # 创建标签
-git push origin v1.0.0                # 触发 Release 构建
+git tag v1.0.3                        # 创建标签
+git push origin v1.0.3                # 触发 Release 构建
 ```
 
 ---

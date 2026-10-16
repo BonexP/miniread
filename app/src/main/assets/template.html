@@ -1,11 +1,30 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* 响应式渲染的 rem 基数：16px × 0.4 = 6.4px。
+           系数 0.4 来自旧「固定 980px 布局视口 + 缩放贴合」模型的换算
+           （WebView 宽约 391dp ÷ 980px ≈ 0.399），用于保持字号观感与旧版一致。
+           ⚠️ 删除本行会让全部 rem 字号整体放大 ~2.5 倍，请勿移除。 */
+        html { font-size: 6.4px; }
+    </style>
+
     <style>
         $normalize_css
     </style>
 
-    <style>
+    <!-- 主题样式表：明 / 暗两套，由 Android 侧按当前 uiMode 注入。
+         ⚠️ id 是刷新入口：uiMode 变化时不重载页面，只就地替换本 <style> 的 textContent
+         （见 ArticleDetailScreen 的 applyThemeCss / themeCssFor），改了 id 会导致深浅色切换失效。 -->
+    <style id="miniread-theme-css">
         $custom_css
+    </style>
+
+    <!-- 平板样式：与主题无关，独立成块，避免刷新主题时被覆盖 -->
+    <style id="miniread-tablet-css">
+        $tablet_css
     </style>
 
 
