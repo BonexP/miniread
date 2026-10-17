@@ -86,8 +86,8 @@
 git push origin main
 
 # 创建 tag → 自动构建 Release APK
-git tag v1.0.3
-git push origin v1.0.3
+git tag -a v1.1.0 -m "MiniRead 1.1.0 — <本版要点>"
+git push origin v1.1.0
 ```
 
 ### 手动触发

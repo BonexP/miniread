@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-18
+
 ### Added
 - 阅读页正文顶部注入元信息行（issue #13）：在 `<h1>` 与正文之间插入 `.miniread-meta`（`订阅源 · 发布时间`）。
   - 新增 `util/ArticleHtml.kt`：`buildContent()` 负责组装（标题 → meta → 正文），`formatPublishedAt()` 把 Miniflux 的 RFC3339 转本地时区 `yyyy-MM-dd HH:mm`（用 `java.text` 而非 `java.time`，`minSdk = 25` 且未开 desugaring），`escapeHtml()` 逐字符转义。
@@ -132,6 +134,7 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.1.0]: https://github.com/BonexP/miniread/releases/tag/v1.1.0
 [1.0.3]: https://github.com/BonexP/miniread/releases/tag/v1.0.3
 [1.0.2]: https://github.com/BonexP/miniread/releases/tag/v1.0.2
 [1.0.1]: https://github.com/BonexP/miniread/releases/tag/v1.0.1

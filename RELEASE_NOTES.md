@@ -1,9 +1,9 @@
-# MiniRead v1.0.3
+# MiniRead v1.1.0
 
 MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS 服务 Android 客户端。
 
-- **版本**：v1.0.3（versionCode 103）
-- **Tag**：`v1.0.3`
+- **版本**：v1.1.0（versionCode 110）
+- **Tag**：`v1.1.0`
 - **渠道**：GitHub Releases（仅此渠道分发）
 
 ## 下载
@@ -12,10 +12,18 @@ MiniRead 是基于 Jetpack Compose + Material Design 3 的 Miniflux 自建 RSS �
 
 | 变体 | APK 文件 | applicationId | 适用设备 |
 |------|----------|---------------|----------|
-| Standard（标准版） | `MiniRead-standard-v1.0.3.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
-| E-Ink（墨水屏版） | `MiniRead-eink-v1.0.3.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
+| Standard（标准版） | `MiniRead-standard-v1.1.0.apk` | `com.i.miniread` | 常规 Android 手机 / 平板 |
+| E-Ink（墨水屏版） | `MiniRead-eink-v1.1.0.apk` | `com.i.miniread.eink` | 电子墨水屏设备 |
 
-## 本版修复（1.0.3）
+## 本版新增与修复（1.1.0）
+
+- **E-Ink 阅读页底栏恢复**（issue #11）：重新拾回旧版 E-Ink 的 7 键图标底栏——上一篇 / 下一篇 / 标记为已读 / 标记为未读 / 收藏 / 分享 / 外部打开，在 48dp 高度内均分；收藏由开关改为实心 / 空心星（墨水屏只能靠形状区分状态），并修正此前 40dp 触控目标低于无障碍下限的问题。Standard 版底栏保持原样。
+- **正文顶部显示来源与时间**（issue #13）：标题下方新增一行「订阅源 · 发布时间」，随正文主题配色；标题为空时不再输出空标题占位，来源或时间缺失时自动省略。
+- **E-Ink 正文与界面主题统一**（issue #12）：正文配色此前跟随系统深色，而界面在 E-Ink 上恒为浅色，系统深色下出现「白工具栏 + 深色正文」的割裂观感。现统一由同一判定决定，并清理了 CSS 里会让正文二次变深的夜间媒体查询；切换系统深浅色时 E-Ink 不再做一次无意义的整页重设（墨水屏上可见的闪烁）。
+- **标题转义修复**：标题含 `<` `>` `&` 时不再被当作 HTML 标签渲染或破坏正文结构。
+- 单元测试扩充至 146 个纯 JVM 用例（新增主题判定真值表、HTML 组装 / 转义 / 时间换算覆盖）。
+
+## 1.0.3 内容
 
 - **阅读进度不再丢失**：修复旋转屏幕、切换收藏后阅读页重载、滚动位置重置的问题：
   - 收藏切换不再触发页面刷新；旋转 / 分屏 / 深色模式切换不再重建界面。

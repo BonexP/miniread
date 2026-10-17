@@ -41,7 +41,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 ### 版本号唯一来源
 
-- **唯一来源**：`app/build.gradle.kts` 顶部的 `appVersionName` / `appVersionCode`（当前 **1.0.3 / 103**，约 L6-7）。
+- **唯一来源**：`app/build.gradle.kts` 顶部的 `appVersionName` / `appVersionCode`（当前 **1.1.0 / 110**，约 L6-7）。
 - 不要在别处硬编码版本；`versionName` / `versionCode` 直接引用这两个 extra 值。
 
 ---
@@ -259,8 +259,8 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 ## 9. 发布流程
 
 1. 确认 `main` 上版本号（`app/build.gradle.kts` 的 `appVersionName` / `appVersionCode`）已更新。
-2. 打 tag 并推送（`v*`，如 `v1.0.0`）→ 触发 `.github/workflows/release.yml`。该 workflow 只用 `github.ref_name`，**不依赖附注 tag**，故轻量 tag 同样有效。
-   ⚠️ 用 jj 推送 tag **必须先 `jj git fetch`**，否则报 `stale info` 并失败（让 CI 重跑的「移动 tag」同样受此约束）；命令见 §10.2。
+2. 打 tag 并推送（`v*`，如 `v1.1.0`）→ 触发 `.github/workflows/release.yml`。该 workflow 只用 `github.ref_name`，**不依赖附注 tag**。
+   ⚠️ **tag 由 git 打与推**（附注 tag，与 `v1.0.0`~`v1.0.3` 一致），命令见 §10.2。用 jj 推 tag 有 `stale info` 前置要求且会把附注降级，见 §10.1 第 4 条。
 3. CI 产出 `MiniRead-standard-<tag>.apk` / `MiniRead-eink-<tag>.apk` 并发布 GitHub Release。
 4. 本地无 keystore 时 release 回退 debug 签名，**仅用于本地回归**；正式发布走 CI（由 secrets 提供 keystore）。
 
@@ -286,14 +286,14 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
    ```
 
    修复后磁盘字节**零改动**（115 个 CRLF 文件与 `gradlew` 哈希均保持不变）。**不要**试图用 `git add --renormalize` 或新增 `.gitattributes` 绕过这个问题（jj 不读 `.gitattributes`）。
-2. ⚠️ **推送 tag 前必须先 `jj git fetch`**。jj 不认远程已存在的 tag，直接推会失败：
-   `Warning: ... refs/tags/vX (reason: stale info)` → `Error: Failed to push some bookmarks`。
-   `--force` **不是**合法参数（会报 `unexpected argument`）——先 fetch 再推即可成功。
+2. ⚠️ **发布 tag 归 git，jj 只读**。实测（2026-10-18）`jj tag list -T 'name ++ " " ++ tracked'` 显示 `v1.0.0`~`v1.0.3` **全部 `tracked=false`** —— jj 从未跟踪过这些远端的附注 tag，这是既有常态。
+   因此：建 / 移 / 删 / 推 tag 一律用 git；jj 侧只需在推送后 `jj git fetch` 让 tag 可见（`tracked` 仍可能为 `false`，无需处理）。
+   若坚持用 jj 推 tag，未先 fetch 会失败：`Warning: ... refs/tags/vX (reason: stale info)` → `Error: Failed to push some bookmarks`；`--force` **不是**合法参数。
    不对称提示：**bookmark 重写后会自动 force-push，tag 不会**。
 3. ⚠️ **jj 改写 `@`（`jj commit` / `jj edit` 等）时会把 git 的 HEAD 置于 detached 状态** → 此时既有的 `git fetch && git merge --ff-only origin/main` 会**静默失效**（只移动游离的 HEAD，`refs/heads/main` 不前进）。
    **凡要执行写操作的 git 命令，先 `git switch main`**；`git log/diff/show/status` 等只读命令不受影响。
    实测（2026-10-17）：`git switch main` 之后**不会**被再次 detach —— 连跑 `jj st` 与 `jj log`，HEAD 仍稳定在 `refs/heads/main`（`@` 的父提交与 main 指向一致时尤其如此）。所以「用了 jj 就永远不能跑 git 写命令」是误解，正确的说法是「**每次 jj 改写 `@` 之后重新挂回一次**」。
-4. **jj 只能建轻量 tag**，建不了附注 tag。发布链路只用轻量 tag 即可（`release.yml` 不依赖附注 tag，见 §9）；若将来确实需要附注 tag（例如要把发布说明写进注记），只能用 git 打并推。
+4. **tag 归 git 独占**：`git tag -a` / `-d` / `-f` / `push` 是唯一路径（本仓库 `v1.0.0`~`v1.1.0` 均为附注 tag）。**禁止**用 `jj tag set` 动发布 tag —— 它只能产出轻量 tag，会把附注降级为普通 commit 引用；也**避免** `jj git push --all`（会把 `tracked=false` 的历史 tag 一并纳入候选）。发布链路本身不依赖附注 tag（`release.yml` 只用 `github.ref_name`，见 §9），附注仅用于把发布说明写进注记。
 5. **推送远程、打 / 移动 / 删除 tag、创建 Release 属公开不可逆动作**，每次均需用户明确授权（同 §9）。清理上游已消失的本地分支同理，且**必须先确认已完全合并**（见 10.3）。
 
 ### 10.2 常用命令
@@ -304,11 +304,12 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | 提交（无暂存区，改完即自动快照） | `jj commit -m "..."`（等价 describe + new） |
 | 开新工作（≈ 建分支） | `jj new main -m "意图"` |
 | 撤销上一步 / 跳到任意历史状态 | `jj undo` / `jj op log` / `jj op restore <op-id>` |
-| 发版打 tag | `jj git fetch` → `jj tag set vX -r <rev>` → `jj git push --tag vX` |
-| 移动 tag 让 CI 重跑 | `jj git fetch` → `jj tag set vX -r <rev> --allow-move` → `jj git push --tag vX` |
+| 发版打 tag（附注，git） | `git tag -a vX -m "MiniRead X.Y.Z — 要点1、要点2"` → `git push origin vX` |
+| 移动 tag 让 CI 重跑（git） | `git tag -f -a vX -m "..."` → `git push origin --delete vX` → `git push origin vX` |
+| 让 jj 看见新 tag | `jj git fetch`（`tracked` 仍可能为 `false`，正常） |
 | 同步远端（≈ git pull） | `jj git fetch` → `jj rebase -d main` |
 
-> `jj tag set` 默认**拒绝移动**已有 tag，必须显式加 `--allow-move`。
+> tag 操作**不要**用 `jj tag set`（只能轻量 tag，会降级附注）；`jj tag set` 若真要用于非发布场景，默认**拒绝移动**已有 tag，必须显式加 `--allow-move`。
 
 ### 10.3 回退 jj（完全退回纯 git）
 
