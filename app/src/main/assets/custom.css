@@ -13,16 +13,15 @@
     --link-light: #1a73e8;
     --highlight-light: #ffeb3b;
 
-    --fg-dark: #d1d1d1;
-    --bg-dark: #00000000;
-    --link-dark: #8ab4f8;
-    --highlight-dark: #fbc02d;
-
     --font-sans: 'Helvetica Neue', Arial, sans-serif;
     --font-serif: 'Georgia', 'Times New Roman', serif;
 }
 
-/* 明亮模式下的全局样式 */
+/* 明亮模式下的全局样式
+   ⚠️ 本文件只服务浅色：深色整份由 customdark.css 替换（见 ArticleDetailScreen.themeCssFor）。
+   因此这里**不允许**再出现任何深色媒体查询（系统深色分支）—— E-Ink flavor 恒注入本文件，
+   系统深色下正文会被染成白底 + #d1d1d1 字，正是 issue #12 的成因。
+   同理不要恢复 `body.dark-mode`：全项目没有任何代码添加该 class。 */
 body {
     font-family: var(--font-sans);
     /* E-Ink 优化：增大字体以提高可读性（从 2rem 增加到 2.2rem，约 10%） */
@@ -32,17 +31,6 @@ body {
     background-color: var(--bg-light);
     padding: 16px;
     word-wrap: break-word;
-}
-body.dark-mode {
-    background-color: var(--bg-dark);
-    color: var(--fg-dark);
-}
-/* 夜间模式下的全局样式 */
-@media (prefers-color-scheme: dark) {
-    body {
-        color: var(--fg-dark);
-        background-color: var(--bg-dark);
-    }
 }
 
 /* 段落 */
@@ -85,19 +73,6 @@ a:hover {
     border-bottom: 1px solid var(--highlight-light);
 }
 
-/* 夜间模式下的链接样式 */
-@media (prefers-color-scheme: dark) {
-    a {
-        color: var(--link-dark);
-        border-bottom: 1px solid var(--link-dark);
-    }
-
-    a:hover {
-        color: var(--highlight-dark);
-        border-bottom: 1px solid var(--highlight-dark);
-    }
-}
-
 /* 图片样式 */
 img {
     max-width: 100%;
@@ -125,13 +100,6 @@ blockquote {
     font-style: italic;
 }
 
-@media (prefers-color-scheme: dark) {
-    blockquote {
-        background-color: #333;
-        border-left: 4px solid #555;
-    }
-}
-
 /* 代码块样式 */
 pre, code {
     font-family: 'Courier New', Courier, monospace;
@@ -143,12 +111,6 @@ pre, code {
 
 pre {
     margin-bottom: 1rem;
-}
-
-@media (prefers-color-scheme: dark) {
-    pre, code {
-        background-color: #2d2d2d;
-    }
 }
 
 /* 表格样式 */
@@ -168,16 +130,6 @@ th {
     text-align: left;
 }
 
-@media (prefers-color-scheme: dark) {
-    th {
-        background-color: #333;
-    }
-
-    td {
-        border-color: #555;
-    }
-}
-
 /* 表单样式 */
 input, select, textarea {
     width: 100%;
@@ -194,18 +146,6 @@ input:focus, select:focus, textarea:focus {
     outline: none;
 }
 
-@media (prefers-color-scheme: dark) {
-    input, select, textarea {
-        background-color: #333;
-        color: #ccc;
-        border-color: #555;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        border-color: var(--link-dark);
-    }
-}
-
 /* 按钮样式 */
 button {
     padding: 0.75rem 1.5rem;
@@ -219,14 +159,4 @@ button {
 
 button:hover {
     background-color: var(--highlight-light);
-}
-
-@media (prefers-color-scheme: dark) {
-    button {
-        background-color: var(--link-dark);
-    }
-
-    button:hover {
-        background-color: var(--highlight-dark);
-    }
 }

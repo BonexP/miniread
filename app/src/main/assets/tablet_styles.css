@@ -130,36 +130,7 @@
     }
 }
 
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) and (min-width: 600px) and (min-height: 480px) {
-    pre {
-        background-color: #2d2d2d;
-        color: #d1d1d1;
-    }
-
-    code {
-        background-color: #2d2d2d;
-        color: #d1d1d1;
-    }
-
-    blockquote {
-        border-left-color: #8ab4f8;
-        color: #aaa;
-    }
-
-    th {
-        background-color: #2d2d2d;
-    }
-
-    td, th {
-        border-color: #444;
-    }
-
-    a {
-        color: #8ab4f8;
-    }
-
-    a:hover {
-        border-bottom-color: #8ab4f8;
-    }
-}
+/* 深色平板适配已迁到 customdark.css（选择器带 body 前缀，压过本文件的浅色基础规则）。
+   ⚠️ 不要在本文件恢复深色媒体查询块：E-Ink flavor 同样注入本文件，
+      系统深色下会把正文染深（issue #12 的成因）。
+      本文件只保留布局与浅色样式，明暗切换由 Android 侧整份替换主题表完成。 */

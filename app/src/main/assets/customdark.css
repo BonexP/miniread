@@ -220,3 +220,40 @@ button:hover {
         background-color: var(--highlight-dark);
     }
 }
+
+/* 深色平板：自 tablet_styles.css 迁入（该文件现在只保留布局与浅色样式）。
+   ⚠️ 选择器必须带 body 前缀：主题表在 template.html 的 <head> 中位于平板表之前，
+   同优先级规则会被 tablet_styles.css 的浅色基础样式覆盖；body pre 的特异性更高，才能改回来。
+   ⚠️ 高度守卫（min-height: 480px）必须保留，用于排除手机横屏（其 WebView 高度通常仅 200~350px）。 */
+@media (min-width: 600px) and (min-height: 480px) {
+    body pre {
+        background-color: #2d2d2d;
+        color: #d1d1d1;
+    }
+
+    body code {
+        background-color: #2d2d2d;
+        color: #d1d1d1;
+    }
+
+    body blockquote {
+        border-left-color: #8ab4f8;
+        color: #aaa;
+    }
+
+    body th {
+        background-color: #2d2d2d;
+    }
+
+    body td, body th {
+        border-color: #444;
+    }
+
+    body a {
+        color: #8ab4f8;
+    }
+
+    body a:hover {
+        border-bottom-color: #8ab4f8;
+    }
+}
