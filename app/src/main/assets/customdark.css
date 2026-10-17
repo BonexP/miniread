@@ -53,6 +53,17 @@ h1 {
     font-size: 3rem;
 }
 
+/* 文章元信息行（由 Kotlin 的 ArticleHtml.buildContent 注入）：订阅源 · 发布时间。
+   用 em 而非 rem：平板块把 body 字号改成 18px，em 会自动跟随，无需在 tablet_styles.css 再写一份。 */
+.miniread-meta {
+    margin: 0 0 1.5rem;
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: var(--fg-dark);
+    opacity: 0.75;
+    word-break: break-word;
+}
+
 /* 标题层级修正：h2/h3 原为 1.75rem / 1.5rem，小于正文（2rem）。
    现调整为大于正文（与 custom.css 同步）。 */
 h2 {

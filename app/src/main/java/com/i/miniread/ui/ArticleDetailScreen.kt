@@ -118,12 +118,31 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                 )
             } else {
                 selectedEntry?.let { entry ->
-                    // 大字符串拼接用 remember 缓存：仅当标题/正文变化时重建，避免每次重组重复拼接整篇文章。
-                    // key 只取这两个字段（不用 entry 对象——收藏 toggle 会产生新实例但内容相同，白重算）。
-                    // 值相等 → LaunchedEffect(content) 不会重启 → 不重载，语义不变。
-                    // ⚠️ 标题是**文本**，必须 escapeHtml；正文是 Miniflux 返回的 HTML，原样透传。
-                    val webViewHtml = remember(entry.title, entry.content) {
-                        "<h1>${ArticleHtml.escapeHtml(entry.title ?: "")}</h1>${entry.content ?: ""}"
+                    // Gson 可能把声明为非空的 feed 落成 null（见 GsonParsingTest），故用安全调用兜底。
+                    @Suppress("UNNECESSARY_SAFE_CALL")
+                    val feedTitle: String? = entry.feed?.title
+
+                    // TODO(reader-header): Compose 顶栏信息栏（订阅源 / 发布时间）本轮不做，
+                    //   元信息只在 WebView 正文内注入。后续若做：在 Scaffold 加 topBar，复用
+                    //   ArticleHtml.formatPublishedAt 避免两套时间口径；E-Ink 下顶栏需与 48dp 底栏同风格
+                    //   （纯白、tonalElevation = 0.dp）。
+
+                    // 大字符串拼接用 remember 缓存：仅当元信息/正文变化时重建，避免每次重组重复拼接整篇文章。
+                    // ⚠️ key 必须含 feedTitle 与 published_at：只 key title+content 会让 meta 永不重建。
+                    // ⚠️ 不要加 starred 或 entry 对象：收藏 toggle 会重载 entry，进 key 就重载页面、丢阅读位置。
+                    // ⚠️ 标题与订阅源名是**文本**（转义），正文是 Miniflux 返回的 HTML（原样透传）。
+                    val webViewHtml = remember(
+                        entry.title,
+                        entry.content,
+                        feedTitle,
+                        entry.published_at
+                    ) {
+                        ArticleHtml.buildContent(
+                            title = entry.title,
+                            feedTitle = feedTitle,
+                            publishedAt = entry.published_at,
+                            content = entry.content
+                        )
                     }
                     ArticleWebView(
                         content = webViewHtml,

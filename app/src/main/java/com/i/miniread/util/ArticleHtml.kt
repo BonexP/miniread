@@ -72,4 +72,47 @@ object ArticleHtml {
             this.timeZone = timeZone
         }.format(parsed)
     }
+
+    /**
+     * 组装塞进 WebView 的正文 HTML 片段（issue #13）。
+     *
+     * 结构：
+     * ```
+     * <h1>转义后的标题</h1>            ← title 空白时整段省略
+     * <p class="miniread-meta">订阅源 · 本地时间</p>   ← 两项都空时整段省略
+     * 原始文章 HTML
+     * ```
+     *
+     * 省略规则（Miniflux 的字段都可能缺）：
+     * - `title` 为 null / 空白 → 不输出 `<h1>`（避免空标题及其上下间距）；
+     * - `feedTitle` 与 `publishedAt` 只有一项可用时，meta 只显示那一项；
+     * - `content` 为 null → 只输出标题与 meta，不崩溃。
+     *
+     * ⚠️ 标题与订阅源名转义，正文**不**转义（正文本身就是 HTML）。
+     */
+    fun buildContent(
+        title: String?,
+        feedTitle: String?,
+        publishedAt: String?,
+        content: String?,
+        timeZone: TimeZone = TimeZone.getDefault()
+    ): String {
+        val safeTitle = title?.takeIf { it.isNotBlank() }
+        val metaParts = listOfNotNull(
+            feedTitle?.takeIf { it.isNotBlank() }?.let(::escapeHtml),
+            formatPublishedAt(publishedAt, timeZone)
+        )
+
+        return buildString {
+            if (safeTitle != null) {
+                append("<h1>").append(escapeHtml(safeTitle)).append("</h1>")
+            }
+            if (metaParts.isNotEmpty()) {
+                append("<p class=\"miniread-meta\">")
+                append(metaParts.joinToString(" · "))
+                append("</p>")
+            }
+            append(content.orEmpty())
+        }
+    }
 }
