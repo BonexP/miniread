@@ -67,6 +67,7 @@ import com.i.miniread.R
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
+import com.i.miniread.util.ReaderThemeResolver
 import com.i.miniread.util.ReadingPositionResolver
 import com.i.miniread.util.ScrollSnapshot
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -566,12 +567,18 @@ fun ArticleWebView(
     // 页面里内联的主题 CSS 仍是旧主题（且 loadHtmlContentAsync 的主题缓存按明/暗分别保存）。
     // 处理：只就地替换 <style id="miniread-theme-css"> 的 textContent，**不**走 loadDataWithBaseURL，
     // 因此阅读位置、滚动状态都不受影响（正文内容与布局尺寸均未变）。
-    // ⚠️ key 用 pageLoadTick（新页面按当前主题构建，需覆盖一次）与 uiModeNight（切换时刷新）。
-    val uiModeNight = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-    LaunchedEffect(pageLoadTick, uiModeNight) {
+    // ⚠️ key 用 pageLoadTick（新页面按当前主题构建，需覆盖一次）与 isDarkTheme（切换时刷新）。
+    //    key 取**解析后的布尔值**而不是 uiModeNight：E-Ink 恒浅色，系统深浅色变化不改变 isDarkTheme，
+    //    因此不会触发一次无意义的整页 CSS 重设（墨水屏上那是可见的闪烁）。
+    val isDarkTheme = ReaderThemeResolver.isDarkMode(
+        isEink = com.i.miniread.BuildConfig.IS_EINK,
+        systemNightMode = (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+    )
+    LaunchedEffect(pageLoadTick, isDarkTheme) {
         if (pageLoadTick == 0 || released) return@LaunchedEffect
         val css = withContext(Dispatchers.IO) {
-            themeCssFor(context, uiModeNight == Configuration.UI_MODE_NIGHT_YES)
+            themeCssFor(context, isDarkTheme)
         }
         if (released) return@LaunchedEffect
         applyThemeCss(webView, css)
@@ -748,8 +755,14 @@ private fun applyThemeCss(webView: WebView, css: String) {
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
-    val isDarkMode = (context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    // ⚠️ 主题判定必须走 ReaderThemeResolver：E-Ink 恒浅色（与 Compose 侧一致），
+    //    standard 跟随系统。此前这里直接读系统 uiMode，导致 E-Ink 版正文跟着系统变深。
+    //    运行期就地刷新的那一处（ArticleWebView 的 LaunchedEffect）必须用同一判据。
+    val isDarkMode = ReaderThemeResolver.isDarkMode(
+        isEink = com.i.miniread.BuildConfig.IS_EINK,
+        systemNightMode = (context.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    )
 
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {
