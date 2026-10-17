@@ -287,8 +287,9 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
    `Warning: ... refs/tags/vX (reason: stale info)` → `Error: Failed to push some bookmarks`。
    `--force` **不是**合法参数（会报 `unexpected argument`）——先 fetch 再推即可成功。
    不对称提示：**bookmark 重写后会自动 force-push，tag 不会**。
-3. ⚠️ **jj 会让 git 的 HEAD 变为 detached** → 既有的 `git fetch && git merge --ff-only origin/main` 会**静默失效**（只移动 detached 的 HEAD，`refs/heads/main` 不前进）。
+3. ⚠️ **jj 改写 `@`（`jj commit` / `jj edit` 等）时会把 git 的 HEAD 置于 detached 状态** → 此时既有的 `git fetch && git merge --ff-only origin/main` 会**静默失效**（只移动游离的 HEAD，`refs/heads/main` 不前进）。
    **凡要执行写操作的 git 命令，先 `git switch main`**；`git log/diff/show/status` 等只读命令不受影响。
+   实测（2026-10-17）：`git switch main` 之后**不会**被再次 detach —— 连跑 `jj st` 与 `jj log`，HEAD 仍稳定在 `refs/heads/main`（`@` 的父提交与 main 指向一致时尤其如此）。所以「用了 jj 就永远不能跑 git 写命令」是误解，正确的说法是「**每次 jj 改写 `@` 之后重新挂回一次**」。
 4. **jj 只能建轻量 tag**，建不了附注 tag。发布链路只用轻量 tag 即可（`release.yml` 不依赖附注 tag，见 §9）；若将来确实需要附注 tag（例如要把发布说明写进注记），只能用 git 打并推。
 5. **推送远程、打 / 移动 / 删除 tag、创建 Release 属公开不可逆动作**，每次均需用户明确授权（同 §9）。清理上游已消失的本地分支同理，且**必须先确认已完全合并**（见 10.3）。
 
