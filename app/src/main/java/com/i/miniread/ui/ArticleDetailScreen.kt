@@ -64,6 +64,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.i.miniread.MainActivity
 import com.i.miniread.R
+import com.i.miniread.util.ArticleHtml
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
@@ -120,8 +121,9 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                     // 大字符串拼接用 remember 缓存：仅当标题/正文变化时重建，避免每次重组重复拼接整篇文章。
                     // key 只取这两个字段（不用 entry 对象——收藏 toggle 会产生新实例但内容相同，白重算）。
                     // 值相等 → LaunchedEffect(content) 不会重启 → 不重载，语义不变。
+                    // ⚠️ 标题是**文本**，必须 escapeHtml；正文是 Miniflux 返回的 HTML，原样透传。
                     val webViewHtml = remember(entry.title, entry.content) {
-                        "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}"
+                        "<h1>${ArticleHtml.escapeHtml(entry.title ?: "")}</h1>${entry.content ?: ""}"
                     }
                     ArticleWebView(
                         content = webViewHtml,
