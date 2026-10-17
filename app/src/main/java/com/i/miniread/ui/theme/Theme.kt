@@ -63,23 +63,6 @@ private val EInkLightColorScheme = lightColorScheme(
 )
 
 /**
- * E-Ink 深色配色方案（备用）
- * 虽然墨水屏不推荐深色模式，但保留此方案以防万一需要
- */
-private val EInkDarkColorScheme = darkColorScheme(
-    primary = Color.Black,
-    secondary = Color.DarkGray,
-    tertiary = Color.Gray,
-    background = Color.White,
-    surface = Color.White,
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black
-)
-
-/**
  * MiniRead 主题
  * 
  * 根据 Build Flavor 自动选择合适的主题：

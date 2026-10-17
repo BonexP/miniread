@@ -15,21 +15,27 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -64,9 +70,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.i.miniread.MainActivity
 import com.i.miniread.R
+import com.i.miniread.util.ArticleHtml
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
+import com.i.miniread.util.ReaderThemeResolver
 import com.i.miniread.util.ReadingPositionResolver
 import com.i.miniread.util.ScrollSnapshot
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -116,11 +124,31 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                 )
             } else {
                 selectedEntry?.let { entry ->
-                    // 大字符串拼接用 remember 缓存：仅当标题/正文变化时重建，避免每次重组重复拼接整篇文章。
-                    // key 只取这两个字段（不用 entry 对象——收藏 toggle 会产生新实例但内容相同，白重算）。
-                    // 值相等 → LaunchedEffect(content) 不会重启 → 不重载，语义不变。
-                    val webViewHtml = remember(entry.title, entry.content) {
-                        "<h1>${entry.title ?: ""}</h1>${entry.content ?: ""}"
+                    // Gson 可能把声明为非空的 feed 落成 null（见 GsonParsingTest），故用安全调用兜底。
+                    @Suppress("UNNECESSARY_SAFE_CALL")
+                    val feedTitle: String? = entry.feed?.title
+
+                    // TODO(reader-header): Compose 顶栏信息栏（订阅源 / 发布时间）本轮不做，
+                    //   元信息只在 WebView 正文内注入。后续若做：在 Scaffold 加 topBar，复用
+                    //   ArticleHtml.formatPublishedAt 避免两套时间口径；E-Ink 下顶栏需与 48dp 底栏同风格
+                    //   （纯白、tonalElevation = 0.dp）。
+
+                    // 大字符串拼接用 remember 缓存：仅当元信息/正文变化时重建，避免每次重组重复拼接整篇文章。
+                    // ⚠️ key 必须含 feedTitle 与 published_at：只 key title+content 会让 meta 永不重建。
+                    // ⚠️ 不要加 starred 或 entry 对象：收藏 toggle 会重载 entry，进 key 就重载页面、丢阅读位置。
+                    // ⚠️ 标题与订阅源名是**文本**（转义），正文是 Miniflux 返回的 HTML（原样透传）。
+                    val webViewHtml = remember(
+                        entry.title,
+                        entry.content,
+                        feedTitle,
+                        entry.published_at
+                    ) {
+                        ArticleHtml.buildContent(
+                            title = entry.title,
+                            feedTitle = feedTitle,
+                            publishedAt = entry.published_at,
+                            content = entry.content
+                        )
                     }
                     ArticleWebView(
                         content = webViewHtml,
@@ -173,132 +201,174 @@ fun ArticleActionsBar(
     } else {
         Modifier
     }
+
+    // ===== 动作回调与无障碍文案 =====
+    // 抽成局部变量：E-Ink（7 键图标）与 standard（6 键 + 开关）两条布局共用同一套行为，
+    // 避免改一处忘另一处。行为本身与改动前逐字一致。
+    val markReadDesc = stringResource(R.string.article_action_mark_read)
+    val markUnreadDesc = stringResource(R.string.article_action_mark_unread)
+    val shareDesc = stringResource(R.string.article_action_share)
+    val openExternalDesc = stringResource(R.string.article_action_open_external)
+    val previousDesc = stringResource(R.string.article_action_previous)
+    val nextDesc = stringResource(R.string.article_action_next)
+    val addBookmarkDesc = stringResource(R.string.article_action_add_bookmark)
+    val removeBookmarkDesc = stringResource(R.string.article_action_remove_bookmark)
+
+    val onMarkRead: () -> Unit = {
+        Log.d("ArticleDetailScreen", "Mark Entry as Read")
+        viewModel.markEntryAsRead(entryId)
+        coroutineScope.launch { snackbarHostState.showSnackbar(markedReadMsg) }
+    }
+    val onMarkUnread: () -> Unit = {
+        viewModel.markEntryAsUnread(entryId)
+        coroutineScope.launch { snackbarHostState.showSnackbar(markedUnreadMsg) }
+    }
+    val onShare: () -> Unit = {
+        Log.d("ArticleDetailScreen", "Share Entry")
+        selectedEntry?.let {
+            val shareIntent = Intent.createChooser(
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, it.title)
+                    putExtra(Intent.EXTRA_TEXT, "${it.title}\n${it.url}")
+                },
+                null
+            )
+            context.startActivity(shareIntent)
+        }
+    }
+    val onOpenExternal: () -> Unit = {
+        Log.d("ArticleDetailScreen", "Open Entry External")
+        selectedEntry?.let {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(it.url)))
+        }
+    }
+    // 上一篇 / 下一篇：用查询参数格式导航，popUpTo 自身保证栈不增长
+    val onPrevious: () -> Unit = {
+        viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
+            navController.navigate("articleDetail?entryId=$prevId") {
+                popUpTo("articleDetail?entryId=$prevId") { inclusive = true }
+                launchSingleTop = true
+            }
+        } ?: run {
+            coroutineScope.launch { snackbarHostState.showSnackbar(firstEntryMsg) }
+        }
+    }
+    val onNext: () -> Unit = {
+        viewModel.navigateToNextEntry(entryId)?.let { nextId ->
+            navController.navigate("articleDetail?entryId=$nextId") {
+                popUpTo("articleDetail?entryId=$nextId") { inclusive = true }
+                launchSingleTop = true
+            }
+        } ?: run {
+            coroutineScope.launch { snackbarHostState.showSnackbar(lastEntryMsg) }
+        }
+    }
+    val onToggleStar: (Int, Boolean) -> Unit = { id, checked ->
+        viewModel.toggleStarred(id, checked)
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(if (checked) bookmarkedMsg else unbookmarkedMsg)
+        }
+    }
+
     BottomAppBar(
         modifier = barModifier,
         // E-Ink 版本使用纯白背景并去掉 tonalElevation，避免灰底与残影
         containerColor = if (isEink) Color.White else MaterialTheme.colorScheme.surface,
         tonalElevation = if (isEink) 0.dp else BottomAppBarDefaults.ContainerElevation,
-        contentPadding = PaddingValues(horizontal = 8.dp)
+        // E-Ink 的 7 个按钮用 weight 均分，横向内边距全部让给按钮；
+        // standard 保留 8dp（行为与改动前一致）
+        contentPadding = PaddingValues(horizontal = if (isEink) 0.dp else 8.dp)
     ) {
-        // 标记为已读按钮
-        ActionButton(icon = Icons.Default.CheckCircle, description = stringResource(R.string.article_action_mark_read), compact = isEink) {
-            Log.d("ArticleDetailScreen", "Mark Entry as Read")
-            viewModel.markEntryAsRead(entryId)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(markedReadMsg)
-            }
-        // 标记为未读按钮
-        }
-        ActionButton(icon = Icons.Outlined.CheckCircle, description = stringResource(R.string.article_action_mark_unread), compact = isEink) {
-            viewModel.markEntryAsUnread(entryId)
-            coroutineScope.launch {
-                snackbarHostState.showSnackbar(markedUnreadMsg)
-            }
-        }
-        //分享按钮
-        ActionButton(icon = Icons.Default.Share, description = stringResource(R.string.article_action_share), compact = isEink) {
-            Log.d("ArticleDetailScreen", "Share Entry")
-            selectedEntry?.let {
-                val shareIntent = Intent.createChooser(
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, it.title)
-                        putExtra(Intent.EXTRA_TEXT, "${it.title}\n${it.url}")
-                    },
-                    null
-                )
-                context.startActivity(shareIntent)
-            }
-        }
-        //外部打开按钮
-        ActionButton(icon = Icons.Default.ExitToApp, description = stringResource(R.string.article_action_open_external), compact = isEink) {
-            Log.d("ArticleDetailScreen", "Open Entry External")
-            selectedEntry?.let {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(it.url))
-                context.startActivity(intent)
-
-            }
-        }
-        //上一篇按钮
-        ActionButton(icon = Icons.Default.ArrowBack, description = stringResource(R.string.article_action_previous), compact = isEink) {
-            viewModel.navigateToPreviousEntry(entryId)?.let { prevId ->
-                Log.d("ArticleDetailScreen", "Previous Entry: $prevId (Type: ${prevId::class.java.simpleName})")
-
-                // 使用查询参数格式导航
-                navController.navigate("articleDetail?entryId=$prevId") {
-
-                    // 保持导航栈整洁
-                    popUpTo("articleDetail?entryId=$prevId") {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
+        if (isEink) {
+            // ===== E-Ink：7 键图标化，布局对齐 v0.3.3（issue #11） =====
+            // 顺序：上一篇 → 下一篇 → 已读 → 未读 → 收藏 → 分享 → 外部打开。
+            // 不用 Switch：墨水屏上开关状态不易辨认，改用实心/空心星 + 统一纯黑 tint。
+            // ⚠️ weight(1f) 是必需的：360dp 宽 ÷ 7 ≈ 51dp 恰好达标 48dp 最小触控尺寸，
+            //    换成固定 48dp + SpaceBetween 会在 320dp 设备上溢出被裁。
+            val slot = Modifier.weight(1f).fillMaxHeight()
+            EInkActionButton(Icons.AutoMirrored.Filled.ArrowBack, previousDesc, onPrevious, slot)
+            EInkActionButton(Icons.AutoMirrored.Filled.ArrowForward, nextDesc, onNext, slot)
+            EInkActionButton(Icons.Default.CheckCircle, markReadDesc, onMarkRead, slot)
+            EInkActionButton(Icons.Outlined.CheckCircle, markUnreadDesc, onMarkUnread, slot)
+            // 收藏：用 selectedEntry 判空而不是 `?: Spacer(slot)`——后者靠 let 返回 Unit
+            // 落进 Elvis 的右侧分支，能跑但语义隐晦，评审时容易被误读成「星标按钮可能不显示」。
+            val starredEntry = selectedEntry
+            if (starredEntry != null) {
+                IconToggleButton(
+                    checked = starredEntry.starred,
+                    onCheckedChange = { onToggleStar(starredEntry.id, it) },
+                    modifier = slot
+                ) {
+                    Icon(
+                        // 实心 = 已收藏，空心 = 未收藏：墨水屏没有彩色语义，只能靠形状区分
+                        imageVector = if (starredEntry.starred) Icons.Filled.Star else Icons.Outlined.Star,
+                        contentDescription = if (starredEntry.starred) removeBookmarkDesc else addBookmarkDesc,
+                        tint = Color.Black
+                    )
                 }
-            } ?: run {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(firstEntryMsg)
-                }
+            } else {
+                // entry 未到达时占位，避免 7 格在加载完成后整体跳动
+                Spacer(slot)
             }
-        }
-        //下一篇按钮
-        ActionButton(icon = Icons.Default.ArrowForward, description = stringResource(R.string.article_action_next), compact = isEink) {
-            viewModel.navigateToNextEntry(entryId)?.let { nextId ->
-                Log.d("ArticleDetailScreen", "Next Entry: $nextId (Type: ${nextId::class.java.simpleName})")
-
-                // 使用查询参数格式导航
-                navController.navigate("articleDetail?entryId=$nextId") {
-
-                    // 保持导航栈整洁
-                    popUpTo("articleDetail?entryId=$nextId") {
-                        inclusive = true
-                    }
-                    launchSingleTop = true
-                }
-            } ?: run {
-                coroutineScope.launch {
-                    snackbarHostState.showSnackbar(lastEntryMsg)
-                }
-            }
-        }
+            EInkActionButton(Icons.Default.Share, shareDesc, onShare, slot)
+            EInkActionButton(Icons.AutoMirrored.Filled.ExitToApp, openExternalDesc, onOpenExternal, slot)
+        } else {
+            // ===== standard：保持改动前的 6 键 + 弹性占位 + 收藏开关 =====
+            ActionButton(icon = Icons.Default.CheckCircle, description = markReadDesc, onClick = onMarkRead)
+            ActionButton(icon = Icons.Outlined.CheckCircle, description = markUnreadDesc, onClick = onMarkUnread)
+            ActionButton(icon = Icons.Default.Share, description = shareDesc, onClick = onShare)
+            ActionButton(icon = Icons.Default.ExitToApp, description = openExternalDesc, onClick = onOpenExternal)
+            ActionButton(icon = Icons.Default.ArrowBack, description = previousDesc, onClick = onPrevious)
+            ActionButton(icon = Icons.Default.ArrowForward, description = nextDesc, onClick = onNext)
 
 //todo 刷新视图
-//        ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
-//            Log.d("ArticleDetailScreen", "refresh webview")
-//
-//
-//        }
-        Spacer(modifier = Modifier.weight(1f))
-        selectedEntry?.let { entry ->
-            //收藏按钮
-            val isBookmarked = entry.starred
-            Switch(
-                checked = isBookmarked,
-                onCheckedChange = { checked ->
-                    viewModel.toggleStarred(entry.id, checked)
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar(if (checked) bookmarkedMsg else unbookmarkedMsg)
-                    }
-                },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+//            ActionButton(icon=Icons.Default.Refresh, description = "refresh view"){
+//                Log.d("ArticleDetailScreen", "refresh webview")
+//            }
+            Spacer(modifier = Modifier.weight(1f))
+            selectedEntry?.let { entry ->
+                //收藏按钮
+                Switch(
+                    checked = entry.starred,
+                    onCheckedChange = { onToggleStar(entry.id, it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
+            }
         }
     }
 }
 
+/** standard 分支的普通图标按钮（沿用 IconButton 默认 48dp 触控区）。 */
 @Composable
 fun ActionButton(
     icon: ImageVector,
     description: String,
-    compact: Boolean = false,
     onClick: () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = if (compact) Modifier.size(40.dp) else Modifier
-    ) {
+    IconButton(onClick = onClick) {
         Icon(imageVector = icon, contentDescription = description)
+    }
+}
+
+/**
+ * E-Ink 分支的图标按钮：统一纯黑 tint，尺寸由外层 `Modifier.weight(1f).fillMaxHeight()` 决定。
+ *
+ * ⚠️ 不要再把尺寸压到 40dp（旧实现的 `compact` 分支）：那低于 Material3 的 48dp 最小交互尺寸，
+ * 是 issue #11 里「失去墨水屏优化」的可访问性代价之一。高度由 48dp 底栏撑满即可。
+ */
+@Composable
+private fun EInkActionButton(
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(onClick = onClick, modifier = modifier) {
+        Icon(imageVector = icon, contentDescription = description, tint = Color.Black)
     }
 }
 
@@ -566,12 +636,18 @@ fun ArticleWebView(
     // 页面里内联的主题 CSS 仍是旧主题（且 loadHtmlContentAsync 的主题缓存按明/暗分别保存）。
     // 处理：只就地替换 <style id="miniread-theme-css"> 的 textContent，**不**走 loadDataWithBaseURL，
     // 因此阅读位置、滚动状态都不受影响（正文内容与布局尺寸均未变）。
-    // ⚠️ key 用 pageLoadTick（新页面按当前主题构建，需覆盖一次）与 uiModeNight（切换时刷新）。
-    val uiModeNight = configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-    LaunchedEffect(pageLoadTick, uiModeNight) {
+    // ⚠️ key 用 pageLoadTick（新页面按当前主题构建，需覆盖一次）与 isDarkTheme（切换时刷新）。
+    //    key 取**解析后的布尔值**而不是 uiModeNight：E-Ink 恒浅色，系统深浅色变化不改变 isDarkTheme，
+    //    因此不会触发一次无意义的整页 CSS 重设（墨水屏上那是可见的闪烁）。
+    val isDarkTheme = ReaderThemeResolver.isDarkMode(
+        isEink = com.i.miniread.BuildConfig.IS_EINK,
+        systemNightMode = (configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+    )
+    LaunchedEffect(pageLoadTick, isDarkTheme) {
         if (pageLoadTick == 0 || released) return@LaunchedEffect
         val css = withContext(Dispatchers.IO) {
-            themeCssFor(context, uiModeNight == Configuration.UI_MODE_NIGHT_YES)
+            themeCssFor(context, isDarkTheme)
         }
         if (released) return@LaunchedEffect
         applyThemeCss(webView, css)
@@ -748,8 +824,14 @@ private fun applyThemeCss(webView: WebView, css: String) {
 
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
-    val isDarkMode = (context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    // ⚠️ 主题判定必须走 ReaderThemeResolver：E-Ink 恒浅色（与 Compose 侧一致），
+    //    standard 跟随系统。此前这里直接读系统 uiMode，导致 E-Ink 版正文跟着系统变深。
+    //    运行期就地刷新的那一处（ArticleWebView 的 LaunchedEffect）必须用同一判据。
+    val isDarkMode = ReaderThemeResolver.isDarkMode(
+        isEink = com.i.miniread.BuildConfig.IS_EINK,
+        systemNightMode = (context.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    )
 
     CoroutineScope(Dispatchers.IO).launch {
         if (cachedNormalizeCss == null) {

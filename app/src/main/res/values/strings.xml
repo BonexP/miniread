@@ -83,4 +83,6 @@
     <string name="article_action_open_external">Open External</string>
     <string name="article_action_previous">Previous</string>
     <string name="article_action_next">Next</string>
+    <string name="article_action_add_bookmark">Add bookmark</string>
+    <string name="article_action_remove_bookmark">Remove bookmark</string>
 </resources>
