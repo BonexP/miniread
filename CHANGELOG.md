@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 阅读页正文顶部注入元信息行（issue #13）：在 `<h1>` 与正文之间插入 `.miniread-meta`（`订阅源 · 发布时间`）。
+  - 新增 `util/ArticleHtml.kt`：`buildContent()` 负责组装（标题 → meta → 正文），`formatPublishedAt()` 把 Miniflux 的 RFC3339 转本地时区 `yyyy-MM-dd HH:mm`（用 `java.text` 而非 `java.time`，`minSdk = 25` 且未开 desugaring），`escapeHtml()` 逐字符转义。
+  - `ui/ArticleDetailScreen.kt`：正文拼接改走 `buildContent`；`remember` 的 key 扩到 `title / content / feedTitle / published_at`——漏了后两个会让 meta 永不重建，而加入 `starred` 或 `entry` 对象会让收藏 toggle 重载页面、丢阅读位置。
+  - `assets/custom.css` / `assets/customdark.css`：新增 `.miniread-meta`，字号用 `0.8em` 自动跟随平板字号，无需改 `tablet_styles.css`。
+  - 空值处理：标题为 null/空白时不输出 `<h1>`（原先会留一个空标题及其间距）；订阅源与时间任一缺失只显示存在项，两者都缺则整行不输出。
+  - Compose 侧顶栏信息栏本轮未做，TODO 留在 HTML 注入点。
+- E-Ink 阅读页恢复 7 键图标底栏（issue #11）：按「上一篇 / 下一篇 / 已读 / 未读 / 收藏 / 分享 / 外部打开」均分 48dp 底栏，收藏由 `Switch` 改为 `IconToggleButton`（实心/空心星，墨水屏只能靠形状区分状态），统一纯黑 tint，并补 `contentDescription`（新增 `article_action_add_bookmark` / `article_action_remove_bookmark`，中英同步）。standard flavor 的 6 键 + 弹性占位 + 开关布局逐行保持不变。
+- 新增纯 JVM 单测 `util/ReaderThemeResolverTest`（4 例，覆盖 flavor × 系统深浅色真值表）与 `util/ArticleHtmlTest`（21 例，覆盖转义、时间换算与元数据省略规则），总用例数 121 → 146。
+
+### Changed
+- 阅读页主题 CSS 收敛为「Android 侧整份替换」单一机制（issue #12），消除与 WebView 自带 `prefers-color-scheme` 的双重判据：
+  - `assets/custom.css`：删除 7 处 `@media (prefers-color-scheme: dark)` 与死分支 `body.dark-mode`，并清掉随之无人引用的 4 个 `--*-dark` 变量（−80 行）。该文件此后只服务浅色。
+  - `assets/tablet_styles.css`：删除深色平板块（规则迁入 `customdark.css`），文件只保留布局与浅色样式。
+  - `assets/customdark.css`：新增深色平板块，选择器带 `body` 前缀（主题表在 `<head>` 中先于平板表，同优先级会被平板基础样式覆盖），高度守卫保留；自身 6 处夜间媒体查询有意保留。
+- `ui/theme/Theme.kt`：删除零引用的 `EInkDarkColorScheme`，让「E-Ink 恒浅色」只剩一条路径。
+
+### Fixed
+- E-Ink 版正文主题与界面不一致（issue #12）：界面恒浅色、正文却跟随系统 `uiMode`，系统深色下变成「白工具栏 + 深色正文」，墨水屏上深底还会加重残影。
+  - 新增 `util/ReaderTheme.kt` 的 `ReaderThemeResolver.isDarkMode(isEink, systemNightMode)` 作为唯一判据，替换 `loadHtmlContentAsync`（首次注入）与 `ArticleWebView` 运行期就地刷新这两处各自为政的判定——此前只改一处会被另一处覆盖。
+  - 运行期刷新的 `LaunchedEffect` key 由 `uiModeNight`（Int）改为解析后的 `isDarkTheme`（Boolean）：E-Ink 切换系统深浅色时不再触发一次无意义的整页 CSS 重设（墨水屏上是可见的闪烁）。
+  - ⚠️ 仅改 Kotlin 判定不足以修复：`custom.css` 自带的夜间媒体查询会让 E-Ink 在系统深色下仍被染深，故同批清理（见 Changed）。
+- 阅读页标题未做 HTML 转义：标题一直以 `"<h1>" + title + "</h1>"` 直接拼进 WebView HTML，含 `<` `>` `&` 的标题会被当作标签或破坏 DOM 结构。现统一走 `ArticleHtml.escapeHtml`；正文是 Miniflux 返回的 HTML，仍原样透传。
+- E-Ink 底栏触控目标低于无障碍下限：`ActionButton` 在 E-Ink 下把尺寸压到 40dp（小于 Material3 的 48dp 最小交互尺寸）。改为 `Modifier.weight(1f).fillMaxHeight()` 均分 48dp 底栏（360dp 宽 ÷ 7 ≈ 51dp），并删除 `compact` 参数以免再次被压小。
+
 ## [1.0.3] - 2026-10-13
 
 ### Fixed

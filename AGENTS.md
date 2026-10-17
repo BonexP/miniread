@@ -93,7 +93,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/example/` | 见 `example/FlavorUsageExample.kt`（flavor 用法示例，非主流程） |
 | `viewmodel/` | `MinifluxViewModel.kt`（唯一 ViewModel） |
 | `network/` | `MinifluxApi.kt`（Retrofit 接口 + 数据类 + `RetrofitInstance`） |
-| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig`、`InterceptionSettings`、`InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow`、`ReadingPosition` |
+| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig`、`InterceptionSettings`、`InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow`、`ReadingPosition`、`ReaderTheme`（E-Ink 主题判据）、`ArticleHtml`（正文 HTML 组装：转义 / 时间 / meta 行） |
 | `eink/` | flavor 专属：`EInkConfig.kt`、`EInkUtils.kt`（在 `standard/` 与 `eink/` 各有一份同名文件） |
 
 ### 「去哪找什么」索引
@@ -248,8 +248,11 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 15. **阅读页响应式渲染红线**（2026-10-13 起）：阅读页由「固定 ~980px 布局视口 + 缩放贴合」改为**真实设备宽度**的响应式渲染，三条红线：
     - `assets/template.html` **必须**保留 `<meta name="viewport" content="width=device-width, initial-scale=1">` 与 `<style>html { font-size: 6.4px; }</style>` rem 基数（`6.4 = 16 × 0.4`，系数 0.4 即旧模型 WebView 宽 ÷ 980px ≈ 0.399）。⚠️ **删除 rem 基数会让全部 rem 字号整体放大 ~2.5 倍**，删除 viewport meta 会让页面退回固定布局视口、旋转不重排。
     - **禁止**在 Android 侧按 `screenWidthDp >= 600` 判定后**条件注入** `tablet_styles.css`：`loadHtmlContentAsync` 必须**无条件注入**（读取后走进程级缓存 `cachedTabletCss`）。条件注入会导致旋转后不重排、手机横屏被误按平板限宽。
-    - `assets/tablet_styles.css` 的媒体查询**必须**带高度守卫：`(min-width:600px) and (min-height:480px)`、`(min-width:840px) and (min-height:480px)`（深色块同步）。高度守卫用于排除 WebView 高度通常仅 200~350px 的**手机横屏**。
+    - `assets/tablet_styles.css` 的媒体查询**必须**带高度守卫：`(min-width:600px) and (min-height:480px)`、`(min-width:840px) and (min-height:480px)`。高度守卫用于排除 WebView 高度通常仅 200~350px 的**手机横屏**。⚠️ 深色平板块**不在此文件**——它已迁入 `customdark.css`（见坑 16），本文件只保留布局与浅色样式。
     - 是否生效完全交给 CSS 媒体查询，按**真实视口**（宽 = WebView 内容区宽度，CSS px = dp）决定；块内字号已全部改为 `px`，不依赖 rem 基数。
+16. **E-Ink 正文主题红线**（2026-10-17 起，issue #12）：Compose 侧 E-Ink 恒用 `EInkLightColorScheme`，WebView 正文必须同步，否则系统深色下出现「白工具栏 + 深色正文」，墨水屏还会因深底加重残影。两条红线：
+    - **`util/ReaderTheme.kt` 的 `ReaderThemeResolver.isDarkMode(isEink, systemNightMode)` 是唯一判据**。两处调用点都必须走它：`loadHtmlContentAsync`（首次注入）与 `ArticleWebView` 的 `LaunchedEffect(pageLoadTick, isDarkTheme)`（运行期就地刷新）。⚠️ 只改一处会被另一处覆盖——这正是修复前的状态。
+    - **`assets/custom.css` 必须保持 0 处 `prefers-color-scheme: dark`**。E-Ink flavor 恒注入这份文件，WebView 的 `prefers-color-scheme` 只跟系统走，媒体查询会把正文染成白底 `#d1d1d1` 字——只改 Kotlin 判定等于没修。`customdark.css` 内的夜间块**保留**（它只服务 standard + 系统深色）。深色平板块在 `customdark.css`，选择器必须带 `body` 前缀：主题表在 `<head>` 中**先于**平板表，同优先级会被 `tablet_styles.css` 的浅色基础样式覆盖。
 
 ---
 
