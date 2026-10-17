@@ -83,4 +83,6 @@
     <string name="article_action_open_external">在浏览器打开</string>
     <string name="article_action_previous">上一篇</string>
     <string name="article_action_next">下一篇</string>
+    <string name="article_action_add_bookmark">收藏文章</string>
+    <string name="article_action_remove_bookmark">取消收藏</string>
 </resources>
