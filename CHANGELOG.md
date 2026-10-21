@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 隐藏设置页（顶栏标题连点 7 次进入）新增**站内帮助文档**，不必离开 App 查资料：
+  - `ui/SettingsHelpScreen.kt` + `ui/SettingsHelpContent.kt`，10 个小节（机制说明 / 何时开启 / 四个条件 / 三个字段各自的匹配规则 / 生效时机 / 导出备份 / 常见错误 / 隐私范围），页头明确「本页只做说明，不改配置」。
+  - 每个字段标题右侧新增「?」，通过 `settingsHelp?section=<id>` 直达对应小节；定位用 `scrollToItem` 瞬移（E-Ink 不用动画滚动）。
+  - 文案全部外置到 `values` / `values-zh` 的 `settings_help_*`，两文件 key 逐字一致。
+- 订阅源白名单改为**弹窗多选**（`ui/FeedWhitelistPicker.kt` + `util/FeedSelection.kt`）：列表显示标题与 `#编号`、支持按标题或编号搜索、已选计数、全选当前结果、清空全部；底层仍写回逗号分隔文本，导出/导入格式与既有单测不受影响。
+  - 配置里存在、但当前订阅列表中没有的编号会进入「已选但不在订阅列表中（可能已删除）」分区，**不会被静默丢弃**，可主动取消。
+  - `feeds` 用 `observeAsState()` 可空重载区分「尚未加载」与「已加载为空」，两种状态都不裁剪已选项，并提供「重新加载」。
+- 行内诊断（`util/InterceptionDiagnostics.kt`）：实时给出每个字段「N 项有效 / M 项将被忽略」、被丢弃项原文与原因（中文标点、域名带 `https://`、编号非数字、规则缺 `=>`、规则被前面的关键字遮蔽等），并在配置不生效时逐条列出原因。
+- 「用当前服务器填入示例」按钮：从当前 `baseUrl` 派生目标域名与 Referer 占位，订阅源编号保留用户已填值、否则取前 3 个已加载源（`util/InterceptionExamples.kt`）；已有输入时先弹确认框，填入后仍需手动保存。**不含任何硬编码地址**，避免私有实例地址随 APK 分发。
+- 新增 4 个纯 JVM 单测文件（`FeedSelectionTest` 14、`InterceptionDiagnosticsTest` 26、`InterceptionClipboardFormatTest` 7、`InterceptionExamplesTest` 15），总用例数 146 → 208。
+
+### Changed
+- 导出 / 导入的 4 行 `key=value` 文本格式从 `HiddenSettingsScreen` 上移到 `util/InterceptionClipboardFormat.kt`，**行为逐字不变**（含「命中任一 key 即成功、未出现字段取空」的旧语义，已由单测锁定），便于回归与复用。
+- `InterceptionSettingsCodec` 仅新增 `splitEntries(raw)`，供诊断复用同一套分隔逻辑；现有解析/序列化函数签名与语义零改动。
+- 三个字段的 `supportingText` 由固定 hint 改为「错误优先 / 警告其次 / 否则 hint」三态；三个输入框新增 `placeholder`，`isError` 跟随诊断结果。
+- 保存与「恢复默认」补 `try/catch`：写盘失败时 Toast 提示且不退出页面，不再让异常直接崩在协程里；保存时若有条目被丢弃，Toast 改为「已保存，N 项无效内容被忽略」。
+
+### Fixed
+- 隐藏设置页与新增的帮助页会与主页顶栏叠成**两条 AppBar**：`MainActivity` 新增 `shouldShowTopBar`，隐藏时同步把 `contentWindowInsets` 置为 `WindowInsets(0)`，避免内层 `Scaffold` 二次消费状态栏高度而多出一条空白。
+- 隐藏设置页四个编辑状态由 `remember` 改为 `rememberSaveable`：跳转帮助页会让该 Composable 离开组合，旧写法返回后会把刚改的内容全部丢掉。
+
 ## [1.1.0] - 2026-10-18
 
 ### Added

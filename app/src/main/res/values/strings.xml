@@ -17,11 +17,11 @@
     <string name="settings_hidden_enable">Enable targeted interception</string>
     <string name="settings_hidden_enable_hint">Off by default. When off, no site gets special handling.</string>
     <string name="settings_hidden_domains">Target domains</string>
-    <string name="settings_hidden_domains_hint">Separate by comma or newline. Multiple allowed; interception applies if any matches.</string>
+    <string name="settings_hidden_domains_hint">Part of the server address, case-insensitive. Separate with English commas. Leave empty to disable.</string>
     <string name="settings_hidden_feed_ids">Feed whitelist</string>
-    <string name="settings_hidden_feed_ids_hint">Comma-separated numbers. Interception applies only to these feeds.</string>
+    <string name="settings_hidden_feed_ids_hint">Numbers only, not titles. Use the picker below. Leave empty to disable.</string>
     <string name="settings_hidden_referer_rules">Referer rules</string>
-    <string name="settings_hidden_referer_rules_hint">Format: hostKeyword=&gt;RefererValue, separated by semicolons; order matters. Example: example.com=&gt;https://example.com/</string>
+    <string name="settings_hidden_referer_rules_hint">keyword=&gt;referer, separated by English semicolons. First match wins.</string>
     <string name="settings_hidden_save">Save</string>
     <string name="settings_hidden_reset">Reset to default</string>
     <string name="settings_hidden_export">Export to clipboard</string>
@@ -85,4 +85,83 @@
     <string name="article_action_next">Next</string>
     <string name="article_action_add_bookmark">Add bookmark</string>
     <string name="article_action_remove_bookmark">Remove bookmark</string>
+
+    <!-- Advanced settings: inline diagnostics -->
+    <string name="settings_hidden_inactive_reasons_title">Why it is not active</string>
+    <string name="settings_hidden_draft_hint">Based on what you typed. Tap Save to apply.</string>
+    <string name="settings_hidden_reason_disabled">Master switch is off</string>
+    <string name="settings_hidden_reason_no_domains">No target domain filled in</string>
+    <string name="settings_hidden_reason_no_feeds">No feed selected</string>
+    <string name="settings_hidden_reason_base_url">Current server does not match any target domain</string>
+    <string name="settings_hidden_field_summary">%1$d valid · %2$d ignored</string>
+    <string name="settings_hidden_field_warning_prefix">Check: %1$s</string>
+    <string name="settings_hidden_issue_chinese_separator">Chinese punctuation found, use the English comma</string>
+    <string name="settings_hidden_issue_domain_scheme">remove https://</string>
+    <string name="settings_hidden_issue_domain_path">remove the path</string>
+    <string name="settings_hidden_issue_feed_not_number">not a number, will be ignored</string>
+    <string name="settings_hidden_issue_feed_not_positive">this id can never match</string>
+    <string name="settings_hidden_issue_rule_arrow">missing =&gt;</string>
+    <string name="settings_hidden_issue_rule_empty_side">one side of =&gt; is empty</string>
+    <string name="settings_hidden_issue_rule_referer_url">right side should start with http:// or https://</string>
+    <string name="settings_hidden_issue_rule_shadowed">an earlier rule already covers it</string>
+    <string name="settings_hidden_issue_rule_multiple_arrows">more than one =&gt;</string>
+    <string name="settings_hidden_issue_rule_pattern_scheme">left side should not contain https://</string>
+    <string name="settings_hidden_issue_duplicate">duplicate entry</string>
+    <string name="settings_hidden_saved_with_ignored">Saved. %1$d invalid item(s) ignored.</string>
+    <string name="settings_hidden_save_failed">Save failed. Please try again.</string>
+    <string name="settings_hidden_fill_example">Fill example from current server</string>
+    <string name="settings_hidden_fill_example_confirm_title">Overwrite current input?</string>
+    <string name="settings_hidden_fill_example_confirm_message">This replaces everything you have typed with an example built from your current server. You still need to tap Save.</string>
+    <string name="settings_hidden_fill_example_done">Example filled from the current server. Review it and tap Save.</string>
+    <string name="settings_hidden_fill_example_no_server">No server address yet. Log in first.</string>
+    <string name="settings_hidden_domains_placeholder">e.g. example.com, mail.example.com</string>
+    <string name="settings_hidden_feed_ids_placeholder">e.g. 101,102</string>
+    <string name="settings_hidden_feed_ids_manual">Feed ids (usually filled by the picker)</string>
+    <string name="settings_hidden_referer_placeholder">e.g. images.example.com=&gt;https://example.com/</string>
+
+    <!-- Advanced settings: feed picker -->
+    <string name="settings_hidden_picker_open">Choose from your feeds</string>
+    <string name="settings_hidden_picker_title">Feed whitelist</string>
+    <string name="settings_hidden_picker_search_hint">Search title or #id</string>
+    <string name="settings_hidden_picker_selected_count">%1$d selected · %2$d shown</string>
+    <string name="settings_hidden_picker_select_all">Select all shown</string>
+    <string name="settings_hidden_picker_clear_all">Clear all</string>
+    <string name="settings_hidden_picker_missing_header">Selected but not in your feed list (may be deleted)</string>
+    <string name="settings_hidden_picker_loading">Loading feeds…</string>
+    <string name="settings_hidden_picker_empty">No feeds loaded</string>
+    <string name="settings_hidden_picker_empty_hint">Check your network and retry, or type ids manually.</string>
+    <string name="settings_hidden_picker_reload">Reload</string>
+    <string name="settings_hidden_picker_no_match">No feed matches %1$s</string>
+    <string name="settings_hidden_picker_done">Done</string>
+
+    <!-- Advanced settings: help page -->
+    <string name="nav_settings_help">Settings Help</string>
+    <string name="settings_help_title">How to fill this page</string>
+    <string name="settings_help_intro">This page only explains the settings. It changes nothing.</string>
+    <string name="settings_help_open_for">Help: %1$s</string>
+    <string name="settings_help_example_label">Example</string>
+    <string name="settings_help_section_overview_title">What this does</string>
+    <string name="settings_help_section_overview_body">When all conditions match, the app fetches images and other resources of the article itself and adds a Referer header. This is needed when an image host rejects requests coming from a reader. It does not block ads, does not change article text, and does not affect any site that is not matched.</string>
+    <string name="settings_help_section_when_title">When to enable it</string>
+    <string name="settings_help_section_when_body">Only when images are broken, blank or return 403, and only for a few feeds. Keep it off if you are not sure: off is the safe default and changes nothing.</string>
+    <string name="settings_help_section_conditions_title">Four conditions must all be true</string>
+    <string name="settings_help_section_conditions_body">1) The master switch is on.\n2) Your current server address contains one of the target domains.\n3) The article belongs to a whitelisted feed.\n4) That feed id is really in the list.\nMissing any one means nothing is intercepted. The status line on the settings page only means the configuration is complete; it does not mean every article is intercepted.</string>
+    <string name="settings_help_section_domains_title">Target domains</string>
+    <string name="settings_help_section_domains_body">Fill in a fragment of your server address. Matching is a case-insensitive contains check, so example.com also matches sub.example.com. Do not include https:// or a path. Separate several values with English commas. Leaving it empty means nothing is intercepted at all, not everything.</string>
+    <string name="settings_help_section_domains_example">example.com\nmail.example.com</string>
+    <string name="settings_help_section_feedids_title">Feed whitelist</string>
+    <string name="settings_help_section_feedids_body">Only numeric feed ids, not titles. The safest way is to tap the picker and tick the feeds; each row shows its #id. An empty list means no article is intercepted. If a feed was deleted, its id is kept and shown in a separate section of the picker so you can remove it on purpose.</string>
+    <string name="settings_help_section_feedids_example">101,102</string>
+    <string name="settings_help_section_referer_title">Referer rules</string>
+    <string name="settings_help_section_referer_body">Each rule is keyword=&gt;address, separated by English semicolons. The left side is matched against the request host with a case-sensitive contains check. Rules are evaluated top to bottom and the first match wins, so put specific keywords before broad ones. Entries without =&gt;, or with an empty side, are dropped.</string>
+    <string name="settings_help_section_referer_example">images.example.com=&gt;https://example.com/</string>
+    <string name="settings_help_section_effect_title">When it takes effect</string>
+    <string name="settings_help_section_effect_body">Settings are written to this device immediately. An article that is already open will not reload by itself: go back to the list and open it again. Switching to another server re-evaluates the domain match. Turning the master switch off restores normal loading at once.</string>
+    <string name="settings_help_section_backup_title">Export and backup</string>
+    <string name="settings_help_section_backup_body">Export copies four lines in key=value form, which you can keep in any notes app. Import replaces all four fields at once, not only the line you copied, and you still need to tap Save. These settings live in DataStore, which is excluded from Android cloud backup, so switching devices requires a manual export and import.</string>
+    <string name="settings_help_section_backup_example">enabled=true\ndomains=example.com\nfeedIds=101\nrefererRules=images.example.com=&gt;https://example.com/</string>
+    <string name="settings_help_section_mistakes_title">Common mistakes</string>
+    <string name="settings_help_section_mistakes_body">Using a Chinese comma instead of an English comma.\nPutting https:// inside a domain.\nTyping -&gt; instead of =&gt;.\nFilling in feed titles instead of #ids.\nPasting a whole feed URL as a domain.\nListing a broad rule before a specific one, which makes the specific rule never apply.</string>
+    <string name="settings_help_section_privacy_title">Scope and privacy</string>
+    <string name="settings_help_section_privacy_body">Only matching requests are re-fetched by the app. The configuration stays on this device and is never uploaded. Restore to default clears all four fields at once.</string>
 </resources>

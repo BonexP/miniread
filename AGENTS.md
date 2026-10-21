@@ -6,6 +6,30 @@
 
 ---
 
+## 0. 外部技能与工具的优先级（最优先；冲突即按本节裁决）
+
+优先级：**本文件 > 第三方技能／工具自带的通用规范 > 通用最佳实践**。
+
+第三方技能描述的是"通用 Android 项目应该长什么样"，本文件的 §6 / §7 / §8 记录的是"这个项目为什么不能那样"——后者全部来自真实回归。因此：
+
+- 外部技能给出的**模板代码、尺寸量值、Gradle 配置**，与本文件冲突时**无条件以本文件为准**；
+- 不得"折中"、不得"按技能改项目"、不得因为技能声称 `Required` / `Best Practice` 就放宽本文件的硬约束；
+- 技能覆盖不到的细节才可采纳技能建议，且仍须通过本项目的构建与单测（`./gradlew assembleStandardDebug` + 双 flavor 单测）。
+
+### 0.1 已核实的冲突（`android-native-dev` 技能，核对日期 2026-10-21）
+
+| 技能位置 | 技能主张 | 本项目规则 | 照做的后果 |
+| --- | --- | --- | --- |
+| `SKILL.md:105` / `:120` | 在 `productFlavors` 里写 `versionNameSuffix`，作为标准示范 | §6 约定规范 →「版本号唯一来源」 | `buildType` 优先级更高，会污染 release 版本名 |
+| `SKILL.md:736` | Bottom Nav 高度 **80dp** | §8 已知坑 第 8 条 → E-Ink 必须 **48dp** | 回落 Material3 默认值，复现 Level2 灰底（回归点 `3707759`） |
+| `SKILL.md:62` | `android.enableJetifier=true` 列为必需配置 | `gradle.properties` 仅开 `useAndroidX` | AGP 8.4 下无收益，拖慢构建 |
+
+**复核义务**：该技能为市场安装、**不会自动更新**。每次重装或升级后必须重新核对其 `SKILL.md` 的行号与主张；本表过期时**更新本表**，不要绕过本表。
+
+> **自指提示**：本文件较长，被工具**自动注入时可能被截断**（正文后半段未必进入上下文）。凡涉及**版本号、E-Ink 尺寸、阅读页、发布流程**的改动，必须**显式读取本文件对应章节**再动手，不得仅凭注入摘要或第三方技能建议判断。
+
+---
+
 ## 1. 项目概览
 
 MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**（自建 RSS 服务）Android 阅读客户端。**单模块 `:app`**，采用 **MVVM**，**无 DI 框架、无 Repository 层**——ViewModel 直接调用网络单例。
@@ -78,10 +102,10 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 | source set | 内容 |
 | --- | --- |
-| `main` | 共享代码与资源；26 个 `.kt`（含 `util/InterceptionSettings.kt`、`util/InterceptionRuntime.kt`、`ui/HiddenSettingsScreen.kt`）+ `res/` + `assets/` |
+| `main` | 共享代码与资源；36 个 `.kt`（含 `util/InterceptionSettings.kt`、`util/InterceptionRuntime.kt`、`ui/HiddenSettingsScreen.kt`、`ui/SettingsHelpScreen.kt`、`ui/FeedWhitelistPicker.kt`）+ `res/` + `assets/` |
 | `standard` | 2 个 `.kt`（`eink/EInkConfig.kt`、`eink/EInkUtils.kt` 的标准版空实现）+ 2 个 `res/values/*.xml` |
 | `eink` | 2 个 `.kt`（同名文件的墨水屏实现）+ 2 个 `res/values/*.xml` |
-| `test` | 纯 JVM 单测（8 个文件 / 110 个用例，见下） |
+| `test` | 纯 JVM 单测（14 个文件 / 208 个用例，见下） |
 | `androidTest` | **空目录**（仅 `java/` 空壳）；本项目测试全部在 `test/` |
 
 ### `app/src/main/java/com/i/miniread/` 包职责
@@ -89,7 +113,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | 路径 | 职责 |
 | --- | --- |
 | `MainActivity.kt`、`SettingsFragment.kt` | Compose 宿主 + 导航；`SettingsFragment` 为历史遗留（当前无入口，见 §8） |
-| `ui/` | 7 个 Screen + `ui/adaptive/`（平板适配）+ `ui/theme/`（配色/主题/字体） |
+| `ui/` | 9 个 Screen（含隐藏设置页与设置帮助页）+ 2 个辅助文件（`FeedWhitelistPicker.kt` 弹窗组件、`SettingsHelpContent.kt` 帮助页元数据表）+ `ui/adaptive/`（平板适配）+ `ui/theme/`（配色/主题/字体） |
 | `ui/example/` | 见 `example/FlavorUsageExample.kt`（flavor 用法示例，非主流程） |
 | `viewmodel/` | `MinifluxViewModel.kt`（唯一 ViewModel） |
 | `network/` | `MinifluxApi.kt`（Retrofit 接口 + 数据类 + `RetrofitInstance`） |
@@ -106,6 +130,9 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | 设置存储（唯一门面） | `util/DataStoreManager.kt` |
 | token 加密存储 | `util/SecureTokenStore.kt` |
 | 定向拦截配置与生效逻辑 | `util/InterceptionConfig.kt` / `util/InterceptionSettings.kt` / `util/InterceptionRuntime.kt` / `util/DomainHelper.kt` |
+| 定向拦截的站内帮助文档 | `ui/SettingsHelpScreen.kt` + `ui/SettingsHelpContent.kt`（文案在 `res/values*/strings.xml` 的 `settings_help_*`） |
+| 订阅源白名单选择器 | `ui/FeedWhitelistPicker.kt` + `util/FeedSelection.kt`（纯逻辑） |
+| 输入诊断（哪一项会被丢弃 / 为什么没生效） | `util/InterceptionDiagnostics.kt` |
 | 纯逻辑工具与单测 | `util/` + `app/src/test/` |
 | 注入阅读页的 CSS/HTML | `app/src/main/assets/` |
 | 平板适配 | `ui/adaptive/` |
@@ -123,7 +150,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `SettingsFragment.kt` | `PreferenceFragmentCompat`，读 `res/xml/preferences.xml`（约 L7-11）。**当前无入口**，见 §8。 |
 | `example/FlavorUsageExample.kt` | flavor 用法演示（如何判 `BuildConfig.IS_EINK`、用 `EInkConfig`/`EInkUtils`），可作参考，非运行时主流程。 |
 
-### `ui/`（7 个 Screen）
+### `ui/`（9 个 Screen）
 
 | 文件 | 说明 |
 | --- | --- |
@@ -134,6 +161,10 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/TodayEntryListScreen.kt` | 「今天」列表，复用 EntryList 思路、只取最近 24h（约 L27）。 |
 | `ui/SubFeedScreen.kt` | 某分类下的订阅源列表（约 L17）。 |
 | `ui/ArticleDetailScreen.kt` | 阅读页。`ArticleDetailScreen`（约 L81）→ WebView 容器；`ArticleActionsBar`（约 L131，`BottomAppBar` 约 L161）；`ArticleWebView`（约 L310）注入 `assets/` 的 HTML/CSS，含 `shouldInterceptRequest` 拦截点、**阅读位置写入与恢复**（见 §8 已知坑 12/13）；`interceptWebRequest`（约 L600）用 OkHttp 自行重发请求。 |
+| `ui/HiddenSettingsScreen.kt` | 隐藏高级设置页（顶栏标题连点 7 次进入）。**编辑态必须 `rememberSaveable`**（跳帮助页会离开组合，见 §8 坑 17）；保存前用 `InterceptionDiagnostics` 给出「N 项有效 / M 项将被忽略」；签名 `(navController, viewModel)`，feeds 走 `observeAsState()` 可空重载。 |
+| `ui/SettingsHelpScreen.kt` | 设置帮助页。`?section=` 直达小节，用 `rememberLazyListState(initialFirstVisibleItemIndex)` + `scrollToItem`（**不用** animate，E-Ink 拖影）。纯说明，不改配置。 |
+| `ui/SettingsHelpContent.kt` | 帮助页 `HelpSection` 枚举（id / titleRes / bodyRes / exampleRes）+ `IssueCode.messageRes()` / `InactiveReason.messageRes()`。**只放资源 id，文案在 strings.xml**。 |
+| `ui/FeedWhitelistPicker.kt` | 订阅源白名单弹窗：搜索 + 多选 + 计数 + 全选/清空 + 「可能已删除」分区。自绘 `Dialog`（`AlertDialog` 的 text 槽不能放 `LazyColumn`），`Surface.heightIn(max = 560.dp)` + `weight(1f, fill = false)`。 |
 
 ### `ui/adaptive/`、`ui/theme/`
 
@@ -163,6 +194,10 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `util/FeedSorter.kt` | `object`（约 L21）：`sort`（约 L32）纯排序函数（列表排序逻辑抽取，便于单测）。 |
 | `util/TimeWindow.kt` | `object`（约 L15）：`publishedAfterForLast24h`（约 L29）「最近 24h」时间戳纯函数。 |
 | `util/ReadingPosition.kt` | `ScrollSnapshot`（阅读位置快照，`scrollY`/`contentHeight`/`viewportHeight`，**均为 view px、不乘 scale**）+ `object ReadingPositionResolver.resolve(saved, current)`（约 L42）位置换算纯函数：顶部早退 → 未布局保护 → 布局一致原样返回 → 贴底吸附 → 文档相对比例换算 + clamp。配套 `ReadingPositionResolverTest`（17 个用例）。 |
+| `util/FeedSelection.kt` | 白名单文本的纯逻辑：`parseCsv`（保序、丢非数字）、`toggle`（幂等、新项追加末尾）、`selectAll`、`clearAll`、`buildView`（`available` / `missing` 分流）。**失效 id 不受搜索影响**。 |
+| `util/InterceptionDiagnostics.kt` | 三字段诊断：`FieldReport`（`rawCount` / `validCount` / `errors` / `warnings`）、`IssueCode`、`InactiveReason`。红线：切分只能调 `InterceptionSettingsCodec.splitEntries`；`validCount` 必须等于对应 `parseXxx` 结果数；`isActive` 必须等于 `InterceptionSettings.isActive`（单测已锁）。 |
+| `util/InterceptionClipboardFormat.kt` | 导出/导入的 4 行 `key=value` 文本格式（从 `HiddenSettingsScreen` 上移，行为逐字不变）。**格式不得变动**——DataStore 被备份规则排除，这是唯一的跨设备备份手段。 |
+| `util/InterceptionExamples.kt` | 「用当前服务器填入示例」的派生逻辑：`parseServer(baseUrl)` 取 scheme/host（宽容处理无 scheme、带端口/路径/userinfo、IPv6），`build(baseUrl, currentFeedIds, availableFeedIds)` 生成域名 / 编号 / Referer 占位。**不存任何硬编码地址**——避免私有实例地址随 APK 分发。 |
 
 ### flavor 专属
 
@@ -179,7 +214,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | --- | --- |
 | **加一个新页面** | `MainActivity.kt` 的 `sealed class Screen`（约 L166）+ **单一 NavHost**（`MainActivity.kt` 内，rail/手机共用一份）+ 新增 `ui/XxxScreen.kt` |
 | **加 / 改一条导航路由** | 同上。NavHost 只有**一份**（rail 与手机共用；`if (useNavigationRail)` 只切换 `AppNavigationRail`，不切换 NavHost） |
-| **改定向拦截参数（域名 / 白名单 / Referer）** | 参数在应用内**隐藏设置页**（`ui/HiddenSettingsScreen.kt`）配置；持久化在 `util/DataStoreManager.kt` 的 4 个 `intercept_*` key（约 L32-35）；生效逻辑在 `util/InterceptionRuntime.kt`（+ `util/InterceptionSettings.kt` 解析、`util/InterceptionConfig.kt` 判定）；消费点在 `ui/ArticleDetailScreen.kt`（约 L262 判定、约 L342 拦截、约 L431 加 Referer） |
+| **改定向拦截参数（域名 / 白名单 / Referer）** | 参数在应用内**隐藏设置页**（`ui/HiddenSettingsScreen.kt`）配置，页内「?」直达帮助页（`ui/SettingsHelpScreen.kt`，10 个小节）；白名单用弹窗勾选（`ui/FeedWhitelistPicker.kt`），底层仍写回逗号分隔文本。持久化在 `util/DataStoreManager.kt` 的 4 个 `intercept_*` key（约 L32-35）；生效逻辑在 `util/InterceptionRuntime.kt`（+ `util/InterceptionSettings.kt` 解析、`util/InterceptionConfig.kt` 判定）；消费点在 `ui/ArticleDetailScreen.kt`（约 L262 判定、约 L342 拦截、约 L431 加 Referer） |
 | **改 E-Ink 行为** | 编译期：改 `app/src/eink/...`（同名文件按 flavor 替换）；运行期：判 `BuildConfig.IS_EINK` |
 | **加 / 改界面文案** | `res/values/strings.xml`（英文）+ `res/values-zh/strings.xml`（中文），**不要在 Kotlin 里硬编码**。**不要**定义 `app_name`——它由 flavor 的 `resValue` 生成。flavor 专属文案同理：`app/src/{standard,eink}/res/values/`（英文）+ `values-zh/`（中文） |
 | **加依赖** | `gradle/libs.versions.toml` + `app/build.gradle.kts` |
@@ -253,6 +288,13 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 16. **E-Ink 正文主题红线**（2026-10-17 起，issue #12）：Compose 侧 E-Ink 恒用 `EInkLightColorScheme`，WebView 正文必须同步，否则系统深色下出现「白工具栏 + 深色正文」，墨水屏还会因深底加重残影。两条红线：
     - **`util/ReaderTheme.kt` 的 `ReaderThemeResolver.isDarkMode(isEink, systemNightMode)` 是唯一判据**。两处调用点都必须走它：`loadHtmlContentAsync`（首次注入）与 `ArticleWebView` 的 `LaunchedEffect(pageLoadTick, isDarkTheme)`（运行期就地刷新）。⚠️ 只改一处会被另一处覆盖——这正是修复前的状态。
     - **`assets/custom.css` 必须保持 0 处 `prefers-color-scheme: dark`**。E-Ink flavor 恒注入这份文件，WebView 的 `prefers-color-scheme` 只跟系统走，媒体查询会把正文染成白底 `#d1d1d1` 字——只改 Kotlin 判定等于没修。`customdark.css` 内的夜间块**保留**（它只服务 standard + 系统深色）。深色平板块在 `customdark.css`，选择器必须带 `body` 前缀：主题表在 `<head>` 中**先于**平板表，同优先级会被 `tablet_styles.css` 的浅色基础样式覆盖。
+17. **隐藏设置页 / 帮助页 / 订阅源选择器的红线**（2026-10-21 起）：
+    - **编辑态必须 `rememberSaveable`**：点字段旁「?」跳帮助页会让 `HiddenSettingsScreen` 离开组合，普通 `remember` 在返回时会把四个字段全部丢掉（必现，不是概率问题）。
+    - **主顶栏让位时必须同时清 inset**：`shouldShowTopBar == false` 时 `Scaffold` 的 `contentWindowInsets` 要置 `WindowInsets(0)`，否则内层 `Scaffold` 二次消费状态栏高度，标题上方多出一条空白。⚠️ **不要**为了隐藏顶栏在 content 里写 `if/else` 包 `NavHost`（违反坑 7/14）。
+    - **选择器不能换成 `AlertDialog`**：M3 1.2.1 的 `text` 槽没有内建滚动，`LazyColumn` 直接放进去会撞 `infinite maximum height constraints`。必须自绘 `Dialog` + `Surface.heightIn(max = 560.dp)` + `Box(weight(1f, fill = false))`，且 `DialogProperties(usePlatformDefaultWidth = false)` 才能让 `fillMaxWidth(0.92f)` 生效。
+    - **`feeds` 必须用 `observeAsState()` 的可空重载**：`fetchFeeds()` 失败会 `postValue(emptyList())`，给 `emptyList()` 默认值就无法区分「尚未加载」与「已加载为空」。两种状态都**不许裁剪已选 id**——失效 id 要在「可能已删除」分区里显式展示并允许主动取消。
+    - 帮助页定位用 `scrollToItem`（瞬移），**不要** `animateScrollToItem`（E-Ink 拖影）；`?section=` 的 `navArgument` 必须给 `defaultValue = ""`，否则不带参数进入会崩在参数校验。
+    - 诊断与解析必须同口径：`InterceptionDiagnosticsAnalyzer` 只能调 `InterceptionSettingsCodec.splitEntries`，**不要**另写 split；`FieldReport.validCount` 与 `InterceptionSettings.isActive` 已由单测锁死，改任一侧都要同步。
 
 ---
 

@@ -17,11 +17,11 @@
     <string name="settings_hidden_enable">启用定向拦截</string>
     <string name="settings_hidden_enable_hint">默认关闭。关闭时不对任何站点做特殊处理。</string>
     <string name="settings_hidden_domains">目标域名</string>
-    <string name="settings_hidden_domains_hint">用逗号或换行分隔，可填多个；命中任一即生效。</string>
+    <string name="settings_hidden_domains_hint">服务器地址里的一段文字，不区分大小写；用英文逗号分隔；留空则不对任何站点生效。</string>
     <string name="settings_hidden_feed_ids">订阅源白名单</string>
-    <string name="settings_hidden_feed_ids_hint">逗号分隔的数字，仅这些订阅源的文章启用拦截。</string>
+    <string name="settings_hidden_feed_ids_hint">只认数字编号，不是标题；推荐用下面的选择器；留空则不对任何文章生效。</string>
     <string name="settings_hidden_referer_rules">Referer 规则</string>
-    <string name="settings_hidden_referer_rules_hint">格式：host关键字=&gt;Referer值，用分号分隔多条，顺序敏感。示例：example.com=&gt;https://example.com/</string>
+    <string name="settings_hidden_referer_rules_hint">关键字=&gt;地址，用英文分号分隔；从上往下首条命中即生效。</string>
     <string name="settings_hidden_save">保存</string>
     <string name="settings_hidden_reset">恢复默认</string>
     <string name="settings_hidden_export">导出到剪贴板</string>
@@ -85,4 +85,83 @@
     <string name="article_action_next">下一篇</string>
     <string name="article_action_add_bookmark">收藏文章</string>
     <string name="article_action_remove_bookmark">取消收藏</string>
+
+    <!-- 高级设置：行内诊断 -->
+    <string name="settings_hidden_inactive_reasons_title">未生效的原因</string>
+    <string name="settings_hidden_draft_hint">按当前填写内容计算，点「保存」后生效。</string>
+    <string name="settings_hidden_reason_disabled">总开关处于关闭状态</string>
+    <string name="settings_hidden_reason_no_domains">未填写目标域名</string>
+    <string name="settings_hidden_reason_no_feeds">未选择任何订阅源</string>
+    <string name="settings_hidden_reason_base_url">当前服务器不匹配任何目标域名</string>
+    <string name="settings_hidden_field_summary">%1$d 项有效 · %2$d 项将被忽略</string>
+    <string name="settings_hidden_field_warning_prefix">注意：%1$s</string>
+    <string name="settings_hidden_issue_chinese_separator">检测到中文标点，请改用英文逗号</string>
+    <string name="settings_hidden_issue_domain_scheme">不要带 https://</string>
+    <string name="settings_hidden_issue_domain_path">不要带路径</string>
+    <string name="settings_hidden_issue_feed_not_number">不是数字，将被忽略</string>
+    <string name="settings_hidden_issue_feed_not_positive">该编号不可能匹配到订阅源</string>
+    <string name="settings_hidden_issue_rule_arrow">缺少 =&gt;</string>
+    <string name="settings_hidden_issue_rule_empty_side">=&gt; 的某一侧为空</string>
+    <string name="settings_hidden_issue_rule_referer_url">右侧应以 http:// 或 https:// 开头</string>
+    <string name="settings_hidden_issue_rule_shadowed">前面的规则已覆盖同一关键字</string>
+    <string name="settings_hidden_issue_rule_multiple_arrows">出现了多个 =&gt;</string>
+    <string name="settings_hidden_issue_rule_pattern_scheme">左侧不要带 https://</string>
+    <string name="settings_hidden_issue_duplicate">重复条目</string>
+    <string name="settings_hidden_saved_with_ignored">已保存，%1$d 项无效内容被忽略。</string>
+    <string name="settings_hidden_save_failed">保存失败，请重试。</string>
+    <string name="settings_hidden_fill_example">用当前服务器填入示例</string>
+    <string name="settings_hidden_fill_example_confirm_title">覆盖当前内容？</string>
+    <string name="settings_hidden_fill_example_confirm_message">这会用当前服务器生成的示例替换你已填写的全部内容，之后仍需点「保存」。</string>
+    <string name="settings_hidden_fill_example_done">已按当前服务器填入示例，请核对后保存。</string>
+    <string name="settings_hidden_fill_example_no_server">尚未获取到服务器地址，请先登录。</string>
+    <string name="settings_hidden_domains_placeholder">例如 example.com, mail.example.com</string>
+    <string name="settings_hidden_feed_ids_placeholder">例如 101,102</string>
+    <string name="settings_hidden_feed_ids_manual">订阅源编号（通常用上面的选择器填写）</string>
+    <string name="settings_hidden_referer_placeholder">例如 images.example.com=&gt;https://example.com/</string>
+
+    <!-- 高级设置：订阅源选择器 -->
+    <string name="settings_hidden_picker_open">从订阅源中选择</string>
+    <string name="settings_hidden_picker_title">选择订阅源</string>
+    <string name="settings_hidden_picker_search_hint">搜索标题或 #编号</string>
+    <string name="settings_hidden_picker_selected_count">已选 %1$d 项 · 显示 %2$d 项</string>
+    <string name="settings_hidden_picker_select_all">全选当前结果</string>
+    <string name="settings_hidden_picker_clear_all">清空全部</string>
+    <string name="settings_hidden_picker_missing_header">已选但不在订阅列表中（可能已删除）</string>
+    <string name="settings_hidden_picker_loading">正在获取订阅源…</string>
+    <string name="settings_hidden_picker_empty">尚未获取到订阅源</string>
+    <string name="settings_hidden_picker_empty_hint">请检查网络后重试，也可以手动填写编号。</string>
+    <string name="settings_hidden_picker_reload">重新加载</string>
+    <string name="settings_hidden_picker_no_match">没有匹配「%1$s」的订阅源</string>
+    <string name="settings_hidden_picker_done">完成</string>
+
+    <!-- 高级设置：帮助文档 -->
+    <string name="nav_settings_help">设置帮助</string>
+    <string name="settings_help_title">怎么填这一页</string>
+    <string name="settings_help_intro">本页只做说明，不会改动任何配置。</string>
+    <string name="settings_help_open_for">查看说明：%1$s</string>
+    <string name="settings_help_example_label">示例</string>
+    <string name="settings_help_section_overview_title">这套机制做什么</string>
+    <string name="settings_help_section_overview_body">四个条件全部命中时，App 会自己代取正文里的图片等资源并附上 Referer 请求头。它用于图床拒绝阅读器请求的场景；不会去广告、不会改动正文，也不影响任何未命中的站点。</string>
+    <string name="settings_help_section_when_title">什么时候需要开</string>
+    <string name="settings_help_section_when_body">只在图片裂开、空白或返回 403，并且只想对个别订阅源生效时才需要开启。不确定就保持关闭：关闭是安全默认值，什么都不会改变。</string>
+    <string name="settings_help_section_conditions_title">四个条件必须同时满足</string>
+    <string name="settings_help_section_conditions_body">① 总开关打开。\n② 当前服务器地址包含某个目标域名。\n③ 文章所属订阅源在白名单里。\n④ 该订阅源编号确实填进了列表。\n缺任何一条都不会拦截。设置页顶部那句「拦截已生效」只代表配置齐全，不代表每篇文章都会被拦截。</string>
+    <string name="settings_help_section_domains_title">目标域名怎么填</string>
+    <string name="settings_help_section_domains_body">填服务器地址里的一段文字。匹配方式是「包含即命中、不区分大小写」，所以 example.com 也会命中 sub.example.com。不要带 https://，也不要带路径。多个值用英文逗号分隔。留空表示不对任何站点生效，而不是对所有站点生效。</string>
+    <string name="settings_help_section_domains_example">example.com\nmail.example.com</string>
+    <string name="settings_help_section_feedids_title">订阅源白名单怎么填</string>
+    <string name="settings_help_section_feedids_body">只认数字编号，不是订阅源标题。最省事的做法是点「从订阅源中选择」，列表里每一行都标了 #编号。留空表示不拦截任何文章。订阅源被删除后，它的编号仍会保留，并在选择器顶部单独列出，方便你主动移除。</string>
+    <string name="settings_help_section_feedids_example">101,102</string>
+    <string name="settings_help_section_referer_title">Referer 规则怎么填</string>
+    <string name="settings_help_section_referer_body">每条规则写成「关键字=&gt;地址」，多条之间用英文分号分隔。左侧关键字会对请求的 host 做「包含匹配，区分大小写」。规则从上往下判断，首条命中就停止，所以特殊的关键字要写在前面。缺少 =&gt;、或者某一侧为空的条目会被直接丢弃。</string>
+    <string name="settings_help_section_referer_example">images.example.com=&gt;https://example.com/</string>
+    <string name="settings_help_section_effect_title">保存后什么时候生效</string>
+    <string name="settings_help_section_effect_body">点保存后立即写入本机。已经打开的阅读页不会自己刷新，需要返回列表再重新打开该文章。切换服务器后会重新判断域名条件。关闭总开关后立刻恢复普通加载。</string>
+    <string name="settings_help_section_backup_title">导出、导入与备份</string>
+    <string name="settings_help_section_backup_body">导出会把四项配置复制成 4 行 key=value 文本，可以存到任意笔记里。导入会整体覆盖四个字段（不只是你复制的那一行），而且导入后仍需点「保存」。这四项存在 DataStore 里，已被系统云备份规则排除，换机或重装需要手动导出再导入。</string>
+    <string name="settings_help_section_backup_example">enabled=true\ndomains=example.com\nfeedIds=101\nrefererRules=images.example.com=&gt;https://example.com/</string>
+    <string name="settings_help_section_mistakes_title">常见错误</string>
+    <string name="settings_help_section_mistakes_body">用中文逗号而不是英文逗号。\n域名里带上了 https://。\n把 =&gt; 打成 -&gt;。\n填订阅源标题而不是 #编号。\n把整条订阅源网址当成域名。\n宽泛的规则排在前面，导致后面的规则永远不生效。</string>
+    <string name="settings_help_section_privacy_title">影响范围与隐私</string>
+    <string name="settings_help_section_privacy_body">只有命中的请求才由 App 代取，未命中的仍走系统 WebView。配置只保存在本机，不会上传。「恢复默认」会一次性清空四个字段。</string>
 </resources>

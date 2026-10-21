@@ -53,6 +53,15 @@ object InterceptionSettingsCodec {
 
     private val SPLIT_REGEX = Regex("[,\\n;]+")
 
+    /**
+     * 按统一的分隔规则切分，返回**逐条原文**（已 trim，已丢弃空白项）。
+     *
+     * ⚠️ 只给 [InterceptionDiagnosticsAnalyzer] 这类「需要展示用户原文」的调用方复用。
+     * 不要在别处再写一套 split —— 否则诊断口径会与真实解析漂移（典型：中文逗号算不算分隔符）。
+     */
+    fun splitEntries(raw: String?): List<String> =
+        raw.orEmpty().split(SPLIT_REGEX).map { it.trim() }.filter { it.isNotEmpty() }
+
     fun parseDomains(raw: String?): List<String> =
         raw.orEmpty()
             .split(SPLIT_REGEX)

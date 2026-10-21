@@ -15,6 +15,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
@@ -61,6 +63,7 @@ import com.i.miniread.ui.EntryListScreen
 import com.i.miniread.ui.FeedListScreen
 import com.i.miniread.ui.HiddenSettingsScreen
 import com.i.miniread.ui.LoginScreen
+import com.i.miniread.ui.SettingsHelpScreen
 import com.i.miniread.ui.SubFeedScreen
 import com.i.miniread.ui.TodayEntryListScreen
 import com.i.miniread.ui.adaptive.AdaptiveLayoutHelper
@@ -173,6 +176,7 @@ sealed class Screen(val route: String, @StringRes val labelRes: Int) {
     data object TodayEntryList : Screen("todayEntryList", R.string.nav_today)
     data object SubFeedScreen : Screen("subFeed", R.string.nav_sub_feed)
     data object HiddenSettings : Screen("hiddenSettings", R.string.nav_hidden_settings)
+    data object SettingsHelp : Screen("settingsHelp", R.string.nav_settings_help)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -236,7 +240,15 @@ fun MainContent(viewModel: MinifluxViewModel) {
 
         // 判断是否是 ArticleDetailScreen 的路由
         val shouldShowBottomBar = currentRoute?.startsWith(Screen.ArticleDetail.route) == false &&
-            currentRoute?.startsWith(Screen.HiddenSettings.route) == false
+            currentRoute?.startsWith(Screen.HiddenSettings.route) == false &&
+            currentRoute?.startsWith(Screen.SettingsHelp.route) == false
+
+        // 隐藏设置页与帮助页自带 AppBar，主顶栏必须让位，否则会出现上下两条 AppBar。
+        // 首帧 currentRoute 为 null 时默认显示，避免闪一下无顶栏。
+        val shouldShowTopBar = currentRoute?.let {
+            !it.startsWith(Screen.HiddenSettings.route) &&
+                !it.startsWith(Screen.SettingsHelp.route)
+        } ?: true
 
         // 判断是否应该使用侧边导航栏（平板横屏模式）
         val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
@@ -248,7 +260,8 @@ fun MainContent(viewModel: MinifluxViewModel) {
 
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
+                // 隐藏设置页 / 帮助页自带 AppBar，主顶栏让位（见 shouldShowTopBar）
+                if (shouldShowTopBar) CenterAlignedTopAppBar(
                     title = {
                         Text(
                             stringResource(id = R.string.app_name),
@@ -405,6 +418,13 @@ fun MainContent(viewModel: MinifluxViewModel) {
                 if (shouldShowBottomBar && !useNavigationRail) {
                     BottomNavigationBar(navController = navController)
                 }
+            },
+            // 顶栏隐藏时必须清空主 Scaffold 的 inset，否则内层 Scaffold 会二次消费状态栏高度，
+            // 在标题上方多出一条状态栏高度的空白。
+            contentWindowInsets = if (shouldShowTopBar) {
+                ScaffoldDefaults.contentWindowInsets
+            } else {
+                WindowInsets(0)
             }
         ) { innerPadding ->
             // 单一 NavHost：调用位置恒定为 Row → Surface → NavHost，if 只切换 AppNavigationRail；
@@ -469,7 +489,22 @@ fun MainContent(viewModel: MinifluxViewModel) {
                             TodayEntryListScreen(viewModel, navController)
                         }
                         composable(Screen.HiddenSettings.route) {
-                            HiddenSettingsScreen(navController)
+                            HiddenSettingsScreen(navController, viewModel)
+                        }
+                        composable(
+                            route = Screen.SettingsHelp.route + "?section={section}",
+                            arguments = listOf(
+                                navArgument("section") {
+                                    type = NavType.StringType
+                                    // 必须给默认值：不带参数进入时 getString 才是 ""，而不是崩在参数校验
+                                    defaultValue = ""
+                                }
+                            )
+                        ) { backStackEntry ->
+                            SettingsHelpScreen(
+                                navController = navController,
+                                sectionId = backStackEntry.arguments?.getString("section").orEmpty()
+                            )
                         }
                         composable(
                             route = "subFeed?categoryId={categoryId}",
