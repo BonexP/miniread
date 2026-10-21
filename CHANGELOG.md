@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-21
+
 ### Added
 - 隐藏设置页（顶栏标题连点 7 次进入）新增**站内帮助文档**，不必离开 App 查资料：
   - `ui/SettingsHelpScreen.kt` + `ui/SettingsHelpContent.kt`，10 个小节（机制说明 / 何时开启 / 四个条件 / 三个字段各自的匹配规则 / 生效时机 / 导出备份 / 常见错误 / 隐私范围），页头明确「本页只做说明，不改配置」。
@@ -157,6 +159,7 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.2.0]: https://github.com/BonexP/miniread/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BonexP/miniread/releases/tag/v1.1.0
 [1.0.3]: https://github.com/BonexP/miniread/releases/tag/v1.0.3
 [1.0.2]: https://github.com/BonexP/miniread/releases/tag/v1.0.2
