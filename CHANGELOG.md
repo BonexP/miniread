@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 保存与「恢复默认」补 `try/catch`：写盘失败时 Toast 提示且不退出页面，不再让异常直接崩在协程里；保存时若有条目被丢弃，Toast 改为「已保存，N 项无效内容被忽略」。
 
 ### Fixed
+- 阅读页「已标记为已读 / 已标记为未读 / 已收藏」等提示条配色不跟随界面主题：M3 默认用的是**反色**（`SnackbarDefaults.color` → `SnackbarTokens.ContainerColor` → `InverseSurface`），深色主题下反而弹出一条浅色提示，E-Ink 上则变成深色块。新增 `ui/MinireadSnackbarHost.kt` 统一着色：standard 走 `surfaceVariant` / `onSurfaceVariant`，E-Ink 走白底黑字 + 2dp 黑框、直角。
 - 隐藏设置页与新增的帮助页会与主页顶栏叠成**两条 AppBar**：`MainActivity` 新增 `shouldShowTopBar`，隐藏时同步把 `contentWindowInsets` 置为 `WindowInsets(0)`，避免内层 `Scaffold` 二次消费状态栏高度而多出一条空白。
 - 隐藏设置页四个编辑状态由 `remember` 改为 `rememberSaveable`：跳转帮助页会让该 Composable 离开组合，旧写法返回后会把刚改的内容全部丢掉。
 

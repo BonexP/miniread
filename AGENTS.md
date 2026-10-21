@@ -113,7 +113,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | 路径 | 职责 |
 | --- | --- |
 | `MainActivity.kt`、`SettingsFragment.kt` | Compose 宿主 + 导航；`SettingsFragment` 为历史遗留（当前无入口，见 §8） |
-| `ui/` | 9 个 Screen（含隐藏设置页与设置帮助页）+ 2 个辅助文件（`FeedWhitelistPicker.kt` 弹窗组件、`SettingsHelpContent.kt` 帮助页元数据表）+ `ui/adaptive/`（平板适配）+ `ui/theme/`（配色/主题/字体） |
+| `ui/` | 9 个 Screen（含隐藏设置页与设置帮助页）+ 3 个辅助文件（`FeedWhitelistPicker.kt` 弹窗组件、`SettingsHelpContent.kt` 帮助页元数据表、`MinireadSnackbarHost.kt` 统一提示条）+ `ui/adaptive/`（平板适配）+ `ui/theme/`（配色/主题/字体） |
 | `ui/example/` | 见 `example/FlavorUsageExample.kt`（flavor 用法示例，非主流程） |
 | `viewmodel/` | `MinifluxViewModel.kt`（唯一 ViewModel） |
 | `network/` | `MinifluxApi.kt`（Retrofit 接口 + 数据类 + `RetrofitInstance`） |
@@ -165,6 +165,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/SettingsHelpScreen.kt` | 设置帮助页。`?section=` 直达小节，用 `rememberLazyListState(initialFirstVisibleItemIndex)` + `scrollToItem`（**不用** animate，E-Ink 拖影）。纯说明，不改配置。 |
 | `ui/SettingsHelpContent.kt` | 帮助页 `HelpSection` 枚举（id / titleRes / bodyRes / exampleRes）+ `IssueCode.messageRes()` / `InactiveReason.messageRes()`。**只放资源 id，文案在 strings.xml**。 |
 | `ui/FeedWhitelistPicker.kt` | 订阅源白名单弹窗：搜索 + 多选 + 计数 + 全选/清空 + 「可能已删除」分区。自绘 `Dialog`（`AlertDialog` 的 text 槽不能放 `LazyColumn`），`Surface.heightIn(max = 560.dp)` + `weight(1f, fill = false)`。 |
+| `ui/MinireadSnackbarHost.kt` | 全应用统一提示条。**不要**直接用 `SnackbarHost(hostState)`：M3 默认是反色（`InverseSurface`），深色主题下弹浅色条、E-Ink 下弹深色块（见 §8 坑 18）。 |
 
 ### `ui/adaptive/`、`ui/theme/`
 
@@ -295,6 +296,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
     - **`feeds` 必须用 `observeAsState()` 的可空重载**：`fetchFeeds()` 失败会 `postValue(emptyList())`，给 `emptyList()` 默认值就无法区分「尚未加载」与「已加载为空」。两种状态都**不许裁剪已选 id**——失效 id 要在「可能已删除」分区里显式展示并允许主动取消。
     - 帮助页定位用 `scrollToItem`（瞬移），**不要** `animateScrollToItem`（E-Ink 拖影）；`?section=` 的 `navArgument` 必须给 `defaultValue = ""`，否则不带参数进入会崩在参数校验。
     - 诊断与解析必须同口径：`InterceptionDiagnosticsAnalyzer` 只能调 `InterceptionSettingsCodec.splitEntries`，**不要**另写 split；`FieldReport.validCount` 与 `InterceptionSettings.isActive` 已由单测锁死，改任一侧都要同步。
+18. **Snackbar 默认是「反色」，不是主题色**（2026-10-21 核实）：M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSurface`，`SupportingTextColor = InverseOnSurface`。后果：深色主题下提示条变**浅色**（像没跟随主题），E-Ink 恒浅色方案下反而成**深色块**（违反恒浅色、残影重）。统一走 `ui/MinireadSnackbarHost.kt`，**不要**再直接写 `SnackbarHost(hostState)`；标准版用 `surfaceVariant` / `onSurfaceVariant`，E-Ink 用白底黑字 + 2dp 黑框 + 直角。
 
 ---
 
