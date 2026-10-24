@@ -37,6 +37,8 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+# 版本由 Compose BOM 托管（BOM 2024.02.00 已含该 artifact），不要写 version
+androidx-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 adapter-guava = { group = "com.squareup.retrofit2", name = "adapter-guava", version.ref = "adapterGuava" }
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version = "4.12.0" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }

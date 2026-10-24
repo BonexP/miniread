@@ -30,7 +30,7 @@ import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
 import androidx.compose.material3.Icon
@@ -300,8 +300,10 @@ fun ArticleActionsBar(
                     modifier = slot
                 ) {
                     Icon(
-                        // 实心 = 已收藏，空心 = 未收藏：墨水屏没有彩色语义，只能靠形状区分
-                        imageVector = if (starredEntry.starred) Icons.Filled.Star else Icons.Outlined.Star,
+                        // 实心 = 已收藏，空心 = 未收藏：墨水屏没有彩色语义，只能靠形状区分。
+                        // ⚠️ 不能用 Icons.Outlined.Star：material-icons-core 里它与 Filled.Star 是
+                        //    同一份 path（单闭合轮廓、无内孔），画出来仍是实心；空心星走 extended 包的 StarBorder。
+                        imageVector = if (starredEntry.starred) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = if (starredEntry.starred) removeBookmarkDesc else addBookmarkDesc,
                         tint = Color.Black
                     )
