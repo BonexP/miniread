@@ -296,7 +296,16 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
     - **`feeds` 必须用 `observeAsState()` 的可空重载**：`fetchFeeds()` 失败会 `postValue(emptyList())`，给 `emptyList()` 默认值就无法区分「尚未加载」与「已加载为空」。两种状态都**不许裁剪已选 id**——失效 id 要在「可能已删除」分区里显式展示并允许主动取消。
     - 帮助页定位用 `scrollToItem`（瞬移），**不要** `animateScrollToItem`（E-Ink 拖影）；`?section=` 的 `navArgument` 必须给 `defaultValue = ""`，否则不带参数进入会崩在参数校验。
     - 诊断与解析必须同口径：`InterceptionDiagnosticsAnalyzer` 只能调 `InterceptionSettingsCodec.splitEntries`，**不要**另写 split；`FieldReport.validCount` 与 `InterceptionSettings.isActive` 已由单测锁死，改任一侧都要同步。
-18. **Snackbar 默认是「反色」，不是主题色**（2026-10-21 核实）：M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSurface`，`SupportingTextColor = InverseOnSurface`。后果：深色主题下提示条变**浅色**（像没跟随主题），E-Ink 恒浅色方案下反而成**深色块**（违反恒浅色、残影重）。统一走 `ui/MinireadSnackbarHost.kt`，**不要**再直接写 `SnackbarHost(hostState)`；标准版用 `surfaceVariant` / `onSurfaceVariant`，E-Ink 用白底黑字 + 2dp 黑框 + 直角。
+    - **E-Ink 只换样式、不重排**（2026-10-24 起，issue #16）：所有差异走 `val eink = BuildConfig.IS_EINK` 的条件参数，**不要**加分组卡片、**不要**改间距节奏 / 文案 / `rememberSaveable` / `contentWindowInsets`。固定取值：顶栏 `Modifier.height(40.dp)` + `titleMedium`（与 `MainActivity` 的 E-Ink 顶栏一致）+ 返回/帮助图标均 20dp；次要按钮统一走私有包装器 `SettingsOutlinedButton`（0dp 直角 + `BorderStroke(2.dp, Black)` + `contentColor = Black`），主 `Button` 黑底白字 + 全零 elevation；`OutlinedTextField` 只改边框/光标/容器色，**error 语义色保留 M3 默认**（灰度屏靠深浅区分即可）；`Switch` 选中白钮黑轨、未选中黑钮白轨 + 黑边。
+    - ⚠️ `AlertDialog` 没有 `border` 参数，黑框只能写 `Modifier.border(2.dp, Black, 与 shape 完全相同的 RoundedCornerShape(8.dp))`：该 modifier 落在 `BasicAlertDialog` 的外层 `Box` 上（与内层 `Surface` 同尺寸），且 `Modifier.border` 先画内容后画描边，所以不会被白底盖住；**圆角不一致会在四角露出方框**。
+    - ⚠️ `OutlinedTextFieldDefaults.colors(...)` 未传的项保持 token 默认（实现是 `.copy(...)`，不会回落成 primary 紫灰），因此 `supportingText` 仍是 `onSurfaceVariant` 灰，与本页 `StatusBlock` 同阶，不要「顺手」改成纯黑。
+18. **Snackbar 默认是「反色」，不是主题色**（2026-10-21 核实）：M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSurface`，`SupportingTextColor = InverseOnSurface`。后果：深色主题下提示条变**浅色**（像没跟随主题），E-Ink 恒浅色方案下反而成**深色块**（违反恒浅色、残影重）。统一走 `ui/MinireadSnackbarHost.kt`，**不要**再直接写 `SnackbarHost(hostState)`；标准版用 `surfaceVariant` / `onSurfaceVariant`，E-Ink 用 `Snackbar` 直角（`RoundedCornerShape(0.dp)`）+ 纯白 + 黑字，**不加任何边框**。
+    - ⚠️ **不要**给 E-Ink 提示条加外框（2026-10-24 用户实测，issue #15）：`Modifier.border(...)` 套在 `Snackbar(snackbarData, modifier)` 上，会被该重载内部的 `modifier.padding(12.dp)` 推到容器**之外**，观感是一圈悬浮在整条外面的黑框（不是描边，也不是「12dp 错位」）。要去框就真的不写 `border`，不要靠调粗细 / 圆角 / 改自绘 `Surface` 去「修」它。
+    - `Snackbar` 的 `shadowElevation` 写死为 `SnackbarTokens.ContainerElevation`（6dp），**没有公开参数可覆盖**；纯白页面上会有一圈很淡的灰边，属已知取舍。
+19. **E-Ink 星标的「空心」要用 `StarBorder`，不能用 `Icons.Outlined.Star`**（2026-10-24 起，issue #17）：`material-icons-core-android:1.6.1` 里 `outlined/StarKt` 与 `filled/StarKt` 的 path **逐行相同**（源码逐行比对过）——单个闭合轮廓、没有内孔，`Icons.Outlined.Star` 渲染出来就是实心星，墨水屏上「已收藏 / 未收藏」区分不出来；core 里也**没有** `StarBorder`。
+    - 正确写法：`imageVector = if (entry.starred) Icons.Filled.Star else Icons.Outlined.StarBorder`；`StarBorder` 来自 **`material-icons-extended`** —— `gradle/libs.versions.toml` 里 `androidx-material-icons-extended`（**版本由 Compose BOM 托管，不要写 version**），`app/build.gradle.kts` 里 `implementation(libs.androidx.material.icons.extended)`。
+    - 代价已知：该库 classes 约 40MB，debug 包与增量构建变慢，release 由 R8 裁到只剩用到的图标。为一个空心星引入它是权衡后的选择，**不要**再为此自造 drawable / 自绘 Canvas。
+    - ⚠️ 该库其它 outlined 图标是否有内孔**未逐个核实**；阅读页 7 键里只有星标依赖「镂空」表达状态，改别的图标前先在设备上看一眼。
 
 ---
 

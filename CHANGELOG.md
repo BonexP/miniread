@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- 新增 `material-icons-extended` 依赖（版本由 Compose BOM 托管，不写 version），供阅读页使用 `Icons.Outlined.StarBorder`。
+
+### Fixed
+- E-Ink 阅读页星标按钮在「已收藏 / 未收藏」两种状态下都显示实心星（issue #17）：`Icons.Outlined.Star` 来自 `material-icons-core`，该库的 outlined 与 filled 的 path **逐行相同**（单个闭合轮廓、无内孔），「空心」根本画不出来，包里也没有 `StarBorder`。现引入 `material-icons-extended`，未收藏改用 `Icons.Outlined.StarBorder`，已收藏仍用 `Icons.Filled.Star`。
+- E-Ink 提示条外面套着一圈 2dp 黑框（issue #15）：`MinireadSnackbarHost` 把 `Modifier.border(2.dp, Color.Black)` 传给了 M3 的 `Snackbar(snackbarData, modifier)`，该重载内部先 `modifier.padding(12.dp)` 再交给 `Surface`，于是边框画在整条容器**之外**，观感是一圈悬浮黑框。现直接去掉边框，E-Ink 提示条保持白底 / 黑字 / 直角；standard 分支逐字未改。
+- 高级设置页在 E-Ink 上仍是标准圆角 / 灰调 / 带阴影组件（issue #16）：顶栏改 40dp + `titleMedium`、返回与帮助图标统一 20dp；5 个次要按钮改「直角 + 2dp 黑框」、主按钮黑底白字零投影；3 个 `OutlinedTextField` 的边框、光标、容器色统一黑白（error 语义色保留 M3 默认）；`Switch` 改「选中白钮黑轨 / 未选中黑钮白轨 + 黑边」；确认弹窗改 8dp 圆角、纯白容器、`tonalElevation = 0` 并补 2dp 黑框。页面结构、间距、文案、`rememberSaveable` 与诊断逻辑均未改动。
+
 ## [1.2.0] - 2026-10-21
 
 ### Added
