@@ -6,8 +6,11 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,12 +18,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -28,8 +34,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,10 +52,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.i.miniread.BuildConfig
 import com.i.miniread.R
 import com.i.miniread.Screen
 import com.i.miniread.util.FieldReport
@@ -74,6 +84,36 @@ import kotlinx.coroutines.launch
 fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewModel) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    // ===== E-Ink 视觉统一（issue #16）：只换样式，不改结构 / 间距 / 文案 =====
+    // 参照既有 E-Ink 语言：帮助页示例块 1dp 黑框 + 8dp 圆角、白名单弹窗 1dp 黑框；
+    // 本页按钮与输入框统一「直角 + 2dp 黑框」，与阅读页 48dp 底栏（纯黑图标、无灰底）同一套。
+    // ⚠️ OutlinedTextFieldDefaults.colors(...) 的未传项保持 token 默认（实现是 .copy(...)），
+    //    所以 supportingText 仍是 onSurfaceVariant 灰，与本页 StatusBlock 同阶，不要改成纯黑。
+    val eink = BuildConfig.IS_EINK
+    val fieldColors = if (eink) {
+        OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Black,
+            unfocusedBorderColor = Color.Black,
+            cursorColor = Color.Black,
+            focusedContainerColor = Color.White,
+            unfocusedContainerColor = Color.White
+        )
+    } else {
+        OutlinedTextFieldDefaults.colors()
+    }
+    val switchColors = if (eink) {
+        SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = Color.Black,
+            checkedBorderColor = Color.Black,
+            uncheckedThumbColor = Color.Black,
+            uncheckedTrackColor = Color.White,
+            uncheckedBorderColor = Color.Black
+        )
+    } else {
+        SwitchDefaults.colors()
+    }
 
     // 顶部状态展示走 StateFlow，只反映**已保存**的配置
     val baseUrl by InterceptionRuntime.baseUrl.collectAsState()
@@ -150,12 +190,24 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.settings_hidden_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.settings_hidden_title),
+                        // E-Ink 与 MainActivity 顶栏对齐：titleMedium + 40dp
+                        style = if (eink) {
+                            MaterialTheme.typography.titleMedium
+                        } else {
+                            MaterialTheme.typography.titleLarge
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = null
+                            contentDescription = null,
+                            // 40dp 顶栏里 24dp 图标只剩 8dp 余量，E-Ink 收到 20dp（与帮助图标一致）
+                            modifier = if (eink) Modifier.size(20.dp) else Modifier
                         )
                     }
                 },
@@ -167,7 +219,8 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                             modifier = Modifier.size(20.dp)
                         )
                     }
-                }
+                },
+                modifier = if (eink) Modifier.height(40.dp) else Modifier
             )
         }
     ) { innerPadding ->
@@ -203,7 +256,11 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
-                Switch(checked = enabled, onCheckedChange = { enabled = it })
+                Switch(
+                    checked = enabled,
+                    onCheckedChange = { enabled = it },
+                    colors = switchColors
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -222,6 +279,7 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                     FieldSupportingText(diag.domains, R.string.settings_hidden_domains_hint)
                 },
                 isError = diag.domains.hasError,
+                colors = fieldColors,
                 minLines = 2
             )
 
@@ -241,10 +299,11 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                     FieldSupportingText(diag.feedIds, R.string.settings_hidden_feed_ids_manual)
                 },
                 isError = diag.feedIds.hasError,
+                colors = fieldColors,
                 minLines = 2
             )
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
+            SettingsOutlinedButton(
                 onClick = { showPicker = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -267,6 +326,7 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                     FieldSupportingText(diag.rules, R.string.settings_hidden_referer_rules_hint)
                 },
                 isError = diag.rules.hasError,
+                colors = fieldColors,
                 minLines = 3
             )
 
@@ -302,14 +362,36 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
                         navController.popBackStack()
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = if (eink) RoundedCornerShape(0.dp) else ButtonDefaults.shape,
+                colors = if (eink) {
+                    // 主操作反色：黑底白字，与 5 个次要按钮（白底黑框）拉开层级
+                    ButtonDefaults.buttonColors(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    )
+                } else {
+                    ButtonDefaults.buttonColors()
+                },
+                // E-Ink 去掉按钮投影：墨水屏上阴影只会变成一圈灰晕
+                elevation = if (eink) {
+                    ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                        focusedElevation = 0.dp,
+                        hoveredElevation = 0.dp,
+                        disabledElevation = 0.dp
+                    )
+                } else {
+                    ButtonDefaults.buttonElevation()
+                }
             ) {
                 Text(stringResource(R.string.settings_hidden_save))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
+            SettingsOutlinedButton(
                 onClick = {
                     scope.launch {
                         try {
@@ -333,7 +415,7 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
+            SettingsOutlinedButton(
                 onClick = {
                     val text = InterceptionClipboardFormat.buildExportText(
                         enabled = enabled,
@@ -353,7 +435,7 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
+            SettingsOutlinedButton(
                 onClick = {
                     val clipboard =
                         context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -382,7 +464,7 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
+            SettingsOutlinedButton(
                 onClick = {
                     val hasInput = enabled ||
                         domainsText.isNotBlank() ||
@@ -426,8 +508,15 @@ fun HiddenSettingsScreen(navController: NavController, viewModel: MinifluxViewMo
     }
 
     if (showFillConfirm) {
+        // E-Ink：8dp 圆角 + 纯白 + 0 tonal。AlertDialog 没有 border 参数，黑框只能走 modifier；
+        // ⚠️ dialogShape 必须与 shape = 共用同一个 val，否则四角会露出「方框 + 圆角」的错位。
+        val dialogShape = RoundedCornerShape(8.dp)
         AlertDialog(
             onDismissRequest = { showFillConfirm = false },
+            modifier = if (eink) Modifier.border(2.dp, Color.Black, dialogShape) else Modifier,
+            shape = if (eink) dialogShape else AlertDialogDefaults.shape,
+            containerColor = if (eink) Color.White else AlertDialogDefaults.containerColor,
+            tonalElevation = if (eink) 0.dp else AlertDialogDefaults.TonalElevation,
             title = { Text(stringResource(R.string.settings_hidden_fill_example_confirm_title)) },
             text = { Text(stringResource(R.string.settings_hidden_fill_example_confirm_message)) },
             confirmButton = {
@@ -557,4 +646,34 @@ private fun FieldSupportingText(report: FieldReport, @StringRes hintRes: Int) {
 
         else -> Text(stringResource(hintRes))
     }
+}
+
+/**
+ * 高级设置页的次要按钮：E-Ink 下换成「直角 + 2dp 黑框 + 纯黑文字」，standard 保持 M3 默认。
+ * 抽成包装器只为不让 5 个调用点各写 4 个条件参数。
+ * ⚠️ 必须把 content 透传下去（`content = content`）：漏了会编译通过但按钮全空白。
+ */
+@Composable
+private fun SettingsOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    val eink = BuildConfig.IS_EINK
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = if (eink) RoundedCornerShape(0.dp) else ButtonDefaults.outlinedShape,
+        colors = if (eink) {
+            ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+        } else {
+            ButtonDefaults.outlinedButtonColors()
+        },
+        border = if (eink) {
+            BorderStroke(2.dp, Color.Black)
+        } else {
+            ButtonDefaults.outlinedButtonBorder
+        },
+        content = content
+    )
 }
