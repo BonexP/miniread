@@ -65,7 +65,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 ### 版本号唯一来源
 
-- **唯一来源**：`app/build.gradle.kts` 顶部的 `appVersionName` / `appVersionCode`（当前 **1.2.0 / 120**，约 L6-7）。
+- **唯一来源**：`app/build.gradle.kts` 顶部的 `appVersionName` / `appVersionCode`（当前 **1.2.1 / 121**，约 L6-7）。
 - 不要在别处硬编码版本；`versionName` / `versionCode` 直接引用这两个 extra 值。
 
 ---

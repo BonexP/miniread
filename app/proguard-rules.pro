@@ -21,9 +21,10 @@
 #-renamesourcefileattribute SourceFile
 
 # Jetpack Compose
--keep class androidx.compose.** { *; }
--keep interface androidx.compose.** { *; }
--keepclassmembers class androidx.compose.** { *; }
+# ⚠️ 不要在这里再加 `-keep class androidx.compose.** { *; }`。那样会把
+#    androidx.compose.material.icons 整体保留 —— 启用 material-icons-extended 后
+#    release dex 里曾塞进 9905 个图标类（只用到 2 个），APK +3.32MB（issue #17 的代价）。
+#    Compose 各 AAR 自带 consumer rules，下面按包的细分 keep 足够；图标类按引用保留即可。
 
 # Compose UI
 -keep class androidx.compose.ui.** { *; }

@@ -5,10 +5,13 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.1] - 2026-10-24
 
 ### Added
 - 新增 `material-icons-extended` 依赖（版本由 Compose BOM 托管，不写 version），供阅读页使用 `Icons.Outlined.StarBorder`。
+
+### Changed
+- `app/proguard-rules.pro` 移除 `-keep class androidx.compose.** { *; }` / `-keep interface androidx.compose.** { *; }` / `-keepclassmembers class androidx.compose.** { *; }` 三条**全量保留**规则（其下 ui / foundation / runtime / material3 的四组细分 keep 原样保留）。原因：全量 keep 会把 `material-icons-extended` 整包留在 release dex 里——实测 9905 个图标类、实际只用 2 个，APK 从 16.6MB 涨到 19.9MB；收窄后回落。
 
 ### Fixed
 - E-Ink 阅读页星标按钮在「已收藏 / 未收藏」两种状态下都显示实心星（issue #17）：`Icons.Outlined.Star` 来自 `material-icons-core`，该库的 outlined 与 filled 的 path **逐行相同**（单个闭合轮廓、无内孔），「空心」根本画不出来，包里也没有 `StarBorder`。现引入 `material-icons-extended`，未收藏改用 `Icons.Outlined.StarBorder`，已收藏仍用 `Icons.Filled.Star`。
