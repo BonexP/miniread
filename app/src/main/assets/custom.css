@@ -171,3 +171,14 @@ button {
 button:hover {
     background-color: var(--highlight-light);
 }
+
+/* 浅色平板的引用配色（原在 tablet_styles.css，issue #18 起收归主题表）。
+   ⚠️ 必须放在基础 blockquote 之后：基础规则用 border-left 简写，
+      本块只改 border-left-color，顺序反了会被简写重置回 #ccc。
+   ⚠️ 高度守卫必须保留，用于排除手机横屏（与 tablet_styles.css 的条件一致）。 */
+@media (min-width: 600px) and (min-height: 480px) {
+    blockquote {
+        color: #555;
+        border-left-color: #1a73e8;
+    }
+}

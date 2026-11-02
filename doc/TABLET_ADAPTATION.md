@@ -106,7 +106,7 @@ implementation("androidx.compose.material3:material3-window-size-class:1.2.1")
 - **响应式断点**（均带高度守卫，排除手机横屏）:
   - `@media (min-width: 600px) and (min-height: 480px)` - 平板
   - `@media (min-width: 840px) and (min-height: 480px)` - 超大屏幕
-  - 深色模式适配（`prefers-color-scheme: dark` 下同步这对断点）
+  - 深色适配**不依赖** `prefers-color-scheme`：`customdark.css` 由 Android 侧按 `ReaderThemeResolver` 整份替换，深色值直接写在基础规则里（issue #18）；本文件的断点只负责布局与浅色样式
 - **字号单位**: 块内 `rem` 已全部改为 `px`（如 h1 40px / h2 32px / h3 24px / 段距 24px），不再依赖 `template.html` 的 rem 基数，避免受基础字号变化影响。
 
 ## 🎯 核心特性

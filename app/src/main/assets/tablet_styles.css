@@ -70,11 +70,13 @@
         padding: 0;
     }
 
+    /* 只保留布局：颜色由主题表提供（浅色见 custom.css 末尾的平板断点块，
+       深色见 customdark.css 的基础 blockquote）。
+       ⚠️ 不要在此声明 color / border-color：本文件后于主题表注入，同特异性会压掉主题取值，
+       深色下就得再靠 body 前缀反压——正是 issue #18 的成因。 */
     blockquote {
-        border-left: 4px solid #1a73e8;
         padding-left: 24px;
         margin: 24px 0;
-        color: #555;
         font-style: italic;
     }
 

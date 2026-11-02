@@ -1,4 +1,10 @@
 /*正在使用暗黑模式*/
+/* ⚠️ 本文件只服务深色：由 ArticleDetailScreen.themeCssFor() 按 ReaderThemeResolver.isDarkMode()
+   整份替换 custom.css 后注入。**禁止**在此写任何响应 WebView 深色偏好的媒体查询块：
+   那是第二个明暗开关，判据是 WebView 自己的颜色偏好，与 Kotlin 读的 Configuration.uiMode
+   不同源；Manifest 的 configChanges 含 uiMode，切换深浅色不重建 Activity，WebView 可能沿用
+   陈旧取值 → 媒体查询不命中，基础规则里的浅色值就会露出来（issue #18）。
+   深色值一律直接写在基础规则里。 */
 /* 基础样式重置 */
 * {
     margin: 0;
@@ -7,13 +13,8 @@
 
 }
 
-/* 定义变量 */
+/* 定义变量：本文件只服务深色，只保留深色取值 */
 :root {
-    --fg-light: #0e0e0e;
-    --bg-light: #00000000;
-    --link-light: #1a73e8;
-    --highlight-light: #ffeb3b;
-
     --fg-dark: #d1d1d1;
     --bg-dark: #00000000;
     --link-dark: #8ab4f8;
@@ -23,7 +24,7 @@
     --font-serif: 'Georgia', 'Times New Roman', serif;
 }
 
-/* 明亮模式下的全局样式 */
+/* 深色全局样式 */
 body {
     font-family: var(--font-sans);
     font-size: 2rem;
@@ -76,27 +77,14 @@ h3 {
 
 /* 链接样式 */
 a {
-    color: var(--link-light);
+    color: var(--link-dark);
     text-decoration: none;
-    border-bottom: 1px solid var(--link-light);
+    border-bottom: 1px solid var(--link-dark);
 }
 
 a:hover {
-    color: var(--highlight-light);
-    border-bottom: 1px solid var(--highlight-light);
-}
-
-/* 夜间模式下的链接样式 */
-@media (prefers-color-scheme: dark) {
-    a {
-        color: var(--link-dark);
-        border-bottom: 1px solid var(--link-dark);
-    }
-
-    a:hover {
-        color: var(--highlight-dark);
-        border-bottom: 1px solid var(--highlight-dark);
-    }
+    color: var(--highlight-dark);
+    border-bottom: 1px solid var(--highlight-dark);
 }
 
 /* 图片样式 */
@@ -117,26 +105,23 @@ li {
     margin-bottom: 0.5rem;
 }
 
-/* 引用样式 */
+/* 引用样式
+   ⚠️ 显式声明 color，不依赖 body 继承：tablet_styles.css 已不再提供引用文字颜色，
+      写死可避免将来有人改 body 时牵动引用块。
+   #d1d1d1 on #2d2d2d = 9.02:1（AAA）；竖线 #8ab4f8 = 6.53:1。 */
 blockquote {
     margin: 1.5rem 0;
     padding: 0.75rem 1.5rem;
-    background-color: #f0f0f0;
-    border-left: 4px solid #ccc;
+    background-color: #2d2d2d;
+    border-left: 4px solid #8ab4f8;
+    color: #d1d1d1;
     font-style: italic;
-}
-
-@media (prefers-color-scheme: dark) {
-    blockquote {
-        background-color: #333;
-        border-left: 4px solid #555;
-    }
 }
 
 /* 代码块样式 */
 pre, code {
     font-family: 'Courier New', Courier, monospace;
-    background-color: #f5f5f5;
+    background-color: #2d2d2d;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     overflow-x: auto;
@@ -146,12 +131,6 @@ pre {
     margin-bottom: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-    pre, code {
-        background-color: #2d2d2d;
-    }
-}
-
 /* 表格样式 */
 table {
     width: 100%;
@@ -159,52 +138,32 @@ table {
     margin-bottom: 1.5rem;
 }
 
+/* 深色下格线统一 #555（与 td 的既有深色取值一致）；此前媒体查询只覆盖 td，
+   th 的 #ddd 会留在深色正文里，属同一处「第二开关」缺陷。 */
 th, td {
     padding: 0.75rem;
-    border: 1px solid #ddd;
+    border: 1px solid #555;
 }
 
 th {
-    background-color: #f0f0f0;
+    background-color: #2d2d2d;
     text-align: left;
 }
 
-@media (prefers-color-scheme: dark) {
-    th {
-        background-color: #333;
-    }
-
-    td {
-        border-color: #555;
-    }
-}
-
-/* 表单样式 */
+/* 表单样式（深色） */
 input, select, textarea {
     width: 100%;
     padding: 0.5rem;
     margin-bottom: 1rem;
-    border: 1px solid #ccc;
+    border: 1px solid #555;
     border-radius: 4px;
-    background-color: #fff;
-    color: #333;
+    background-color: #333;
+    color: #ccc;
 }
 
 input:focus, select:focus, textarea:focus {
-    border-color: var(--link-light);
+    border-color: var(--link-dark);
     outline: none;
-}
-
-@media (prefers-color-scheme: dark) {
-    input, select, textarea {
-        background-color: #333;
-        color: #ccc;
-        border-color: #555;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        border-color: var(--link-dark);
-    }
 }
 
 /* 按钮样式 */
@@ -212,30 +171,22 @@ button {
     padding: 0.75rem 1.5rem;
     border: none;
     border-radius: 4px;
-    background-color: var(--link-light);
+    background-color: var(--link-dark);
     color: #fff;
     font-size: 1rem;
     cursor: pointer;
 }
 
 button:hover {
-    background-color: var(--highlight-light);
-}
-
-@media (prefers-color-scheme: dark) {
-    button {
-        background-color: var(--link-dark);
-    }
-
-    button:hover {
-        background-color: var(--highlight-dark);
-    }
+    background-color: var(--highlight-dark);
 }
 
 /* 深色平板：自 tablet_styles.css 迁入（该文件现在只保留布局与浅色样式）。
    ⚠️ 选择器必须带 body 前缀：主题表在 template.html 的 <head> 中位于平板表之前，
    同优先级规则会被 tablet_styles.css 的浅色基础样式覆盖；body pre 的特异性更高，才能改回来。
-   ⚠️ 高度守卫（min-height: 480px）必须保留，用于排除手机横屏（其 WebView 高度通常仅 200~350px）。 */
+   ⚠️ 高度守卫（min-height: 480px）必须保留，用于排除手机横屏（其 WebView 高度通常仅 200~350px）。
+   ⚠️ 引用块**不在此处**：tablet_styles.css 的 blockquote 已不再声明颜色，基础规则即可覆盖两档。
+   ⚠️ 格线沿用 #444（手机基础规则是 #555）：两者都是既有取值，本轮只收敛媒体查询、不改平板观感。 */
 @media (min-width: 600px) and (min-height: 480px) {
     body pre {
         background-color: #2d2d2d;
@@ -245,11 +196,6 @@ button:hover {
     body code {
         background-color: #2d2d2d;
         color: #d1d1d1;
-    }
-
-    body blockquote {
-        border-left-color: #8ab4f8;
-        color: #aaa;
     }
 
     body th {

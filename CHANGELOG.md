@@ -5,6 +5,14 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- 深色主题下引用块（`blockquote`）底色仍是浅色、文字发灰，对比度最低 **1.34:1**（issue #18）。根因不是漏写一条颜色，而是 `customdark.css` 已经是深色专用表，却还在内部用 `@media (prefers-color-scheme: dark)` 做第二次明暗判断——Kotlin 侧按 `Configuration.uiMode` 整份选表，WebView 的媒体查询判据不同源（且 `configChanges` 含 `uiMode`，切深浅色不重建 Activity），两者不同步时深色表里的浅色基础规则就露出来。
+  - `assets/customdark.css`：6 处夜间媒体查询全部删除，深色值直接写进基础规则（链接 / 引用 / 代码块 / 表格 / 表单 / 按钮）。引用块改为 `#2d2d2d` 底 + `#d1d1d1` 字 + `#8ab4f8` 左边框（9.02:1 / 6.53:1）；表格 `th` 边框随 `td` 一并由 `#ddd` 改为 `#555`；删除随之无引用的 4 个 `--*-light` 变量；平板块删除已无必要的 `body blockquote` 覆盖。
+  - `assets/tablet_styles.css`：`blockquote` 只保留布局（`padding-left` / `margin` / `font-style`），去掉 `color: #555` 与写死的 `border-left` 颜色；浅色平板的 `#555` + `#1a73e8` 迁入 `custom.css` 末尾的平板断点块（高度守卫保留）。浅色与 E-Ink 观感逐像素不变。
+  - 深色下引用块竖线在手机 / 平板两档统一为 `#8ab4f8`，不再随媒体查询命中情况漂移；浅色保留既有设计（手机 `#ccc`、平板 `#1a73e8`）。
+
 ## [1.2.1] - 2026-10-24
 
 ### Added
