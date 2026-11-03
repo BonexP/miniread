@@ -3,7 +3,7 @@
 ![Build Debug](https://github.com/BonexP/miniread/workflows/Build%20Debug%20APKs/badge.svg)
 ![Release](https://github.com/BonexP/miniread/workflows/Build%20&%20Release%20Android%20APK/badge.svg)
 
-**当前版本：v1.1.0**
+**当前版本：v1.2.2**
 
 ### 项目简介
 

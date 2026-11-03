@@ -5,7 +5,7 @@ All notable changes to MiniRead will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.2] - 2026-11-03
 
 ### Fixed
 - 深色主题下引用块（`blockquote`）底色仍是浅色、文字发灰，对比度最低 **1.34:1**（issue #18）。根因不是漏写一条颜色，而是 `customdark.css` 已经是深色专用表，却还在内部用 `@media (prefers-color-scheme: dark)` 做第二次明暗判断——Kotlin 侧按 `Configuration.uiMode` 整份选表，WebView 的媒体查询判据不同源（且 `configChanges` 含 `uiMode`，切深浅色不重建 Activity），两者不同步时深色表里的浅色基础规则就露出来。
@@ -178,6 +178,8 @@ MiniRead 首个正式稳定版本。本次发布将版本语义修正为 SemVer 
 
 ---
 
+[1.2.2]: https://github.com/BonexP/miniread/releases/tag/v1.2.2
+[1.2.1]: https://github.com/BonexP/miniread/releases/tag/v1.2.1
 [1.2.0]: https://github.com/BonexP/miniread/releases/tag/v1.2.0
 [1.1.0]: https://github.com/BonexP/miniread/releases/tag/v1.1.0
 [1.0.3]: https://github.com/BonexP/miniread/releases/tag/v1.0.3
