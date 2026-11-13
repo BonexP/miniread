@@ -164,4 +164,29 @@
     <string name="settings_help_section_mistakes_body">用中文逗号而不是英文逗号。\n域名里带上了 https://。\n把 =&gt; 打成 -&gt;。\n填订阅源标题而不是 #编号。\n把整条订阅源网址当成域名。\n宽泛的规则排在前面，导致后面的规则永远不生效。</string>
     <string name="settings_help_section_privacy_title">影响范围与隐私</string>
     <string name="settings_help_section_privacy_body">只有命中的请求才由 App 代取，未命中的仍走系统 WebView。配置只保存在本机，不会上传。「恢复默认」会一次性清空四个字段。</string>
+
+    <!-- 阅读页排版（issue #19） -->
+    <string name="reader_typography_open">阅读排版设置</string>
+    <string name="reader_typography_title">阅读排版</string>
+    <string name="reader_typography_close">关闭排版设置</string>
+    <string name="reader_typography_reset">恢复默认</string>
+    <string name="reader_typography_font_size">字号</string>
+    <string name="reader_typography_line_height">行距</string>
+    <string name="reader_typography_width">行宽</string>
+    <string name="reader_typography_paragraph_spacing">段落间距</string>
+    <string name="reader_typography_font_family">正文字体</string>
+    <string name="reader_typography_align">对齐方式</string>
+    <string name="reader_typography_follow_default">跟随默认</string>
+    <string name="reader_typography_font_size_small">小</string>
+    <string name="reader_typography_font_size_normal">默认</string>
+    <string name="reader_typography_font_size_large">大</string>
+    <string name="reader_typography_font_size_xlarge">特大</string>
+    <string name="reader_typography_width_default">默认</string>
+    <string name="reader_typography_width_narrow">窄</string>
+    <string name="reader_typography_width_medium">中</string>
+    <string name="reader_typography_width_wide">宽</string>
+    <string name="reader_typography_font_sans">无衬线</string>
+    <string name="reader_typography_font_serif">衬线</string>
+    <string name="reader_typography_align_left">左对齐</string>
+    <string name="reader_typography_align_justify">两端对齐</string>
 </resources>

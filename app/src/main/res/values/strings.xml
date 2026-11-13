@@ -164,4 +164,29 @@
     <string name="settings_help_section_mistakes_body">Using a Chinese comma instead of an English comma.\nPutting https:// inside a domain.\nTyping -&gt; instead of =&gt;.\nFilling in feed titles instead of #ids.\nPasting a whole feed URL as a domain.\nListing a broad rule before a specific one, which makes the specific rule never apply.</string>
     <string name="settings_help_section_privacy_title">Scope and privacy</string>
     <string name="settings_help_section_privacy_body">Only matching requests are re-fetched by the app. The configuration stays on this device and is never uploaded. Restore to default clears all four fields at once.</string>
+
+    <!-- Reader typography (issue #19) -->
+    <string name="reader_typography_open">Reading display settings</string>
+    <string name="reader_typography_title">Reading display</string>
+    <string name="reader_typography_close">Close display settings</string>
+    <string name="reader_typography_reset">Reset to default</string>
+    <string name="reader_typography_font_size">Font size</string>
+    <string name="reader_typography_line_height">Line spacing</string>
+    <string name="reader_typography_width">Line width</string>
+    <string name="reader_typography_paragraph_spacing">Paragraph spacing</string>
+    <string name="reader_typography_font_family">Body font</string>
+    <string name="reader_typography_align">Alignment</string>
+    <string name="reader_typography_follow_default">Default</string>
+    <string name="reader_typography_font_size_small">Small</string>
+    <string name="reader_typography_font_size_normal">Normal</string>
+    <string name="reader_typography_font_size_large">Large</string>
+    <string name="reader_typography_font_size_xlarge">Extra large</string>
+    <string name="reader_typography_width_default">Default</string>
+    <string name="reader_typography_width_narrow">Narrow</string>
+    <string name="reader_typography_width_medium">Medium</string>
+    <string name="reader_typography_width_wide">Wide</string>
+    <string name="reader_typography_font_sans">Sans-serif</string>
+    <string name="reader_typography_font_serif">Serif</string>
+    <string name="reader_typography_align_left">Left</string>
+    <string name="reader_typography_align_justify">Justified</string>
 </resources>

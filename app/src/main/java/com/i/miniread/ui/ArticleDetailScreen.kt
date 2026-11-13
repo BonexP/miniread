@@ -12,13 +12,18 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -33,12 +38,15 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -54,6 +62,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +73,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
@@ -100,6 +111,15 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val markedReadMsg = stringResource(R.string.article_snackbar_marked_read)
+
+    // ===== 阅读排版面板（issue #19）=====
+    // 面板显隐用 rememberSaveable：旋转 / 分屏（configChanges 不重建 Activity，但组合仍可能被回收）
+    // 后仍保持展开状态。面板本体是内联叠层，不占底栏、不给 E-Ink 底栏加第 8 个按钮。
+    var showTypographyPanel by rememberSaveable { mutableStateOf(false) }
+    val typography by DataStoreManager.getReaderTypographyFlow()
+        .collectAsState(initial = ReaderTypography.DEFAULT)
+    val openTypographyDesc = stringResource(R.string.reader_typography_open)
+    val isEink = com.i.miniread.BuildConfig.IS_EINK
 
     LaunchedEffect(entryId, selectedEntry?.id) {
         if (selectedEntry?.id != entryId) {
@@ -164,6 +184,55 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                         // 阅读进度：旋转 / resize / WebView 重建后恢复（见 AGENTS.md §8 已知坑 13）
                         onRequestSavedPosition = { viewModel.getReadingPosition(entryId) },
                         onPositionChanged = { viewModel.saveReadingPosition(entryId, it) }
+                    )
+                }
+            }
+
+            // ===== Aa 入口 + 排版面板（叠在内容区上层，不占底栏）=====
+            // 无动画：直接 if/else 组合，E-Ink 上任何渐变都是可见闪烁（§8 坑 17）。
+            // 面板在按钮下方对齐右上，避免遮住正文首段。
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .fillMaxWidth(0.92f)
+            ) {
+                OutlinedButton(
+                    onClick = { showTypographyPanel = !showTypographyPanel },
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .size(48.dp)
+                        .semantics { contentDescription = openTypographyDesc },
+                    shape = if (isEink) RoundedCornerShape(0.dp) else RoundedCornerShape(12.dp),
+                    border = if (isEink) BorderStroke(2.dp, Color.Black) else
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                    contentPadding = PaddingValues(0.dp),
+                    colors = if (isEink) ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Black
+                    ) else ButtonDefaults.outlinedButtonColors()
+                ) {
+                    Text(
+                        text = "Aa",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    )
+                    // contentDescription 通过 semantics 提供（文案外置，§6）
+                }
+                if (showTypographyPanel) {
+                    Spacer(Modifier.height(4.dp))
+                    ReaderTypographyPanel(
+                        current = typography,
+                        onChange = { updated ->
+                            coroutineScope.launch {
+                                DataStoreManager.saveReaderTypography(updated)
+                            }
+                        },
+                        onReset = {
+                            coroutineScope.launch {
+                                DataStoreManager.saveReaderTypography(ReaderTypography.DEFAULT)
+                            }
+                        },
+                        onClose = { showTypographyPanel = false }
                     )
                 }
             }
