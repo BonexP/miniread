@@ -166,6 +166,7 @@
     <string name="settings_help_section_privacy_body">只有命中的请求才由 App 代取，未命中的仍走系统 WebView。配置只保存在本机，不会上传。「恢复默认」会一次性清空四个字段。</string>
 
     <!-- 阅读页排版（issue #19） -->
+    <string name="reader_typography_aa">Aa</string>
     <string name="reader_typography_open">阅读排版设置</string>
     <string name="reader_typography_title">阅读排版</string>
     <string name="reader_typography_close">关闭排版设置</string>

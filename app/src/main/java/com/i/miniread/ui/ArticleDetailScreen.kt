@@ -119,6 +119,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
     val typography by DataStoreManager.getReaderTypographyFlow()
         .collectAsState(initial = ReaderTypography.DEFAULT)
     val openTypographyDesc = stringResource(R.string.reader_typography_open)
+    val typographyAaLabel = stringResource(R.string.reader_typography_aa)
     val isEink = com.i.miniread.BuildConfig.IS_EINK
 
     LaunchedEffect(entryId, selectedEntry?.id) {
@@ -212,7 +213,7 @@ fun ArticleDetailScreen(viewModel: MinifluxViewModel, entryId: Int, navControlle
                     ) else ButtonDefaults.outlinedButtonColors()
                 ) {
                     Text(
-                        text = "Aa",
+                        text = typographyAaLabel,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                     )
