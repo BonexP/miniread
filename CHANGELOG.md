@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **AI 开发规范复核与瘦身**（仅文档，无生产代码改动）：`AGENTS.md` 由 425 行精简至 210 行，§0–§10 编号不变；§8 已知坑完整论证外移到新增的 `doc/KNOWN_PITFALLS.md`、§10 命令/回退/实测外移到 `doc/VC_WORKFLOW.md`（两者均声明「冲突以 AGENTS.md 为准」）。新增 §0.2「硬约束速查」把 14 条硬数值前移，抵御工具自动注入截断；全仓易漂移的「约 Lx」行号改为符号名定位；§0.1 `android-native-dev` 技能冲突表按 2026-11-13 复核更新行号（`:111/:124`、`:742`、`:68`）。
 - **文档编排重排四层**（不删、不移动任何文件）：`doc/README.md` 删除无效链接 `BUILD_CONFIGURATION_SUMMARY.md`，重写为 L1 权威 / L2 参考 / L3 历史存档 / 外部资料四层导航；`AGENTS.md` 文档地图同步分层。16 份文档补状态横幅；`doc/CHECKLIST.md` 的 flavor 级 `versionNameSuffix` 打勾改为「已取消」（现行规则见 §6）；`TECHNICAL_SUMMARY.md` / `BUILD_FLAVORS_GUIDE.md` / `BUILD_GUIDE.md` / `QUICK_BUILD_REFERENCE.md` 的 `1.1.0` 与 `v1.1.0` 示例更新为 1.2.2 或 `vX.Y.Z` 占位；`README.md` 去掉硬编码实例地址/Referer、修正「TodayEntryList 继承 EntryListScreen」等事实错误；`doc/archive/README.md` 补 13 份归档清单并修复 `FLAVOR_IMPLEMENTATION.md` 归档后失效链接。`API Reference.md` 标注为上游快照。
-- 校验：全部 md 相对链接零断链；双 flavor 单测各 208/208、`assembleStandardDebug` 通过（基线）。
+- 校验：全部 md 相对链接零断链；文档重排时的单测基线为 208（当前 232，见 §Added）。
+- **阅读排版入口上提到全局顶栏、面板不再遮挡正文**：`Aa` 按钮从阅读页内容区的浮层移到 `MainActivity` 顶栏 `actions`（与刷新同一栏，仅阅读页显示）；显隐状态提升到 `MainContent` 并 `rememberSaveable`。面板改为顶栏下方**占空间的独立横条**（正文 `Box` 用 `weight(1f)` 被往下推），彻底不遮挡正文。`ArticleWebView` 组合位置保持恒定，展开/收起不重载页面、不丢阅读位置。
+- **排版面板支持宽屏两列、高度自适应**：`BoxWithConstraints` 按可用宽度在 `maxWidth >= 600.dp` 时排成两列（修长手机横屏 / 平板），窄屏保持单列；高度上限改为 `(maxHeight * 0.65f).coerceIn(160.dp, 360.dp)` 并保留滚动。修复修长手机横屏时面板溢出可视区、观感错乱的问题（此前硬编码 `heightIn(max = 360.dp)`）。六个可调项只在 `sections` 列表定义一次，两种排布共用。
 
 ### Added
-- **阅读页可调排版**（issue #19）：阅读页内容区右上新增「Aa」入口 + 内联调节面板，支持**字号（四档 85%–150%）/ 行距（1.4–2.0）/ 行宽（默认 / 窄 / 中 / 宽）/ 段落间距（0.8–2.0em）/ 字体族（无衬线 / 衬线）/ 对齐（左 / 两端）**六项；全局生效、持久化（6 个独立 `typo_*` DataStore key）、调节即时生效且不打断当前阅读位置。
+- **阅读页可调排版**（issue #19）：顶栏「Aa」入口 + 调节面板，支持**字号（四档 85%–150%）/ 行距（1.4–2.0）/ 行宽（默认 / 窄 / 中 / 宽）/ 段落间距（0.8–2.0em）/ 字体族（无衬线 / 衬线）/ 对齐（左 / 两端）**六项；全局生效、持久化（6 个独立 `typo_*` DataStore key）、调节即时生效且不打断当前阅读位置。
   - 新增 `util/ReaderTypography.kt`（纯逻辑：档位换算 / clamp / CSS 片段生成 / 宽容解析 Codec）与纯 JVM 单测 `ReaderTypographyTest`（24 例，总用例 208 → 232）；新增 `ui/ReaderTypographyPanel.kt`（无动画、编辑态 `rememberSaveable`、E-Ink 黑白直角样式，文案 `reader_typography_*` 中英双份）。
   - `app/src/main/assets/template.html`：新增 `<style id="miniread-typo-css">`，位于主题表 / 平板表之后（后注入者胜出）；`ui/ArticleDetailScreen.kt`：新增 `applyTypoCss()` 就地替换样式、独立排版 Effect 做阅读位置重锚、`DataStoreManager` 新增 6 个 key 与读写函数（既有公开签名不变，`clearAll()` 自动清理）。
 - `AGENTS.md` §8 新增坑 20（排版红线）、§0.2 速查表加排版行；`doc/KNOWN_PITFALLS.md` 同步 §20 完整论证。

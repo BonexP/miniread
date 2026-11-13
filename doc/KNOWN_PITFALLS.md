@@ -146,7 +146,17 @@ M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSur
 
 ### 入口与 E-Ink
 
-底栏 standard 6 键 / E-Ink 7 键、E-Ink 48dp 是硬约束（坑 8 / issue #11），**不能加第 8 个图标按钮**。因此用内容区右上的 `Aa` 浮动按钮 + 内联面板（叠层，不占底栏）。面板无动画（直接 `if` 组合，E-Ink 上任何渐变都是可见闪烁）、编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+底栏 standard 6 键 / E-Ink 7 键、E-Ink 48dp 是硬约束（坑 8 / issue #11），**不能加第 8 个图标按钮**。因此入口放在**全局顶栏的 `actions`** 里（`MainActivity` 的 `CenterAlignedTopAppBar`，与刷新同一栏），**仅阅读页显示**（`isArticleDetail` 判定）；显隐状态 `showTypographyPanel` 提升到 `MainContent` 并用 `rememberSaveable`，经参数传给 `ArticleDetailScreen`。
+
+面板是顶栏下方**占空间的独立横条**（`Column` 的第一个孩子，正文 `Box` 用 `weight(1f)` 被往下推），**不是 Box 叠层**——早先的实现用 `Alignment.TopEnd` + `fillMaxWidth(0.92f)` 叠在 WebView 上层，展开必然盖住正文。⚠️ 只增删面板这个兄弟节点，`ArticleWebView` 的组合位置必须恒定：把正文包进 `if/else` 会重建 WebView、重载页面、丢阅读位置（坑 12/13）。面板无动画、编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+
+### 面板的宽屏两列与高度约束
+
+面板内用 `BoxWithConstraints` 取自身可用宽高：`maxWidth >= 600.dp`（修长手机横屏 / 平板）时六个可调项排成**两列网格**，窄屏单列。六个 section 只在 `sections` 列表里定义一次、两种排布共用，避免两套控件逻辑漂移。
+
+高度上限取 `(maxHeight * 0.65f).coerceIn(160.dp, 360.dp)`，内层保留 `verticalScroll`。早先硬编码 `heightIn(max = 360.dp)`：竖屏够用，但修长手机横屏时可用高度常只剩 200dp 上下，面板按内容撑到 360dp 后超出可视区被裁剪，观感「样式奇怪」。现在任何屏幕比例下都不溢出、内容始终可滚到底。
+
+（`maxHeight` 在无界约束下为 `Infinity`，经 `coerceIn(160.dp, 360.dp)` 会正确夹到 360dp，不会溢出。）
 
 ### 存储与字体资产
 
