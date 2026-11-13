@@ -1,5 +1,7 @@
 # 设备兼容性说明文档
 
+> **L2 参考**（2026-11-13 标注）。E-Ink 设备兼容性记录；`EInkConfig` / `EInkUtils` 的两 flavor 同名同签名属 [AGENTS.md](../AGENTS.md) §7 禁区，改动前先读该节。
+
 ## 文档说明
 
 本文档详细说明 MiniRead E-Ink 版本在不同电子墨水屏设备上的兼容性、限制和已知问题。

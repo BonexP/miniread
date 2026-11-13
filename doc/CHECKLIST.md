@@ -1,5 +1,7 @@
 # Build Flavors 实施检查清单
 
+> **L2 参考**（原写于 2025-10 flavor 合并期，2026-11-13 复核）。清单中的配置示范以当时的代码为准；**现行硬约束以 [AGENTS.md](../AGENTS.md) §6 为准**。⚠️ 特别注意：flavor 级 `versionNameSuffix` 现已**禁止**（见下方「构建配置」），仅 debug buildType 允许 `-debug`。
+
 使用此清单确保 Build Flavors 正确实施和维护。
 
 ## ✅ 初始设置检查
@@ -10,8 +12,8 @@
 - [x] 启用了 `buildConfig = true`
 - [x] 配置了 `BuildConfig` 字段（FLAVOR_TYPE, IS_EINK）
 - [x] 设置了 `applicationIdSuffix`
-- [x] 设置了 `versionNameSuffix`
 - [x] 使用 `resValue` 定义了 app_name
+- [x] ❌ **已取消**：flavor 级 `versionNameSuffix`（违反 AGENTS.md §6「版本号唯一来源」；仅 debug buildType 允许 `-debug`）
 
 ### 源代码结构
 - [x] 创建了 `src/standard/` 目录
@@ -95,10 +97,11 @@
 ## 🚀 发布前检查
 
 ### 版本信息
-- [ ] 更新 `versionCode`
-- [ ] 更新 `versionName`
-- [ ] 更新 CHANGELOG（如有）
-- [ ] 检查版本号在两个 flavor 中一致
+- [ ] 更新 `app/build.gradle.kts` 顶部的 `appVersionCode`（**唯一来源**）
+- [ ] 更新同文件的 `appVersionName`（**唯一来源**）
+- [ ] 更新 CHANGELOG / RELEASE_NOTES / README 的版本行（如有）
+- [ ] 确认**没有**给 flavor 或 release buildType 加 `versionNameSuffix`（AGENTS.md §6）
+- [ ] 打 `v*` tag 与推送前先取得用户明确授权（AGENTS.md §9）
 
 ### 签名配置
 - [ ] 配置了 release 签名

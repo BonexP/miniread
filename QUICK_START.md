@@ -1,5 +1,7 @@
 # 🚀 快速开始指南
 
+> **L2 参考**（入门速览，2026-11-13 标注）。命令以 L1 的 [doc/QUICK_BUILD_REFERENCE.md](doc/QUICK_BUILD_REFERENCE.md) 为准；全部硬约束见 [AGENTS.md](AGENTS.md)（唯一权威）。
+
 **仅需 5 分钟，立即开始使用 Build Flavors！**
 
 ## 📱 你现在有什么？

@@ -1,5 +1,7 @@
 # Build Flavors 合并工作完成总结
 
+> **L3 历史存档**（写于 2025-10 flavor 合并期，2026-11-13 标注）。本文是当时的完成总结，**不保证与当前代码一致**；含已过期的 flavor 级 `versionNameSuffix` 示范（如 L192/L201）与旧版本号，**勿照抄**。现行规则见 [AGENTS.md](../../AGENTS.md) §6。本目录全部文档的性质见 [archive/README.md](./README.md)。
+
 ## 📋 项目概述
 
 **项目名称**: MiniRead  

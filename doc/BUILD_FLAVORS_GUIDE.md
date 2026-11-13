@@ -236,10 +236,10 @@ app/build/outputs/apk/eink/release/app-eink-release.apk
 
 ### 版本命名规范
 
-- `versionName` 统一为 `1.1.0`，不带 flavor 后缀（debug 构建附加 `-debug` 后缀）。
-- 发布 APK（由 CI 产出）：
-  - 标准版：`MiniRead-standard-v1.1.0.apk`
-  - E-Ink 版：`MiniRead-eink-v1.1.0.apk`
+- **版本号唯一来源**：`app/build.gradle.kts` 顶部的 `appVersionName` / `appVersionCode`（当前 **1.2.2 / 122**），`versionName` / `versionCode` 直接引用这两个 extra 值；**不要**在别处硬编码版本，也**不要**给 flavor 或 release buildType 加 `versionNameSuffix`（仅 debug 允许 `-debug`）。详见 [AGENTS.md](../AGENTS.md) §6。
+- 发布 APK（由 CI 产出，`<tag>` 为 `v*` 标签，如 `v1.2.2`）：
+  - 标准版：`MiniRead-standard-<tag>.apk`
+  - E-Ink 版：`MiniRead-eink-<tag>.apk`
 
 ## 常见问题
 

@@ -1,5 +1,7 @@
 # Build Flavors 快速参考
 
+> **L2 参考**（2026-11-13 标注）。代码片段与配置速查；**构建命令以 L1 的 [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) 为准**，硬约束见 [AGENTS.md](../AGENTS.md) §6。⚠️ 文内版本发布检查清单里的「更新 versionName」应理解为更新 `app/build.gradle.kts` 的 `appVersionName` / `appVersionCode`（唯一来源），**不要**给 flavor 加 `versionNameSuffix`。
+
 ## 快速命令
 
 ### 构建命令

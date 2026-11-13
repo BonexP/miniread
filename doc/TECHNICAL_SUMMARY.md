@@ -1,5 +1,7 @@
 # 技术实现总结
 
+> **L2 参考**（创建于 2025-10 flavor 合并期，2026-11-13 复核）。本文是当时的架构与构建配置快照；**现行硬约束以 [AGENTS.md](../AGENTS.md) §6 为准**，构建命令以 [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) 为准。⚠️ 文中 flavor 级 `versionNameSuffix` 示范已过期（现仅 debug buildType 允许 `-debug`），勿照抄。
+
 ## 文档说明
 
 本文档提供 MiniRead 项目 Build Flavors 架构的完整技术实现说明，包括架构设计、代码组织、构建配置和最佳实践。
@@ -238,7 +240,7 @@ android {
     buildTypes {
         debug {
             isMinifyEnabled = false
-            versionNameSuffix = debugVersionSuffix
+            versionNameSuffix = debugVersionSuffix   // ✅ 唯一合法的一处：仅 debug buildType，值 -debug
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -929,8 +931,11 @@ val drawable = ContextCompat.getDrawable(context, R.drawable.icon)
 #### 版本控制
 
 ```kotlin
-// 1. 使用语义化版本（versionName 统一为 1.1.0，无 flavor 后缀；debug 构建附加 -debug）
-versionName = "1.1.0"
+// 1. 使用语义化版本：唯一来源是 app/build.gradle.kts 顶部的
+//    appVersionName / appVersionCode（当前 1.2.2 / 122），
+//    versionName / versionCode 直接引用这两个 extra 值；
+//    不要给 flavor 或 release 加 versionNameSuffix（仅 debug 允许 -debug）。
+versionName = appVersionName
 
 // 2. 每个 flavor 使用不同的 Application ID
 standard: com.i.miniread

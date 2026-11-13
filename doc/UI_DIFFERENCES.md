@@ -1,5 +1,7 @@
 # UI/界面布局/配色详细对比文档
 
+> **L2 参考**（2026-11-13 标注）。本文描述两个变体的界面差异；E-Ink 的**现行硬约束**以 [AGENTS.md](../AGENTS.md) §0.2 / §8 为准（48dp 底栏、黑白自绘提示条、StarBorder 等），完整论证见 [KNOWN_PITFALLS.md](./KNOWN_PITFALLS.md)。
+
 ## 文档说明
 
 本文档专注于 MiniRead 项目中标准版（Main）与电子墨水屏版（E-Ink）在用户界面、布局和配色方面的详细对比。

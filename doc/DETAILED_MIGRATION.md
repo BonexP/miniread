@@ -1,5 +1,7 @@
 # 详细迁移说明文档
 
+> **L3 历史存档**（写于 2025-10 flavor 合并期，2026-11-13 标注）。本文是当时的完整迁移记录，**不保证与当前代码一致**；含已过期的 flavor 级 `versionNameSuffix`（如 L132/L141）与旧版本号，**勿照抄**。现行规则见 [AGENTS.md](../AGENTS.md) §6，构建指南见 [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)。
+
 ## 文档说明
 
 本文档提供从独立的 main 和 eink 分支迁移到统一 Build Flavors 架构的详细步骤和指导。

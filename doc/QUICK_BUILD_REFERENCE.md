@@ -85,9 +85,9 @@
 # Push 到 main/develop → 自动构建 Debug APK
 git push origin main
 
-# 创建 tag → 自动构建 Release APK
-git tag -a v1.1.0 -m "MiniRead 1.1.0 — <本版要点>"
-git push origin v1.1.0
+# 创建 tag → 自动构建 Release APK（把 vX.Y.Z 换成实际版本号；推送需授权，见 AGENTS.md §9）
+git tag -a vX.Y.Z -m "MiniRead X.Y.Z — <本版要点>"
+git push origin vX.Y.Z
 ```
 
 ### 手动触发

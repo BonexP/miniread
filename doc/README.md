@@ -1,182 +1,110 @@
 # MiniRead 文档目录
 
-欢迎查阅 MiniRead 项目文档！
-
-## 🚀 快速开始
-
-- 🏗️ **[BUILD_GUIDE.md](./BUILD_GUIDE.md)** - 完整的构建指南（**推荐新手阅读**）
-- ⚡ **[QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md)** - 构建命令速查表
-- 📝 **[BUILD_CONFIGURATION_SUMMARY.md](./BUILD_CONFIGURATION_SUMMARY.md)** - 构建配置完成总结
-
-## 📚 核心文档
-
-### [BUILD_GUIDE.md](./BUILD_GUIDE.md) ⭐ 新增
-**完整构建指南** - 一站式构建操作手册
-
-包含内容：
-- Android Studio 操作指南（3种方法）
-- 命令行构建详解
-- GitHub Workflow 使用说明
-- 构建变体对比
-- 故障排除指南
-- 快速参考命令
-
-**适合人群**：所有需要构建项目的开发者
-
-### [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) ⭐ 新增
-**构建命令速查表** - 快速查找构建命令
-
-包含内容：
-- 所有常用构建命令
-- GitHub Actions 操作
-- APK 输出位置
-- Build Variants 对照表
-- 快速故障排除
-
-**适合人群**：日常开发需要快速查找命令的开发者
-
-### [BUILD_CONFIGURATION_SUMMARY.md](./BUILD_CONFIGURATION_SUMMARY.md) ⭐ 新增
-**构建配置完成总结** - 配置说明和使用指南
-
-包含内容：
-- 已完成的配置说明
-- Android Studio 使用指南
-- GitHub Actions 使用指南
-- 配置检查清单
-- 构建变体对比
-
-**适合人群**：了解整体配置的开发者、项目维护者
-
-### [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)
-**Build Flavors 开发指南** - 详细的多风味开发和维护文档
-
-包含内容：
-- 项目结构说明
-- Build Variants 配置
-- 开发最佳实践
-- E-Ink 优化要点
-- 测试策略
-- 开发工作流
-- 发布流程
-- 常见问题解答
-- E-Ink 设备适配建议
-
-**适合人群**：新加入的开发者、需要了解架构设计的开发者
-
-### [QUICK_REFERENCE.md](./QUICK_REFERENCE.md)
-**快速参考手册** - 常用代码片段和配置
-
-包含内容：
-- 代码片段示例
-- 目录结构速查
-- 资源命名约定
-- 调试技巧
-- 版本发布检查清单
-
-**适合人群**：日常开发需要快速查找代码示例的开发者
-
-### [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
-**迁移指南** - 将现有代码迁移到 Flavor 架构
-
-包含内容：
-- 迁移步骤说明
-- 代码重构示例
-- 迁移检查清单
-- 构建与发布说明
-- 常见问题解答
-
-**适合人群**：需要重构现有代码以适配新架构的开发者
-
-### [CHECKLIST.md](./CHECKLIST.md)
-**检查清单** - 开发、测试、发布全流程检查清单
-
-包含内容：
-- 初始设置检查
-- 开发阶段检查
-- 测试阶段检查
-- 发布前检查
-- 维护阶段检查
-- 质量指标
-
-**适合人群**：需要确保代码质量和发布流程的所有开发者
-
-## 🎯 快速导航
-
-### 我想...
-
-- **了解项目的 Flavor 架构** → [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md#概述)
-- **构建某个特定版本** → [QUICK_REFERENCE.md](./QUICK_REFERENCE.md#快速命令)
-- **迁移现有代码** → [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)
-- **添加 E-Ink 优化功能** → [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md#4-e-ink-版本优化要点)
-- **查看代码示例** → [QUICK_REFERENCE.md](./QUICK_REFERENCE.md#代码片段)
-- **准备发布新版本** → [QUICK_REFERENCE.md](./QUICK_REFERENCE.md#版本发布检查清单)
-- **解决常见问题** → [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md#常见问题)
-
-## 🏗️ 项目 Flavors 概览
-
-MiniRead 目前支持两个产品风味：
-
-| Flavor | 目标设备 | 特点 | Application ID |
-|--------|---------|------|----------------|
-| **Standard** | 普通智能手机/平板 | 全功能、彩色UI、流畅动画 | `com.i.miniread` |
-| **E-Ink** | 电子墨水屏设备 | 黑白优化、无动画、刷新控制 | `com.i.miniread.eink` |
-
-## 🚀 快速开始
-
-### 1. 构建标准版
-```bash
-./gradlew assembleStandardDebug
-```
-
-### 2. 构建 E-Ink 版
-```bash
-./gradlew assembleEinkDebug
-```
-
-### 3. 切换 Build Variant（Android Studio）
-View → Tool Windows → Build Variants → 选择目标变体
-
-## 📋 项目结构
-
-```
-miniread/
-├── app/
-│   ├── src/
-│   │   ├── main/          # 共享代码和资源
-│   │   ├── standard/      # 标准版专属
-│   │   ├── eink/          # E-Ink 版专属
-│   │   └── test/          # 测试代码
-│   └── build.gradle.kts   # 构建配置
-└── doc/                   # 📍 你在这里
-    ├── README.md          # 本文件
-    ├── BUILD_FLAVORS_GUIDE.md
-    └── QUICK_REFERENCE.md
-```
-
-## 🔧 开发建议
-
-1. **阅读文档**：开发前请先阅读 [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)
-2. **共享优先**：新功能优先放在 `main/` 中，只在必要时才放在 flavor 特定目录
-3. **保持兼容**：确保两个 flavor 的 API 兼容性
-4. **测试充分**：每个 flavor 都应该有对应的测试
-5. **文档更新**：修改架构时记得更新文档
-
-## 📝 文档维护
-
-- 文档应与代码同步更新
-- 发现问题或有改进建议请及时提出
-- 添加新功能时，请更新相应文档
-
-## 🤝 贡献指南
-
-如需贡献代码或文档：
-1. Fork 项目
-2. 创建特性分支
-3. 提交变更
-4. 发起 Pull Request
+> 这里是**文档导航入口**（L2 参考）。**唯一权威的 AI 开发指令是仓库根目录的 [AGENTS.md](../AGENTS.md)**；命令、硬约束、发布流程以其为准，本文与其它文档冲突时一律以 AGENTS.md 为准。
+> 分层规则见 AGENTS.md「文档地图」：L1 权威（与代码同步维护） / L2 参考（允许滞后，不得与 L1 冲突） / L3 历史存档（不保证与当前代码一致，勿据此判断现状） / 外部资料。
+> 当前版本：**v1.2.2**（versionCode 122）。
 
 ---
 
-**最后更新**: 2025-10-26  
-**维护者**: MiniRead 开发团队
+## L1 权威 — 与代码同步维护
 
+改代码必须同步这些文档。
+
+| 文档 | 一句话定位 |
+| --- | --- |
+| [AGENTS.md](../AGENTS.md) | AI 开发指令（唯一权威）：优先级、硬约束、禁区、已知坑、发布与 VCS 纪律 |
+| [README.md](../README.md) | 项目简介、功能、两个构建变体 |
+| [CHANGELOG.md](../CHANGELOG.md) | 变更日志（Keep a Changelog / SemVer） |
+| [RELEASE_NOTES.md](../RELEASE_NOTES.md) | 面向用户的发布说明 |
+| [BUILD_GUIDE.md](./BUILD_GUIDE.md) | 完整构建指南（Android Studio / 命令行 / CI / 故障排除） |
+| [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md) | Flavor 架构与开发指南 |
+| [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) | 构建命令速查（**日常命令以此为准**） |
+
+## L2 参考 — 按需查阅
+
+允许滞后，但不得与 L1 冲突；每份顶部都有状态横幅。
+
+| 文档 | 一句话定位 |
+| --- | --- |
+| [KNOWN_PITFALLS.md](./KNOWN_PITFALLS.md) | AGENTS.md §8 已知坑的**完整论证**（回归点 / 实测数据 / 推导） |
+| [VC_WORKFLOW.md](./VC_WORKFLOW.md) | AGENTS.md §10 的**命令表 / 回退 jj / eol 与 tag 实测** |
+| [TECHNICAL_SUMMARY.md](./TECHNICAL_SUMMARY.md) | 技术总结（架构与实现快照） |
+| [TABLET_ADAPTATION.md](./TABLET_ADAPTATION.md) | 平板适配（响应式阅读页、媒体查询） |
+| [UI_DIFFERENCES.md](./UI_DIFFERENCES.md) | Standard / E-Ink 两个变体的 UI 差异 |
+| [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) | 代码片段与配置速查 |
+| [CHECKLIST.md](./CHECKLIST.md) | 开发 / 测试 / 发布检查清单 |
+| [DEVICE_COMPATIBILITY.md](./DEVICE_COMPATIBILITY.md) | 设备兼容性记录 |
+| [QUICK_START.md](../QUICK_START.md) | 入门速览（命令以 `QUICK_BUILD_REFERENCE.md` 为准） |
+
+## L3 历史存档 — 不保证与当前代码一致
+
+只读，**不得据此判断现状**；含 2025-10 flavor 合并期的过期配置示范（flavor 级 `versionNameSuffix`、旧版本号），现行规则见 AGENTS.md §6。
+
+| 文档 | 一句话定位 |
+| --- | --- |
+| [archive/](./archive/README.md) | 13 份历史过程文档（完成总结 / 修复报告 / 迁移记录） |
+| [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) | 迁移到 Flavor 架构的指南（历史） |
+| [DETAILED_MIGRATION.md](./DETAILED_MIGRATION.md) | 详细迁移记录（历史） |
+| [BRANCH_COMPARISON.md](./BRANCH_COMPARISON.md) | 原 main / eink 分支对比（历史） |
+| [WORK_LOG.md](./WORK_LOG.md) | Flavor 合并工作日志（历史） |
+
+## 外部资料
+
+| 文档 | 一句话定位 |
+| --- | --- |
+| [API Reference.md](../API%20Reference.md) | Miniflux 上游 API 文档快照，**非本项目 API 实现**；本项目接口见 `network/MinifluxApi.kt` |
+
+---
+
+## 「我想…」快速导航
+
+| 我想 | 去哪 |
+| --- | --- |
+| 知道 AI 开发该遵守什么 | [AGENTS.md](../AGENTS.md)（尤其 §0 优先级、§6 硬约束、§7 禁区、§8 已知坑） |
+| 构建某个变体 / 查命令 | [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md) → [BUILD_GUIDE.md](./BUILD_GUIDE.md) |
+| 了解 Flavor 架构 | [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md) |
+| 改阅读页 / 撞到 WebView 或旋转丢进度 | AGENTS.md §8 坑 12–16 → [KNOWN_PITFALLS.md](./KNOWN_PITFALLS.md) |
+| 改 E-Ink 样式 / 提示条 / 星标 | AGENTS.md §8 坑 8 / 17–19 → [KNOWN_PITFALLS.md](./KNOWN_PITFALLS.md) |
+| 发新版 / 打 tag / 推远程 | AGENTS.md §9 + §10.1（🚫 每次需用户明确授权）→ [VC_WORKFLOW.md](./VC_WORKFLOW.md) |
+| 查 jj / git 命令与回退 | [VC_WORKFLOW.md](./VC_WORKFLOW.md) |
+| 查两个变体的界面差异 | [UI_DIFFERENCES.md](./UI_DIFFERENCES.md) |
+| 查平板适配 | [TABLET_ADAPTATION.md](./TABLET_ADAPTATION.md) |
+| 查历史（为何这样设计） | L3 存档，**只看背景，不照抄配置** |
+
+---
+
+## 两个产品变体（速览）
+
+| Flavor | applicationId | 目标设备 | 特点 |
+| --- | --- | --- | --- |
+| `standard` | `com.i.miniread` | 常规 Android 手机 / 平板 | 完整 MD3 主题、动态颜色、深色模式 |
+| `eink` | `com.i.miniread.eink` | 电子墨水屏设备 | 高对比黑白、无动画、48dp 底栏 |
+
+两个变体 applicationId 不同，**可同机共存**。E-Ink 的硬尺寸 / 样式红线见 AGENTS.md §0.2 与 §8。
+
+---
+
+## 常用命令（详见 L1）
+
+```bash
+./gradlew assembleStandardDebug        # 标准版 Debug
+./gradlew assembleEinkDebug            # 墨水屏 Debug
+./gradlew testStandardDebugUnitTest    # 标准版单测
+./gradlew testEinkDebugUnitTest        # 墨水屏单测
+```
+
+产物：`app/build/outputs/apk/{standard,eink}/{debug,release}/`。完整命令表见 [QUICK_BUILD_REFERENCE.md](./QUICK_BUILD_REFERENCE.md)。
+
+---
+
+## 文档维护约定
+
+- 分层以 AGENTS.md「文档地图」为准；新增文档必须先在地图里登记层级，再写内容。
+- L1 文档改代码时同步；L2 顶部标注状态 / 快照日期；L3 一律加状态横幅，不逐字改写历史正文。
+- 所有构建命令、版本号、硬约束只从 AGENTS.md 或 L1 引用，不要在 L2 / L3 里另立一套。
+- 版本号唯一来源：`app/build.gradle.kts` 的 `appVersionName` / `appVersionCode`。
+
+---
+
+**最后更新**：2026-11-13（文档编排重排为四层；断链 `BUILD_CONFIGURATION_SUMMARY.md` 已移除）
+**维护**：见 [AGENTS.md](../AGENTS.md) 文档地图

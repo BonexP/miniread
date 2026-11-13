@@ -1,5 +1,7 @@
 # Build Flavors 实施总结
 
+> **L3 历史存档**（写于 2025-10 flavor 合并期，2026-11-13 标注）。本文是当时的实施总结，**不保证与当前代码一致，勿据此判断现状**。文中链接原按仓库根目录书写，因归档到 `doc/archive/` 已改为相对路径。现行规则见 [AGENTS.md](../../AGENTS.md)，文档总入口见 [doc/README.md](../README.md)。
+
 ## ✅ 已完成的工作
 
 本次更新为 MiniRead 项目实施了完整的 Build Flavors 架构，支持以下两个产品变体：
@@ -79,7 +81,7 @@ doc/
 ## 🚀 快速开始
 
 ### 立即开始使用
-👉 **查看 [QUICK_START.md](./QUICK_START.md) 快速上手指南（仅需 5 分钟）**
+👉 **查看 [QUICK_START.md](../../QUICK_START.md) 快速上手指南（仅需 5 分钟）**
 
 ### 构建不同版本
 ```bash
@@ -115,10 +117,10 @@ val backgroundColor = EInkConfig.Colors.Background
 
 所有文档位于 `doc/` 目录：
 
-1. **[doc/README.md](doc/README.md)** - 文档导航和快速开始
-2. **[doc/BUILD_FLAVORS_GUIDE.md](doc/BUILD_FLAVORS_GUIDE.md)** - 完整的开发和维护指南
-3. **[doc/QUICK_REFERENCE.md](doc/QUICK_REFERENCE.md)** - 常用命令和代码片段
-4. **[doc/MIGRATION_GUIDE.md](doc/MIGRATION_GUIDE.md)** - 现有代码迁移指南
+1. **[doc/README.md](../README.md)** - 文档导航和快速开始
+2. **[doc/BUILD_FLAVORS_GUIDE.md](../BUILD_FLAVORS_GUIDE.md)** - 完整的开发和维护指南
+3. **[doc/QUICK_REFERENCE.md](../QUICK_REFERENCE.md)** - 常用命令和代码片段
+4. **[doc/MIGRATION_GUIDE.md](../MIGRATION_GUIDE.md)** - 现有代码迁移指南
 
 ## 🛠️ 构建变体
 
@@ -139,7 +141,7 @@ val backgroundColor = EInkConfig.Colors.Background
 3. **测试覆盖**：每个 flavor 都应该有对应的测试
 
 ### 迁移现有代码
-1. 查看 [MIGRATION_GUIDE.md](doc/MIGRATION_GUIDE.md) 了解如何重构现有代码
+1. 查看 [MIGRATION_GUIDE.md](../MIGRATION_GUIDE.md) 了解如何重构现有代码
 2. 使用 `BuildConfig.IS_EINK` 替代自定义的设备检测逻辑
 3. 使用 `EInkConfig` 和 `EInkUtils` 封装 E-Ink 相关功能
 
@@ -167,9 +169,9 @@ val backgroundColor = EInkConfig.Colors.Background
 
 ## 📞 获取帮助
 
-- **查看文档**：[doc/README.md](doc/README.md)
-- **快速参考**：[doc/QUICK_REFERENCE.md](doc/QUICK_REFERENCE.md)
-- **常见问题**：[doc/BUILD_FLAVORS_GUIDE.md](doc/BUILD_FLAVORS_GUIDE.md#常见问题)
+- **查看文档**：[doc/README.md](../README.md)
+- **快速参考**：[doc/QUICK_REFERENCE.md](../QUICK_REFERENCE.md)
+- **常见问题**：[doc/BUILD_FLAVORS_GUIDE.md](../BUILD_FLAVORS_GUIDE.md#常见问题)
 
 ## ✨ 最佳实践遵循
 

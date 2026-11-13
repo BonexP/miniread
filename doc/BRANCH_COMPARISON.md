@@ -1,5 +1,7 @@
 # Main 与 E-Ink 分支对比分析
 
+> **L3 历史存档**（写于 2025-10 flavor 合并期，2026-11-13 标注）。本文记录合并前两个独立分支的差异，**不保证与当前代码一致**；含已过期的 flavor 级 `versionNameSuffix` 示范（如 L400/L410/L419）与旧版本号，**勿照抄**。现行规则见 [AGENTS.md](../AGENTS.md) §6，两变体现状见 [UI_DIFFERENCES.md](./UI_DIFFERENCES.md)。
+
 ## 文档说明
 
 本文档详细记录了 MiniRead 项目中 `main` 分支（标准版本）与 `eink` 分支（电子墨水屏版本）之间的所有差异。这些差异已通过 Build Flavors 功能合并到统一的代码库中。

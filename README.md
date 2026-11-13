@@ -15,6 +15,8 @@
 
 > 💡 两个版本可以同时安装在同一设备上，互不冲突
 
+> 📖 **开发者文档**：AI 开发指令与全部硬约束见仓库根目录 [AGENTS.md](AGENTS.md)（唯一权威）；文档总入口见 [doc/README.md](doc/README.md)；构建命令以 [doc/QUICK_BUILD_REFERENCE.md](doc/QUICK_BUILD_REFERENCE.md) 为准。
+
 ### 主要功能
 
 1. **用户登录**：支持通过 Miniflux API Token 登录，并将 Token 安全存储以实现自动登录。
@@ -22,10 +24,10 @@
 3. **分类管理**：用户可以按分类浏览内容，轻松切换查看不同主题的文章。
 4. **文章阅读**：
     - 提供详细的文章阅读界面，支持显示文章内容、来源、发布时间。
-    - 对特定 `feed_id` 进行请求头的动态调整（例如：对 `cdnfile.sspai.com` 的请求自动添加 `Referer` 头 `https://sspai.com/`）。
-    - 支持动态生成 HTML 内容，并注入自定义 CSS 和 JavaScript，优化移动设备的文章显示效果。
-5. **TodayEntryList**：显示当天的文章列表，用户可快速浏览最新内容。
-6. **汉堡菜单导航**：MD3 风格的汉堡菜单导航，支持在不同页面间流畅切换。在文章阅读时禁用滑动手势，避免与 WebView 滑动操作冲突。
+    - 可选的**定向拦截**：按用户自行配置的目标域名、订阅源白名单与 Referer 规则，由 App 代取命中请求并附加请求头；默认关闭，配置方式见应用内高级设置页与其站内帮助。文档中不含任何具体实例地址。
+    - 支持动态生成 HTML 内容，并注入自定义 CSS，优化移动设备的文章显示效果。
+5. **TodayEntryList**：显示最近 24 小时的文章列表，用户可快速浏览最新内容。
+6. **导航**：手机竖屏使用底部导航栏，平板横屏使用侧边导航栏（两者共用同一份 NavHost）。在文章阅读时禁用滑动手势，避免与 WebView 滑动操作冲突。
 
 ### 技术栈
 
@@ -52,12 +54,12 @@
     - 在阅读文章时，自动隐藏底部导航栏，优化视觉体验。
 - **MinifluxViewModel.kt**：
     - 通过 Miniflux API 获取 RSS 源、分类、文章等数据。
-    - 针对特定 `feed_id` 的请求头进行了优化，提升特定站点文章加载体验。
+    - 定向拦截的生效判定走 `util/InterceptionRuntime.kt` 等纯逻辑模块（配置由用户在应用内填写，代码里不含硬编码地址）。
 - **EntryListScreen.kt**：
     - 显示选定分类或订阅源的文章列表，点击文章导航至详情页面。
     - 支持通过 `LaunchedEffect` 实现动态刷新文章列表。
 - **TodayEntryListScreen.kt**：
-    - 继承自 `EntryListScreen`，只显示当天的文章，利用 UNIX 时间戳计算当日范围的文章。
+    - 与 `EntryListScreen` 思路相同的独立页面（Composable 函数之间不存在继承关系），只显示最近 24 小时的文章，时间窗口由 `util/TimeWindow.kt` 的纯函数计算。
 - **ArticleDetailScreen.kt**：
     - 使用 WebView 渲染文章内容，支持动态注入 `Referer` 头和优化 HTML 渲染。
     - 通过注入自定义 CSS 和 JavaScript，提升文章在移动设备上的阅读体验。

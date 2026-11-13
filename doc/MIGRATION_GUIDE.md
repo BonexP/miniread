@@ -1,5 +1,7 @@
 # 迁移现有代码到 Flavor 架构
 
+> **L3 历史存档**（写于 2025-10 flavor 合并期，2026-11-13 标注）。本文记录当时的迁移步骤与配置示范，**不保证与当前代码一致**；含已过期的 flavor 级 `versionNameSuffix` 与旧版本号，**勿照抄**。现行规则见 [AGENTS.md](../AGENTS.md) §6，构建指南见 [BUILD_FLAVORS_GUIDE.md](./BUILD_FLAVORS_GUIDE.md)。
+
 本文档帮助你将现有代码迁移到新的 Build Flavors 架构。
 
 ## 概述

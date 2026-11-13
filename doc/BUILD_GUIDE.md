@@ -200,7 +200,7 @@ adb install -r app/build/outputs/apk/eink/debug/app-eink-debug.apk
 #### 2. Release 构建 (`.github/workflows/release.yml`)
 
 **触发条件：**
-- 推送带 `v*` 前缀的 tag（例如 `v1.1.0`）
+- 推送带 `v*` 前缀的 tag（例如 `v1.2.2`；`<tag>` 用实际版本号替换）
 
 **构建内容：**
 - Standard Release APK（已签名）
@@ -220,11 +220,11 @@ adb install -r app/build/outputs/apk/eink/debug/app-eink-debug.apk
 ### 创建 Release
 
 ```bash
-# 1. 打上版本标签（附注 tag，与已发布版本一致）
-git tag -a v1.1.0 -m "MiniRead 1.1.0 — <本版要点>"
+# 1. 打上版本标签（附注 tag；把 vX.Y.Z 换成 appVersionName，例如 v1.2.2）
+git tag -a vX.Y.Z -m "MiniRead X.Y.Z — <本版要点>"
 
-# 2. 推送标签到 GitHub
-git push origin v1.1.0
+# 2. 推送标签到 GitHub（🚫 推送 / 打 tag 前须取得用户明确授权，见 AGENTS.md §9）
+git push origin vX.Y.Z
 
 # 3. GitHub Actions 会自动：
 #    - 构建 Standard 和 E-Ink 的 Release APK
@@ -399,8 +399,8 @@ find app/build/outputs/apk -name "*.apk" -type f
 
 ### GitHub
 ```bash
-git tag -a v1.1.0 -m "MiniRead 1.1.0 — <本版要点>"   # 创建附注标签
-git push origin v1.1.0                # 触发 Release 构建
+git tag -a vX.Y.Z -m "MiniRead X.Y.Z — <本版要点>"   # 创建附注标签（换成实际版本号）
+git push origin vX.Y.Z                # 触发 Release 构建（推送需授权，见 AGENTS.md §9）
 ```
 
 ---

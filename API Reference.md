@@ -1,3 +1,5 @@
+> **外部资料**（Miniflux 上游 API 文档快照，非本项目实现，2026-11-13 标注）。本项目的网络接口与数据类以 `app/src/main/java/com/i/miniread/network/MinifluxApi.kt` 为准；AI 开发指令见 [AGENTS.md](AGENTS.md)，文档分层见 [doc/README.md](doc/README.md)。
+
 [Home](https://miniflux.app/index.html) > [Documentation](https://miniflux.app/docs/index.html)
 
 Table of Contents:
