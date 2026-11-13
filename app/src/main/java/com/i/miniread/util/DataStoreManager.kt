@@ -37,6 +37,14 @@ object DataStoreManager {
     private val KEY_INTERCEPT_FEED_IDS = stringPreferencesKey("intercept_feed_ids")
     private val KEY_INTERCEPT_REFERER_RULES = stringPreferencesKey("intercept_referer_rules")
 
+    // 阅读页排版配置（issue #19 新增；6 个独立 key，未写入时走 ReaderTypography.DEFAULT）
+    private val KEY_TYPO_FONT_SCALE = stringPreferencesKey("typo_font_scale")
+    private val KEY_TYPO_LINE_HEIGHT = stringPreferencesKey("typo_line_height")
+    private val KEY_TYPO_WIDTH_STEP = stringPreferencesKey("typo_width_step")
+    private val KEY_TYPO_PARAGRAPH_SPACING = stringPreferencesKey("typo_paragraph_spacing")
+    private val KEY_TYPO_FONT_FAMILY = stringPreferencesKey("typo_font_family")
+    private val KEY_TYPO_TEXT_ALIGN = stringPreferencesKey("typo_text_align")
+
     fun init(context: Context) {
         this.context = context.applicationContext
     }
@@ -186,7 +194,55 @@ object DataStoreManager {
         }
     }
 
-    // 清除所有数据（注意：会连定向拦截配置一起清空，回到中性化默认）
+    // ===== 阅读页排版配置（issue #19）=====
+    // 六个独立 string key：缺失即视为「跟随默认」，解析/容错全在 ReaderTypographyCodec。
+    // 公开函数签名保持不变；clearAll() 用 preferences.clear()，会一并清掉这些 key。
+
+    /** 一次性读取（与 getInterceptionRaw 同样的「一次 DataStore 往返」风格）。 */
+    suspend fun getReaderTypography(): ReaderTypography {
+        val prefs = context.dataStore.data.first()
+        return ReaderTypographyCodec.decode(
+            ReaderTypographyRaw(
+                fontScale = prefs[KEY_TYPO_FONT_SCALE],
+                lineHeight = prefs[KEY_TYPO_LINE_HEIGHT],
+                widthStep = prefs[KEY_TYPO_WIDTH_STEP],
+                paragraphSpacing = prefs[KEY_TYPO_PARAGRAPH_SPACING],
+                fontFamily = prefs[KEY_TYPO_FONT_FAMILY],
+                textAlign = prefs[KEY_TYPO_TEXT_ALIGN]
+            )
+        )
+    }
+
+    /** 观察排版配置，供 Compose 即时重组（跟随 DataStore 写入）。 */
+    fun getReaderTypographyFlow(): Flow<ReaderTypography> {
+        return context.dataStore.data.map { prefs ->
+            ReaderTypographyCodec.decode(
+                ReaderTypographyRaw(
+                    fontScale = prefs[KEY_TYPO_FONT_SCALE],
+                    lineHeight = prefs[KEY_TYPO_LINE_HEIGHT],
+                    widthStep = prefs[KEY_TYPO_WIDTH_STEP],
+                    paragraphSpacing = prefs[KEY_TYPO_PARAGRAPH_SPACING],
+                    fontFamily = prefs[KEY_TYPO_FONT_FAMILY],
+                    textAlign = prefs[KEY_TYPO_TEXT_ALIGN]
+                )
+            )
+        }
+    }
+
+    /** 保存（写盘即生效；纯逻辑 Codec 保证存进去的永远是 clamp 后的合法值）。 */
+    suspend fun saveReaderTypography(typography: ReaderTypography) {
+        val raw = ReaderTypographyCodec.encode(typography)
+        context.dataStore.edit { preferences ->
+            preferences[KEY_TYPO_FONT_SCALE] = raw.fontScale ?: ""
+            preferences[KEY_TYPO_LINE_HEIGHT] = raw.lineHeight ?: ""
+            preferences[KEY_TYPO_WIDTH_STEP] = raw.widthStep ?: ""
+            preferences[KEY_TYPO_PARAGRAPH_SPACING] = raw.paragraphSpacing ?: ""
+            preferences[KEY_TYPO_FONT_FAMILY] = raw.fontFamily ?: ""
+            preferences[KEY_TYPO_TEXT_ALIGN] = raw.textAlign ?: ""
+        }
+    }
+
+    // 清除所有数据（注意：会连定向拦截配置与排版配置一起清空，回到中性化默认）
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
             preferences.clear()
