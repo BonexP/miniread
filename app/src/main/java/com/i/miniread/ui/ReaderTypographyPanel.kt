@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -144,99 +145,132 @@ fun ReaderTypographyPanel(
             }
             Spacer(Modifier.height(4.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 360.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            // 六个可调项（顺序即展示顺序）。只在这里定义一次，单列 / 两列共用同一份，
+            // 避免两套排布各写一份控件逻辑后漂移。
+            val sections: List<@Composable () -> Unit> = listOf(
                 // ---- 字号：四档 ----
-                TypographySection(stringResource(R.string.reader_typography_font_size), sectionColor) {
-                    val labels = listOf(
-                        stringResource(R.string.reader_typography_font_size_small),
-                        stringResource(R.string.reader_typography_font_size_normal),
-                        stringResource(R.string.reader_typography_font_size_large),
-                        stringResource(R.string.reader_typography_font_size_xlarge)
-                    )
-                    StepRow(labels, fontScaleStep, eink) {
-                        fontScaleStep = it
-                        emit()
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_font_size), sectionColor
+                    ) {
+                        StepRow(
+                            listOf(
+                                stringResource(R.string.reader_typography_font_size_small),
+                                stringResource(R.string.reader_typography_font_size_normal),
+                                stringResource(R.string.reader_typography_font_size_large),
+                                stringResource(R.string.reader_typography_font_size_xlarge)
+                            ),
+                            fontScaleStep, eink
+                        ) { fontScaleStep = it; emit() }
                     }
-                }
-
+                },
                 // ---- 行距：1.4–2.0，0 = 跟随默认 ----
-                TypographySection(stringResource(R.string.reader_typography_line_height), sectionColor) {
-                    TypographySlider(
-                        value = lineHeight,
-                        valueRange = 0f..ReaderTypography.LINE_HEIGHT_MAX,
-                        steps = 5,
-                        unsetLabel = stringResource(R.string.reader_typography_follow_default),
-                        format = { if (it <= 0f) null else ReaderTypography.num(it) },
-                        eink = eink,
-                        onValueChange = { lineHeight = it },
-                        onValueChangeFinished = { emit() }
-                    )
-                }
-
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_line_height), sectionColor
+                    ) {
+                        TypographySlider(
+                            value = lineHeight,
+                            valueRange = 0f..ReaderTypography.LINE_HEIGHT_MAX,
+                            steps = 5,
+                            unsetLabel = stringResource(R.string.reader_typography_follow_default),
+                            format = { if (it <= 0f) null else ReaderTypography.num(it) },
+                            eink = eink,
+                            onValueChange = { lineHeight = it },
+                            onValueChangeFinished = { emit() }
+                        )
+                    }
+                },
                 // ---- 行宽：四档（默认 / 窄 / 中 / 宽）----
-                TypographySection(stringResource(R.string.reader_typography_width), sectionColor) {
-                    val labels = listOf(
-                        stringResource(R.string.reader_typography_width_default),
-                        stringResource(R.string.reader_typography_width_narrow),
-                        stringResource(R.string.reader_typography_width_medium),
-                        stringResource(R.string.reader_typography_width_wide)
-                    )
-                    StepRow(labels, widthStep, eink) {
-                        widthStep = it
-                        emit()
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_width), sectionColor
+                    ) {
+                        StepRow(
+                            listOf(
+                                stringResource(R.string.reader_typography_width_default),
+                                stringResource(R.string.reader_typography_width_narrow),
+                                stringResource(R.string.reader_typography_width_medium),
+                                stringResource(R.string.reader_typography_width_wide)
+                            ),
+                            widthStep, eink
+                        ) { widthStep = it; emit() }
                     }
-                }
-
+                },
                 // ---- 段落间距：0.8–2.0，0 = 跟随默认 ----
-                TypographySection(
-                    stringResource(R.string.reader_typography_paragraph_spacing),
-                    sectionColor
-                ) {
-                    TypographySlider(
-                        value = paragraphSpacing,
-                        valueRange = 0f..ReaderTypography.PARAGRAPH_SPACING_MAX,
-                        steps = 5,
-                        unsetLabel = stringResource(R.string.reader_typography_follow_default),
-                        format = { if (it <= 0f) null else "${ReaderTypography.num(it)}em" },
-                        eink = eink,
-                        onValueChange = { paragraphSpacing = it },
-                        onValueChangeFinished = { emit() }
-                    )
-                }
-
-                // ---- 字体族 ----
-                TypographySection(stringResource(R.string.reader_typography_font_family), sectionColor) {
-                    StepRow(
-                        listOf(
-                            stringResource(R.string.reader_typography_font_sans),
-                            stringResource(R.string.reader_typography_font_serif)
-                        ),
-                        fontFamily,
-                        eink
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_paragraph_spacing), sectionColor
                     ) {
-                        fontFamily = it
-                        emit()
+                        TypographySlider(
+                            value = paragraphSpacing,
+                            valueRange = 0f..ReaderTypography.PARAGRAPH_SPACING_MAX,
+                            steps = 5,
+                            unsetLabel = stringResource(R.string.reader_typography_follow_default),
+                            format = { if (it <= 0f) null else "${ReaderTypography.num(it)}em" },
+                            eink = eink,
+                            onValueChange = { paragraphSpacing = it },
+                            onValueChangeFinished = { emit() }
+                        )
+                    }
+                },
+                // ---- 字体族 ----
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_font_family), sectionColor
+                    ) {
+                        StepRow(
+                            listOf(
+                                stringResource(R.string.reader_typography_font_sans),
+                                stringResource(R.string.reader_typography_font_serif)
+                            ),
+                            fontFamily, eink
+                        ) { fontFamily = it; emit() }
+                    }
+                },
+                // ---- 对齐 ----
+                {
+                    TypographySection(
+                        stringResource(R.string.reader_typography_align), sectionColor
+                    ) {
+                        StepRow(
+                            listOf(
+                                stringResource(R.string.reader_typography_align_left),
+                                stringResource(R.string.reader_typography_align_justify)
+                            ),
+                            textAlign, eink
+                        ) { textAlign = it; emit() }
                     }
                 }
+            )
 
-                // ---- 对齐 ----
-                TypographySection(stringResource(R.string.reader_typography_align), sectionColor) {
-                    StepRow(
-                        listOf(
-                            stringResource(R.string.reader_typography_align_left),
-                            stringResource(R.string.reader_typography_align_justify)
-                        ),
-                        textAlign,
-                        eink
-                    ) {
-                        textAlign = it
-                        emit()
+            // 宽屏（修长手机横屏 / 平板）走两列，窄屏走单列；高度上限按可用高度收缩，
+            // 保证任何比例下面板都不溢出可视区、内容始终可滚到底。
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val useTwoColumns = maxWidth >= 600.dp
+                val maxPanelHeight = (maxHeight * 0.65f).coerceIn(160.dp, 360.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = maxPanelHeight)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (useTwoColumns) {
+                        // 逐对成行；奇数项时最后一格留空，保持左右列对齐
+                        sections.chunked(2).forEach { pair ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                pair.forEach { section ->
+                                    Box(modifier = Modifier.weight(1f)) { section() }
+                                }
+                                if (pair.size == 1) Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    } else {
+                        sections.forEach { section -> section() }
                     }
                 }
             }
