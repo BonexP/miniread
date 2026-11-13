@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 新增 `util/ReaderTypography.kt`（纯逻辑：档位换算 / clamp / CSS 片段生成 / 宽容解析 Codec）与纯 JVM 单测 `ReaderTypographyTest`（24 例，总用例 208 → 232）；新增 `ui/ReaderTypographyPanel.kt`（无动画、编辑态 `rememberSaveable`、E-Ink 黑白直角样式，文案 `reader_typography_*` 中英双份）。
   - `app/src/main/assets/template.html`：新增 `<style id="miniread-typo-css">`，位于主题表 / 平板表之后（后注入者胜出）；`ui/ArticleDetailScreen.kt`：新增 `applyTypoCss()` 就地替换样式、独立排版 Effect 做阅读位置重锚、`DataStoreManager` 新增 6 个 key 与读写函数（既有公开签名不变，`clearAll()` 自动清理）。
 - `AGENTS.md` §8 新增坑 20（排版红线）、§0.2 速查表加排版行；`doc/KNOWN_PITFALLS.md` 同步 §20 完整论证。
+- 新增根目录 `TECH_DEBT.md`：把悬而未决的技术债（proguard 死规则、`assets/fonts/` 17.8MB 未引用、文章刷新空壳、reader-header、字号双模型等）整理成索引，按「低风险可立即做 / 需单独确认 / 只记录不动」分组，并标注 §7 禁区与需授权项。**只记录不实施**；已登记到 `AGENTS.md` 文档地图与 `doc/README.md` 的 L2 参考层。
 
 ### Fixed
 - 深色主题表 `customdark.css` 的正文字号 `2rem` 与浅色 `custom.css` 的 `2.2rem` 对齐：此前同一篇文章切到深色会小 10%（issue #19 背景点名）。

@@ -28,6 +28,7 @@
 | --- | --- |
 | [KNOWN_PITFALLS.md](./KNOWN_PITFALLS.md) | AGENTS.md §8 已知坑的**完整论证**（回归点 / 实测数据 / 推导） |
 | [VC_WORKFLOW.md](./VC_WORKFLOW.md) | AGENTS.md §10 的**命令表 / 回退 jj / eol 与 tag 实测** |
+| [TECH_DEBT.md](../TECH_DEBT.md) | 悬而未决的技术债清单（只记录不实施；🔒 禁区 / ✋ 需授权已标注） |
 | [TECHNICAL_SUMMARY.md](./TECHNICAL_SUMMARY.md) | 技术总结（架构与实现快照） |
 | [TABLET_ADAPTATION.md](./TABLET_ADAPTATION.md) | 平板适配（响应式阅读页、媒体查询） |
 | [UI_DIFFERENCES.md](./UI_DIFFERENCES.md) | Standard / E-Ink 两个变体的 UI 差异 |
