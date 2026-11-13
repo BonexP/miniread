@@ -43,10 +43,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -204,6 +207,11 @@ fun MainContent(viewModel: MinifluxViewModel) {
     var titleTapCount by remember { mutableStateOf(0) }
     var lastTapAt by remember { mutableStateOf(0L) }
 
+    // 阅读排版面板显隐（issue #19）：状态提升到 MainContent，Aa 入口在全局顶栏，
+    // 面板由 ArticleDetailScreen 在正文上方以「占空间横条」呈现。
+    // 用 rememberSaveable：旋转 / 配置变化后仍保持展开态（§8 坑 17 同款）。
+    var showTypographyPanel by rememberSaveable { mutableStateOf(false) }
+
     // 初始化时读取 DataStore 数据
     LaunchedEffect(Unit) {
         baseUrl = DataStoreManager.getBaseUrl()
@@ -249,6 +257,9 @@ fun MainContent(viewModel: MinifluxViewModel) {
             !it.startsWith(Screen.HiddenSettings.route) &&
                 !it.startsWith(Screen.SettingsHelp.route)
         } ?: true
+
+        // Aa 排版入口只在阅读页显示（顶栏是全路由共享的全局 AppBar）
+        val isArticleDetail = currentRoute?.startsWith(Screen.ArticleDetail.route) == true
 
         // 判断是否应该使用侧边导航栏（平板横屏模式）
         val useNavigationRail = AdaptiveLayoutHelper.shouldUseNavigationRail(windowSizeClass)
@@ -297,6 +308,26 @@ fun MainContent(viewModel: MinifluxViewModel) {
                         )
                     },
                     actions = {
+                        // 阅读排版入口（issue #19）：与刷新同一栏，仅阅读页显示。
+                        // 面板是顶栏下方「占空间的独立横条」，不叠在 WebView 正文上。
+                        if (isArticleDetail) {
+                            val typographyOpenDesc = stringResource(R.string.reader_typography_open)
+                            IconButton(
+                                onClick = { showTypographyPanel = !showTypographyPanel },
+                                modifier = Modifier.semantics {
+                                    contentDescription = typographyOpenDesc
+                                }
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.reader_typography_aa),
+                                    style = if (BuildConfig.IS_EINK)
+                                        androidx.compose.material3.MaterialTheme.typography.titleSmall
+                                    else
+                                        androidx.compose.material3.MaterialTheme.typography.titleMedium,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                )
+                            }
+                        }
                         IconButton(onClick = {
                             Log.d(
                                 "IconButton",
@@ -480,7 +511,13 @@ fun MainContent(viewModel: MinifluxViewModel) {
                             val entryId = backStackEntry.arguments?.getInt("entryId")
                             if (entryId != null) {
                                 selectedScreen = Screen.ArticleDetail.route
-                                ArticleDetailScreen(viewModel, entryId, navController)
+                                ArticleDetailScreen(
+                                    viewModel = viewModel,
+                                    entryId = entryId,
+                                    navController = navController,
+                                    showTypographyPanel = showTypographyPanel,
+                                    onCloseTypographyPanel = { showTypographyPanel = false }
+                                )
                             } else {
                                 Log.d("MainActivity", "MainContent: Error while getting entryId")
                             }
