@@ -73,7 +73,9 @@ import com.i.miniread.util.ArticleHtml
 import com.i.miniread.util.DomainHelper
 import com.i.miniread.util.InterceptionConfig
 import com.i.miniread.util.InterceptionRuntime
+import com.i.miniread.util.DataStoreManager
 import com.i.miniread.util.ReaderThemeResolver
+import com.i.miniread.util.ReaderTypography
 import com.i.miniread.util.ReadingPositionResolver
 import com.i.miniread.util.ScrollSnapshot
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -396,6 +398,9 @@ fun ArticleWebView(
     // 读内存快照判定：不再在组合期 runBlocking 读盘；隐藏设置页改完配置后重新进入文章页即生效
     val interceptionSettings by InterceptionRuntime.settings.collectAsState()
     val currentBaseUrl by InterceptionRuntime.baseUrl.collectAsState()
+    // 阅读页排版配置（issue #19）：跟随 DataStore 写入即时重组；缺省即 DEFAULT（观感不变）。
+    val typography by DataStoreManager.getReaderTypographyFlow()
+        .collectAsState(initial = ReaderTypography.DEFAULT)
     val shouldInterceptRequests = remember(interceptionSettings, currentBaseUrl, feedId) {
         DomainHelper.isTargetDomain(interceptionSettings, currentBaseUrl) &&
             feedId != null && feedId in interceptionSettings.feedIds
@@ -413,6 +418,8 @@ fun ArticleWebView(
     var pageLoadTick by remember { mutableIntStateOf(0) }
     // 上次已处理的 pageLoadTick：区分「真·页面加载事件」与「纯布局变化（旋转/分屏）」
     var lastHandledPageLoadTick by remember { mutableIntStateOf(-1) }
+    // 排版 Effect 上次处理的 pageLoadTick：区分「新页面首次应用配置」与「用户调节触发的重排」
+    var lastAppliedTypoPageLoadTick by remember { mutableIntStateOf(-1) }
     // WebView 是否已被 onRelease 销毁：防止 postDelayed 回调对已销毁的 WebView 调用 JS
     var released by remember { mutableStateOf(false) }
     // 程序化滚动后的抑制时间窗（SystemClock.uptimeMillis 基准）：防止恢复被误判为「滚到底」
@@ -654,6 +661,55 @@ fun ArticleWebView(
         applyThemeCss(webView, css)
     }
 
+    // ===== 正文排版即时生效（issue #19）=====
+    // 两类触发，分开处理：
+    //   · pageLoadTick 变化 = 新页面加载完成 → 首次应用配置，不需要重锚（下方恢复 Effect 会处理进度）
+    //   · typography 变化 = 用户调节 → 取改动前快照 → 应用样式 → 等一次重排 → 按文档比例
+    //     重锚 + scrollGuardUntil（防被误判「滚到底」而标记已读）。
+    // ⚠️ 本 Effect 与「阅读位置恢复」Effect 都只写 scrollGuardUntil / scrollDebounceJob，
+    //    互不把对方的 key 掺进来；**绝不**把 typography 加进恢复 Effect 的 key（§8 坑 13）。
+    // ⚠️ 字号走 WebSettings.textZoom：手机 rem 基数 / 平板 px 两套模型，CSS 改字号会
+    //    出现「手机变了平板没变」。textZoom 是唯一同时命中两套模型的开关。
+    LaunchedEffect(pageLoadTick, typography) {
+        if (pageLoadTick == 0 || released) return@LaunchedEffect
+
+        val isNewPage = pageLoadTick != lastAppliedTypoPageLoadTick
+        lastAppliedTypoPageLoadTick = pageLoadTick
+
+        // 取「改动前」的落点：调节会重排文档，必须按新文档高度重新换算
+        val before = if (isNewPage) null else measureScrollSnapshot(webView)
+
+        // 1) 字号（统一缩放，立即生效，不触发页面重载）
+        webView.settings.textZoom = ReaderTypography.textZoomFor(typography.fontScale)
+        // 2) 其余尺寸：就地替换 <style id="miniread-typo-css">，只写尺寸、不写颜色
+        applyTypoCss(webView, typography.buildCss())
+
+        if (isNewPage || before == null || before.scrollY <= 0) return@LaunchedEffect
+
+        // 3) 等一次 CSS 重排（改字号/行距/行宽会真实改变 contentHeight）
+        delay(SCROLL_LAYOUT_SETTLE_DELAY_MS)
+        if (released) return@LaunchedEffect
+
+        // 4) 按文档相对比例换算新落点：saved.contentHeight 来自改动前，current 来自改动后
+        val latest = measureScrollSnapshot(webView)
+        if (latest.contentHeight <= 0 || latest.viewportHeight <= 0) return@LaunchedEffect
+        val resolved = ReadingPositionResolver.resolve(before, latest)
+        if (resolved <= 0) return@LaunchedEffect
+
+        scrollDebounceJob?.cancel()
+        scrollGuardUntil = SystemClock.uptimeMillis() + SCROLL_GUARD_MS
+        webView.scrollTo(0, resolved)
+        Log.d("ArticleWebView", "Typography changed: re-anchored scrollY=$resolved")
+        // 归一化落盘：直接写目标落点（scrollTo 后立刻读 scrollY 可能仍是旧值）
+        updatedOnPositionChanged(
+            ScrollSnapshot(
+                scrollY = resolved,
+                contentHeight = latest.contentHeight,
+                viewportHeight = latest.viewportHeight
+            )
+        )
+    }
+
     LaunchedEffect(pageLoadTick, sizeSignature) {
         if (pageLoadTick == 0) return@LaunchedEffect   // 页面尚未 onPageFinished
 
@@ -823,6 +879,21 @@ private fun applyThemeCss(webView: WebView, css: String) {
     webView.evaluateJavascript(script, null)
 }
 
+/**
+ * 就地替换页面内的排版样式表（`<style id="miniread-typo-css">`）。
+ *
+ * 与 [applyThemeCss] 同理：只改样式文本、不触发页面重载 —— 字号/行距/行宽调节时
+ * 正文 DOM 与阅读位置都不重建。CSS 通过 JSON 字符串字面量注入，避免引号 / 换行破坏脚本。
+ *
+ * ⚠️ 字号**不在这里**：`WebSettings.textZoom` 由 ArticleWebView 在应用配置时设置
+ * （手机 rem 基数 + 平板 px 两套模型，CSS 改字号会出现「手机变了平板没变」）。
+ */
+private fun applyTypoCss(webView: WebView, css: String) {
+    val script = "(function(){var e=document.getElementById('miniread-typo-css');" +
+        "if(e){e.textContent=${JSONObject.quote(css)};}return true;})()"
+    webView.evaluateJavascript(script, null)
+}
+
 // 异步加载并缓存文件内容的函数
 fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String) -> Unit) {
     // ⚠️ 主题判定必须走 ReaderThemeResolver：E-Ink 恒浅色（与 Compose 侧一致），
@@ -855,6 +926,8 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
         }
 
         // 构建HTML内容（主题 CSS 与 tablet CSS 分开注入，便于 uiMode 切换时只刷新主题块）
+        // 排版表首次注入为空：实际配置由 ArticleWebView 的排版 Effect 在页面加载后就地写入，
+        // 不参与 HTML 拼接（避免 content 变化导致 loadDataWithBaseURL 重载、阅读位置归零）。
         val tabletCss = cachedTabletCss ?: ""
         val htmlContent = cachedHtmlTemplate?.let { template ->
             cachedNormalizeCss?.let { normalizeCss ->
@@ -862,6 +935,7 @@ fun loadHtmlContentAsync(context: Context, content: String, onHtmlReady: (String
                     .replace("\$normalize_css", normalizeCss)
                     .replace("\$custom_css", themeCss)
                     .replace("\$tablet_css", tabletCss)
+                    .replace("\$typo_css", "")
                     .replace("\$content", content)
             }
         } ?: run {

@@ -27,6 +27,13 @@
         $tablet_css
     </style>
 
+    <!-- 正文排版样式（issue #19）：只写尺寸、不写颜色，位于主题表 / 平板表**之后**，
+         同优先级下后注入者胜出，因而能覆盖平板的 max-width / line-height。
+         ⚠️ id 是运行期就地刷新入口：调节面板改字号/行距/行宽时只替换 textContent，
+         不重建 HTML（避免阅读位置归零，见 AGENTS.md §8 坑 12）。改了 id 会让即时生效失效。 -->
+    <style id="miniread-typo-css">
+        $typo_css
+    </style>
 
     <title></title>
 

@@ -27,7 +27,9 @@
 /* 深色全局样式 */
 body {
     font-family: var(--font-sans);
-    font-size: 2rem;
+    /* 与 custom.css 的 2.2rem 对齐：此前深浅两套表字号不一致（2rem vs 2.2rem），
+       同一篇文章切到深色会小 10%（issue #19 背景点名）。字号仍由 WebSettings.textZoom 统一缩放。 */
+    font-size: 2.2rem;
     line-height: 1.6;
     color: var(--fg-dark);
     background-color: var(--bg-dark);
