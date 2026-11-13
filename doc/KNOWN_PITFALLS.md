@@ -117,3 +117,43 @@ M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSur
 - 正确写法：`imageVector = if (entry.starred) Icons.Filled.Star else Icons.Outlined.StarBorder`；`StarBorder` 来自 **`material-icons-extended`** —— `gradle/libs.versions.toml` 里 `androidx-material-icons-extended`（**版本由 Compose BOM 托管，不要写 version**），`app/build.gradle.kts` 里 `implementation(libs.androidx.material.icons.extended)`。
 - 代价已知：该库 classes 约 40MB，debug 包与增量构建变慢，release 由 R8 裁到只剩用到的图标。为一个空心星引入它是权衡后的选择，**不要**再为此自造 drawable / 自绘 Canvas。
 - ⚠️ 该库其它 outlined 图标是否有内孔**未逐个核实**；阅读页 7 键里只有星标依赖「镂空」表达状态，改别的图标前先在设备上看一眼。
+
+## 20. 阅读页排版（issue #19，2026-11-13 起）
+
+六项配置（字号 / 行距 / 行宽 / 段落间距 / 字体族 / 对齐）全局生效、持久化、调节即时生效且不打断阅读位置。AGENTS.md §8 条目 20 与 §0.2 保留了结论；这里记录**为什么这么设计**与取舍。
+
+### 为什么不重建 HTML
+
+`ArticleWebView` 的 `loadDataWithBaseURL` 必须留在 `LaunchedEffect(htmlContent)` 里（坑 12）：一旦把排版拼进 `loadHtmlContentAsync` 的输出，`htmlContent` 变化就会重载页面、阅读位置归零。因此排版走 `template.html` 里独立的 `<style id="miniread-typo-css">`（位于主题表 / 平板表**之后**，同优先级后注入者胜出），由 `applyTypoCss()` 用 JS 就地替换 `textContent`，与 `applyThemeCss()` 同一机制。首次加载时注入空槽，实际配置由页面加载完成后的排版 Effect 写入。
+
+### 为什么字号走 textZoom 而不是 CSS
+
+阅读页有**两套字号模型**：手机靠 `template.html` 的 `html { font-size: 6.4px }` rem 基数（坑 15），平板的 `body` / 标题在 `tablet_styles.css` 里全部写成 px。若只改 `html` 的 rem 基数或只改 body 的 `font-size`，必然出现「手机生效、平板不动」（或反之）。`WebSettings.textZoom` 是唯一同时命中两套模型的开关，且改动最小。
+
+`fontScale = 100` 映射到既有的硬编码 `textZoom = 125`，因此**默认值下观感逐像素不变**；四档 85 / 100 / 120 / 150 分别对应 `textZoom` 106 / 125 / 150 / 188。顺带把 `customdark.css` 的 `font-size: 2rem` 与 `custom.css` 的 `2.2rem` 对齐——此前深浅两套表字号不一致，同一篇文章切到深色会小 10%（issue #19 背景点名）。
+
+方案 B（把平板表 px 字号全改 rem/em、由 rem 基数统一驱动）更干净，但要重算整张平板表字号、回归面大，故不采用。
+
+### 为什么排版表只写尺寸
+
+颜色归 `custom.css` / `customdark.css`，Android 侧按 `ReaderThemeResolver` 整份选表（坑 16）。若排版表也写颜色，就回到 issue #18 的「同一属性两个开关、谁生效看媒体查询」的冲突。行宽只用 `max-width` + `margin: 0 auto`（不写死 width），只在超限时收窄；`em` 相对元素自身字号，不依赖 html 的 6.4px rem 基数；平板固定上限 800px / 900px 由后注入的排版表覆盖。
+
+### 调节后为什么必须重锚
+
+改字号 / 行距 / 行宽会真实改变 `contentHeight`（响应式渲染，坑 15），滚动锚点会漂移。流程：取改动前 `measureScrollSnapshot()` → 应用样式 → `delay(SCROLL_LAYOUT_SETTLE_DELAY_MS)` 等一次重排 → `ReadingPositionResolver.resolve(before, latest)` 按文档相对比例换算 → `scrollTo` **一次** → 设 `scrollGuardUntil` 防止被「滚到底」监听误判而把文章标记为已读（同坑 13）。
+
+⚠️ **绝不把 `typography` 加进恢复 Effect 的 key**：恢复 Effect 的 key 只能是 `pageLoadTick` 与 `sizeSignature`（坑 13），排版有自己独立的 Effect；混在一起会让「仅重组、不重载」的场景误触发恢复。
+
+### 入口与 E-Ink
+
+底栏 standard 6 键 / E-Ink 7 键、E-Ink 48dp 是硬约束（坑 8 / issue #11），**不能加第 8 个图标按钮**。因此用内容区右上的 `Aa` 浮动按钮 + 内联面板（叠层，不占底栏）。面板无动画（直接 `if` 组合，E-Ink 上任何渐变都是可见闪烁）、编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+
+### 存储与字体资产
+
+六个独立 `typo_*` DataStore key + `ReaderTypographyCodec`（宽容 + clamp：缺失 / 空串 / 非数字 / NaN / 越界一律回落 DEFAULT，绝不把脏值传给 WebView 或 Slider）。`DataStoreManager` **只新增、不改既有公开签名**；`clearAll()` 用 `preferences.clear()` 自动清掉这些 key。
+
+`assets/fonts/` 17.8MB（含 14.8MB `NotoSerifSC-Regular.ttf`）当前**没有**任何注入式 `@font-face` 引用（只有未被注入且禁删的 `magick.css` 引用 Averia*，§7）。「衬线」选项因此用 CSS 系统字体族（`Georgia` / `Times New Roman` / `serif`）实现，**未启用 NotoSerifSC**；是否启用自定义字体、以及这 17.8MB 资产的清理，单列技术债 / 新 issue。
+
+### 验收判据（issue 原文）
+
+三档字号 × 手机/平板 × 明/暗共 12 组合都生效（不出现「手机变了平板没变」）；调节后不重载、位置偏差 ≤1 屏、不误标已读；行距 1.4 / 2.0 极端值下引用块 / 代码块 / 表格不重叠；退出重进 / 杀进程保留、`clearAll()` 回默认；E-Ink 无动画、底栏仍 48dp、无残影；中英文案齐全无硬编码；双 flavor 单测 + assemble 通过。

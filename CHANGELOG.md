@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **文档编排重排四层**（不删、不移动任何文件）：`doc/README.md` 删除无效链接 `BUILD_CONFIGURATION_SUMMARY.md`，重写为 L1 权威 / L2 参考 / L3 历史存档 / 外部资料四层导航；`AGENTS.md` 文档地图同步分层。16 份文档补状态横幅；`doc/CHECKLIST.md` 的 flavor 级 `versionNameSuffix` 打勾改为「已取消」（现行规则见 §6）；`TECHNICAL_SUMMARY.md` / `BUILD_FLAVORS_GUIDE.md` / `BUILD_GUIDE.md` / `QUICK_BUILD_REFERENCE.md` 的 `1.1.0` 与 `v1.1.0` 示例更新为 1.2.2 或 `vX.Y.Z` 占位；`README.md` 去掉硬编码实例地址/Referer、修正「TodayEntryList 继承 EntryListScreen」等事实错误；`doc/archive/README.md` 补 13 份归档清单并修复 `FLAVOR_IMPLEMENTATION.md` 归档后失效链接。`API Reference.md` 标注为上游快照。
 - 校验：全部 md 相对链接零断链；双 flavor 单测各 208/208、`assembleStandardDebug` 通过（基线）。
 
+### Added
+- **阅读页可调排版**（issue #19）：阅读页内容区右上新增「Aa」入口 + 内联调节面板，支持**字号（四档 85%–150%）/ 行距（1.4–2.0）/ 行宽（默认 / 窄 / 中 / 宽）/ 段落间距（0.8–2.0em）/ 字体族（无衬线 / 衬线）/ 对齐（左 / 两端）**六项；全局生效、持久化（6 个独立 `typo_*` DataStore key）、调节即时生效且不打断当前阅读位置。
+  - 新增 `util/ReaderTypography.kt`（纯逻辑：档位换算 / clamp / CSS 片段生成 / 宽容解析 Codec）与纯 JVM 单测 `ReaderTypographyTest`（24 例，总用例 208 → 232）；新增 `ui/ReaderTypographyPanel.kt`（无动画、编辑态 `rememberSaveable`、E-Ink 黑白直角样式，文案 `reader_typography_*` 中英双份）。
+  - `app/src/main/assets/template.html`：新增 `<style id="miniread-typo-css">`，位于主题表 / 平板表之后（后注入者胜出）；`ui/ArticleDetailScreen.kt`：新增 `applyTypoCss()` 就地替换样式、独立排版 Effect 做阅读位置重锚、`DataStoreManager` 新增 6 个 key 与读写函数（既有公开签名不变，`clearAll()` 自动清理）。
+- `AGENTS.md` §8 新增坑 20（排版红线）、§0.2 速查表加排版行；`doc/KNOWN_PITFALLS.md` 同步 §20 完整论证。
+
+### Fixed
+- 深色主题表 `customdark.css` 的正文字号 `2rem` 与浅色 `custom.css` 的 `2.2rem` 对齐：此前同一篇文章切到深色会小 10%（issue #19 背景点名）。
+- 字号统一走 `WebSettings.textZoom`（`fontScale = 100` 对应既有 `textZoom = 125`），消除「手机 rem 基数 + 平板 px 两套模型，单改一侧出现手机变了平板没变」的隐患。
+
 ## [1.2.2] - 2026-11-03
 
 ### Fixed

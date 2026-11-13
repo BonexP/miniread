@@ -42,6 +42,7 @@
 | E-Ink 底栏 | `BottomAppBar` 必须 `Modifier.height(48.dp)` + `tonalElevation = 0.dp` + `contentPadding`（回归点 `3707759`） |
 | 阅读页视口 | `template.html` 必须保留 `<meta name="viewport" content="width=device-width, initial-scale=1">` 与 `html { font-size: 6.4px; }`；`tablet_styles.css` **无条件注入**，媒体查询带 `(min-width:600px) and (min-height:480px)` / `840px` 高度守卫 |
 | 阅读页主题 | `ReaderThemeResolver.isDarkMode(isEink, systemNightMode)` 是**唯一判据**，两处调用点都要走；`custom.css` 与 `customdark.css` 各保持 **0 处 `prefers-color-scheme`** |
+| 阅读页排版（#19） | 排版表 `<style id="miniread-typo-css">` **只写尺寸、不写颜色**，位于主题表 / 平板表**之后**；调节**就地替换 textContent，绝不重建 HTML**（`loadDataWithBaseURL` 只在 `LaunchedEffect(htmlContent)`）；字号统一走 `WebSettings.textZoom`（手机 rem 基数 + 平板 px 两套模型，CSS 改字号会「手机变了平板没变」）；行宽用 `max-width`+`margin:0 auto` 不写死 width；调节后必须**重锚**（取改动前快照 → `SCROLL_LAYOUT_SETTLE_DELAY_MS` → `ReadingPositionResolver.resolve` → `scrollTo` 一次 + `scrollGuardUntil`），且**不把排版配置加进恢复 Effect 的 key** |
 | 导航 | **单一 NavHost**（rail / 手机共用）；`if (useNavigationRail)` 只切 `AppNavigationRail`；**不要改回 if/else 两份** |
 | 阅读页加载 | `loadDataWithBaseURL` **必须留在 `LaunchedEffect(htmlContent)`**；恢复 Effect 的 **key 只能是 `pageLoadTick` 与 `sizeSignature`** |
 | 阅读位置 | `measureScrollSnapshot()` 的 `contentHeight` **不乘 `scale`**（与滚到底判定 `contentHeight * scale` 并存，改一处须同步另一处）；纯布局变化先过 `needsRestoreAfterLayoutChange`，正确则**绝不 `scrollTo`**；`onPageFinished` / `onRelease` **不许用 `scrollY == 0` 覆盖**已保存位置 |
@@ -49,7 +50,7 @@
 | 提示条 | 不要直接 `SnackbarHost(hostState)`（M3 默认反色 `InverseSurface`）；统一走 `ui/MinireadSnackbarHost.kt`；E-Ink 自绘 `Surface(RectangleShape, White, 0.dp, 0.dp, BorderStroke(2.dp, Black))` |
 | 星标 | `Icons.Outlined.Star` 是实心；用 `Icons.Outlined.StarBorder`（来自 `material-icons-extended`，**版本由 Compose BOM 托管，不要写 version**）；**不要**自造 drawable |
 | 存储 / 架构 | `DataStoreManager` 是唯一门面、**公开签名不可改**；token 走 `SecureTokenStore`；无 DI、无 Repository；flavor 差异用编译期同名文件替换 + `BuildConfig.IS_EINK` |
-| 测试 | 纯逻辑抽 `util/` 并配纯 JVM 单测（禁 `android.*` / Robolectric）；两 workflow 都跑 `testStandardDebugUnitTest` + `testEinkDebugUnitTest`（当前 **208 例**）；测试全在 `app/src/test/` |
+| 测试 | 纯逻辑抽 `util/` 并配纯 JVM 单测（禁 `android.*` / Robolectric）；两 workflow 都跑 `testStandardDebugUnitTest` + `testEinkDebugUnitTest`（当前 **232 例**）；测试全在 `app/src/test/` |
 | 发布 / VCS | 🚫 **推送远程 / 打 tag / 建 Release 每次需用户明确授权**；tag 归 git（附注）；提交走 jj；**凡执行 git 写操作先 `git switch main`**；必须保留仓库级 `working-copy.eol-conversion = "input-output"` |
 
 ---
@@ -126,10 +127,10 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 
 | source set | 内容 |
 | --- | --- |
-| `main` | 共享代码与资源；37 个 `.kt` + `res/` + `assets/` |
+| `main` | 共享代码与资源；39 个 `.kt`（含 `util/ReaderTypography.kt`、`ui/ReaderTypographyPanel.kt`）+ `res/` + `assets/` |
 | `standard` | 2 个 `.kt`（`eink/EInkConfig.kt`、`eink/EInkUtils.kt` 的标准版空实现）+ `res/values*/` |
 | `eink` | 2 个 `.kt`（同名文件的墨水屏实现）+ `res/values*/` |
-| `test` | 纯 JVM 单测（14 个文件 / **208 个用例**） |
+| `test` | 纯 JVM 单测（15 个文件 / **232 个用例**） |
 | `androidTest` | **空目录**（仅 `java/` 空壳）；本项目测试全部在 `test/` |
 
 ### `app/src/main/java/com/i/miniread/` 包职责
@@ -141,7 +142,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `ui/example/` | `FlavorUsageExample.kt`（flavor 用法示例，非主流程） |
 | `viewmodel/` | `MinifluxViewModel.kt`（唯一 ViewModel） |
 | `network/` | `MinifluxApi.kt`（Retrofit 接口 + 数据类 + `RetrofitInstance`） |
-| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig` / `InterceptionSettings` / `InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow`、`ReadingPosition`、`ReaderTheme`（E-Ink 主题判据）、`ArticleHtml`（正文 HTML 组装）、`FeedSelection`、`InterceptionDiagnostics`、`InterceptionClipboardFormat`、`InterceptionExamples` |
+| `util/` | 纯逻辑与存储门面：`DataStoreManager`、`SecureTokenStore`、`InterceptionConfig` / `InterceptionSettings` / `InterceptionRuntime`、`DomainHelper`、`FeedSorter`、`TimeWindow`、`ReadingPosition`、`ReaderTheme`（E-Ink 主题判据）、`ArticleHtml`（正文 HTML 组装）、`FeedSelection`、`InterceptionDiagnostics`、`InterceptionClipboardFormat`、`InterceptionExamples`、`ReaderTypography`（阅读排版纯逻辑 + Codec） |
 | `eink/` | flavor 专属：`EInkConfig.kt`、`EInkUtils.kt`（`standard/` 与 `eink/` 各一份同名文件） |
 
 ### 「去哪找什么」索引
@@ -150,6 +151,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | --- | --- |
 | 应用入口 / 导航 / 顶栏 / 底部 tab | `MainActivity.kt` |
 | 阅读页与底部操作栏 | `ui/ArticleDetailScreen.kt` |
+| 阅读页可调排版（配置 / CSS / 面板） | `util/ReaderTypography.kt` + `ui/ReaderTypographyPanel.kt` + `assets/template.html` 的 `miniread-typo-css` |
 | 网络接口与数据类 | `network/MinifluxApi.kt` |
 | 设置存储（唯一门面） | `util/DataStoreManager.kt` |
 | token 加密存储 | `util/SecureTokenStore.kt` |
@@ -195,6 +197,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | **加 / 改界面文案** | `res/values/strings.xml`（英文）+ `res/values-zh/strings.xml`（中文），**不要在 Kotlin 里硬编码**。**不要**定义 `app_name`——它由 flavor 的 `resValue` 生成。flavor 专属文案同理：`app/src/{standard,eink}/res/values/`（英文）+ `values-zh/`（中文） |
 | **加依赖** | `gradle/libs.versions.toml` + `app/build.gradle.kts` |
 | **加纯逻辑 + 单测** | 抽到 `util/` 纯函数 → 测试放 `app/src/test/java/com/i/miniread/`（纯 JVM，禁用 `android.*` 与 Robolectric，用 JUnit4） |
+| **改阅读页排版（字号 / 行距 / 行宽 / 段落间距 / 字体 / 对齐）** | 配置与纯逻辑 `util/ReaderTypography.kt` + `util/DataStoreManager.kt` 的 6 个 `typo_*` key；CSS 注入 `assets/template.html` 的 `miniread-typo-css` + `ui/ArticleDetailScreen.kt` 的 `applyTypoCss` / 排版 Effect；调节面板 `ui/ReaderTypographyPanel.kt`；文案 `res/values*/strings.xml` 的 `reader_typography_*`。**红线见 §0.2 / §8 坑 20** |
 | **改主题 / 配色** | `ui/theme/Color.kt`、`ui/theme/Theme.kt`、`res/values/{colors,themes}.xml`、flavor 的 `res/values/colors.xml` |
 | **改 token / baseUrl 存储** | `util/DataStoreManager.kt`（门面，**公开签名不可改**）+ `util/SecureTokenStore.kt` |
 | **改 API 接口** | `network/MinifluxApi.kt`（接口与数据类同文件） |
@@ -272,6 +275,15 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 19. **E-Ink 星标的「空心」要用 `StarBorder`，不能用 `Icons.Outlined.Star`**（2026-10-24 起，issue #17）：`material-icons-core-android:1.6.1` 里 `outlined/StarKt` 与 `filled/StarKt` 的 path **逐行相同**（单闭合轮廓、无内孔），`Icons.Outlined.Star` 渲染就是实心星；core 里也**没有** `StarBorder`。
     - 正确写法：`imageVector = if (entry.starred) Icons.Filled.Star else Icons.Outlined.StarBorder`；`StarBorder` 来自 **`material-icons-extended`** —— `gradle/libs.versions.toml` 里 `androidx-material-icons-extended`（**版本由 Compose BOM 托管，不要写 version**），`app/build.gradle.kts` 里 `implementation(libs.androidx.material.icons.extended)`。
     - 代价已知：该库 classes 约 40MB，debug 包与增量构建变慢，release 由 R8 裁到只剩用到的图标。**不要**再为此自造 drawable / 自绘 Canvas。⚠️ 该库其它 outlined 图标是否有内孔**未逐个核实**；阅读页 7 键里只有星标依赖「镂空」表达状态，改别的图标前先在设备上看一眼。
+
+20. **阅读页排版（issue #19，2026-11-13 起）**：六项配置（字号 / 行距 / 行宽 / 段落间距 / 字体族 / 对齐）全局生效、持久化、调节即时生效且不打断阅读位置。红线见 §0.2，逐条落地：
+    - **不得重建 HTML**：`loadDataWithBaseURL` 仍只在 `LaunchedEffect(htmlContent)`；排版走 `<style id="miniread-typo-css">` 的 `textContent` 就地替换（`applyTypoCss`），首次注入为空槽。把排版拼进 `loadHtmlContentAsync` 会让 `content` 变化触发重载、阅读位置归零（坑 12 同源）。
+    - **字号只走 `WebSettings.textZoom`**：手机 rem 基数（`html{font-size:6.4px}`）+ 平板 px 字号是两套模型；CSS 里改字号必然「手机生效、平板不动」。`fontScale = 100` 对应既有硬编码 `textZoom = 125`，默认值观感逐像素不变。`customdark.css` 的 `2rem` 已与 `custom.css` 的 `2.2rem` 对齐（此前深色比浅色小 10%）。
+    - **排版表只写尺寸、不写颜色**，且必须位于主题表 / 平板表**之后**（后注入者胜出，才能覆盖平板 `max-width:800px/900px` 与 `line-height:1.8`）；行宽只用 `max-width` + `margin:0 auto`，不写死 `width`；`em` 相对元素字号、不依赖 rem 基数。颜色永远归 `custom.css` / `customdark.css`（避免 #18 双开关）。
+    - **调节后必须重锚**：独立 `LaunchedEffect(pageLoadTick, typography)`，区分「新页面首次应用」与「用户调节」；后者取改动前 `measureScrollSnapshot()` → 应用样式 → `delay(SCROLL_LAYOUT_SETTLE_DELAY_MS)` → `ReadingPositionResolver.resolve` → `scrollTo` **一次** + `scrollGuardUntil`（防被误判滚到底而标记已读）。⚠️ **绝不把 `typography` 加进恢复 Effect 的 key**（坑 13）。
+    - **入口不占底栏**：`Aa` 浮动按钮 + 内联面板叠在内容区右上，底栏仍 standard 6 键 / E-Ink 7 键、E-Ink 仍 48dp；面板**无动画**（直接 `if` 组合，E-Ink 上渐变是可见闪烁）、编辑态 `rememberSaveable`、E-Ink 只换黑白直角样式不重排；文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+    - 六个独立 `typo_*` DataStore key + `ReaderTypographyCodec`（宽容 + clamp，脏值回落 DEFAULT）；`clearAll()` 用 `preferences.clear()` 自动清掉；`DataStoreManager` **只新增、不改既有公开签名**。
+    - `assets/fonts/` 17.8MB 未被任何注入式 `@font-face` 引用（仅 `magick.css` 引用 Averia*，§7 禁删）；「衬线」选项用 CSS 系统字体族（`Georgia` 等）实现，**未启用 NotoSerifSC**，字体资产清理另列技术债。
 
 ---
 
