@@ -148,15 +148,85 @@ M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSur
 
 底栏 standard 6 键 / E-Ink 7 键、E-Ink 48dp 是硬约束（坑 8 / issue #11），**不能加第 8 个图标按钮**。因此入口放在**全局顶栏的 `actions`** 里（`MainActivity` 的 `CenterAlignedTopAppBar`，与刷新同一栏），**仅阅读页显示**（`isArticleDetail` 判定）；显隐状态 `showTypographyPanel` 提升到 `MainContent` 并用 `rememberSaveable`，经参数传给 `ArticleDetailScreen`。
 
-面板是顶栏下方**占空间的独立横条**（`Column` 的第一个孩子，正文 `Box` 用 `weight(1f)` 被往下推），**不是 Box 叠层**——早先的实现用 `Alignment.TopEnd` + `fillMaxWidth(0.92f)` 叠在 WebView 上层，展开必然盖住正文。⚠️ 只增删面板这个兄弟节点，`ArticleWebView` 的组合位置必须恒定：把正文包进 `if/else` 会重建 WebView、重载页面、丢阅读位置（坑 12/13）。面板无动画、编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+#### v2 决策回退：从「占空间横条」改为「覆盖式浮层」（2026-11-19）
 
-### 面板的宽屏两列与高度约束
+**上一轮（2026-11-13）的决策**是：面板做顶栏下方**占空间的独立横条**（`Column` 的第一个孩子，正文 `Box` 用 `weight(1f)` 被往下推），**明确否决**早先 `Alignment.TopEnd` + `fillMaxWidth(0.92f)` 的 Box 叠层浮层，理由是「展开必然盖住正文」。
 
-面板内用 `BoxWithConstraints` 取自身可用宽高：`maxWidth >= 600.dp`（修长手机横屏 / 平板）时六个可调项排成**两列网格**，窄屏单列。六个 section 只在 `sections` 列表里定义一次、两种排布共用，避免两套控件逻辑漂移。
+**v2 显式推翻这条形态决策**：重新采用覆盖式浮层——挂在正文 `Box` 的**尾兄弟节点**（`ArticleWebView` 之后），**竖屏顶部下拉、横屏侧边滑出**，方向性 docking + 一条常驻「来源边」把手（黑线 + 小矩形）承载「拉出/滑出」语义，而非靠运动。**遮挡正文是本次主动接受的取舍**，换取两条硬收益：
 
-高度上限取 `(maxHeight * 0.65f).coerceIn(160.dp, 360.dp)`，内层保留 `verticalScroll`。早先硬编码 `heightIn(max = 360.dp)`：竖屏够用，但修长手机横屏时可用高度常只剩 200dp 上下，面板按内容撑到 360dp 后超出可视区被裁剪，观感「样式奇怪」。现在任何屏幕比例下都不溢出、内容始终可滚到底。
+1. **平板横屏不再触发坑 15 的真实重排**。占空间横条展开 360dp 会把 WebView 从约 636dp 压到约 276dp，跌破 `tablet_styles.css` 的 `(min-height:480px)` 高度守卫 → 平板样式（800/900px `max-width`、`line-height:1.8`、18px px 字号）在阅读中意外关闭、内容高度变化；而开合横条不改变 `sizeSignature`（屏幕级配置）、也不动 `pageLoadTick`，当前无 Effect 覆盖这次重排。覆盖浮层**不改变 WebView 测量尺寸**，从根上规避。
+2. **手机横屏不再被压到几乎不可读**。占空间横条在 800×360dp 手机横屏只有约 216dp 可用高，面板夹到 160dp 后正文 Box 扣 padding 仅剩约 36dp；横屏侧滑浮层只遮尾侧一条，正文可见宽仍约 396dp。
 
-（`maxHeight` 在无界约束下为 `Infinity`，经 `coerceIn(160.dp, 360.dp)` 会正确夹到 360dp，不会溢出。）
+**代价**：展开时盖住部分正文，「边调边看」只在浮层未覆盖区可见（这也是上一轮否决浮层的原话）。此为产品层决策变更，不是回归。
+
+⚠️ **必须继续守住的组合位置红线**：`ArticleWebView` 的组合槽位恒定——浮层只能是 WebView **之后**的兄弟节点，**绝不**把 WebView 包进 `if/else`、**也别**把浮层放到 WebView 之前；否则重建 WebView、重载、丢阅读位置（坑 12/13）。浮层根用不透明白底吞触摸，防止点击透传给下层 WebView；**不写 `fillMaxSize()`**。⚠️ **v3 真机修复（2026-11-19）：吞触摸的 `pointerInput` 必须在 `PointerEventPass.Final` 只消费 `!isConsumed` 残留，绝不能用默认 `Main` pass 全量 consume**——详见下方「v3 真机三症状修复」。
+
+**为什么不用 Dialog / ModalDrawer / Popup**：它们带 scrim（E-Ink 上是违反坑 18 的灰/半透明块），`DialogProperties` 无公开的 dim 开关（需 `DialogWindowProvider.dimAmount = 0` 绕窗），还引入独立窗口层 + 返回键 + 焦点复杂度；`ModalBottomSheet` 更带默认 slide 动画（残影）。in-Content Box 尾兄弟浮层天然无 scrim / 无窗口层，最利于 E-Ink。
+
+**E-Ink 无动画如何表达「下拉/滑出」**：`EInkConfig.DISABLE_ANIMATIONS = true`、`getAnimationSpec() = snap()` 是硬红线，真 `slideIn` / `animateDpAsState(Modifier.offset)` 会多次局刷产生残影。方案是**单帧瞬切 + 方向性 docking + 静态把手**：浮层一次出现，「下拉/滑出」由停靠边（顶/尾侧）与一条静态黑线 + 小矩形把手在单帧内表达，不靠运动。两 flavor 共用瞬切结构，标准版如需 `slideIn` 抛光则终态几何必须与瞬切一致（延续「E-Ink 只换样式、不重排」，坑 17/18/20）。浮层开合不改 WebView 尺寸 → 不触发重锚，恢复 Effect 的 key **绝不加** `showTypographyPanel` / `typography`（坑 13）。其余不变：编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
+
+### 控件 + 字段名符号化（v2 定形、v3 微调，2026-11-19）
+
+六项按**档位数**选控件，解决上一轮「字号糊在一起」的根因（两列临界列宽 294dp、四档按钮仅 70.5dp/个，扣 M3 16dp×2 内边距后英文 `Extra large` 必然折行）：
+
+| 档位性质 | 配置项 | 控件 | 取值（复用 `ReaderTypography` 常量） |
+| --- | --- | --- | --- |
+| 数值增减 | 行距、段距 | `+ / 值 / −` 步进器 | 1.4–2.0 / 0.8–2.0，step 0.1；保留 `UNSET = -1f`「跟随默认」哨兵（手机 1.6 / 平板 1.8 由 CSS 媒体查询决定） |
+| 两档 | 字体族、对齐 | `Switch` + 左右双标签 | 0/1；E-Ink 复用坑 17 黑白轨钮配方（选中白钮黑轨 / 未选中黑钮白轨 + 黑边），选中标签反色表达、不用灰 |
+| 多档（4） | 字号 | **v3：`+ / 档位文本 / −` 索引步进器**（v2 曾用 `Slider(steps=3)`，真机反直觉已弃用） | `FONT_SCALES = [85,100,120,150]`；`emit()` 仍写 `FONT_SCALES[step]`、仍只走 `textZoom` |
+| 多档（4） | 行宽 | **v3：四档按钮**（v2 曾用 `Slider(steps=3)`；窄面板 `maxWidth < 268.dp` 降 2×2 防英文折行，每档 48dp + `maxLines=1`） | `WIDTH_EM = [0,24,32,40]`；仍走 `max-width`+`margin:0 auto` |
+
+步进器到边界时按钮**不置灰**（灰在 E-Ink 上是脏块），保持黑框黑字、仅忽略点击；重置仍由标题行「恢复默认」统一处理。E-Ink 一律纯黑白 + 直角 + 2dp 黑框 + 零阴影/灰底/半透明，standard 走 M3 默认。所有 `+`/`−`/`Switch`/`Slider` 的 `contentDescription` 走 `stringResource`，且在 `@Composable` 作用域先提取成 `val` 再进 lambda（§6；尤其 `onClick` 内不可调 `stringResource`）；六个草稿与档位索引仍 `rememberSaveable`。
+
+字段名改符号/字形：字号 `A`、行宽 `↔`、行距 `↕`、段距 `¶`、字体 `Aa`、对齐 `≡`。**以文本字形为主**（语义精确、`Aa` 已有先例、`sp` 随字号、零新依赖），`material-icons-extended` 仅在 E-Ink 真机出现 tofu（□）时按符号逐个兜底——坑 19 明示该库其它图标的镂空/细节未逐个核实，不要无条件全换。符号对读屏无意义，必须挂可访问名：`Text` 用 `Modifier.semantics { contentDescription = stringResource(...) }`（或 `clearAndSetSemantics`），复用现有 6 个字段名 key（`reader_typography_font_size` / `_line_height` / `_width` / `_paragraph_spacing` / `_font_family` / `_align`，中英已一一对应，无需新增 label key），不可硬编码（坑 11）。六个 section 只在 `sections` 列表定义一次、四形态共用，防逻辑漂移。
+
+### v3 真机三症状修复（2026-11-19，模拟器鼠标操作反馈）
+
+v2 静态评审与双 flavor 构建/单测全绿，但用户真机（模拟器鼠标）发现三问题，揭示**静态验证覆盖不到事件派发与可视窗口**。根因与修法：
+
+1. **浮层难滚 / 显示不全（主因，代码可证）**：v2 浮层壳在「承载可滚面板的同一个祖先 Box」上挂 `pointerInput(Unit){ awaitEachGesture { awaitFirstDown(requireUnconsumed=false).consume(); do { awaitPointerEvent().changes.forEach{consume()} } while(pressed) } }`。`awaitPointerEvent()` 缺省走 `PointerEventPass.Main`（**父先子后**），祖先在子 `verticalScroll` 之前把整段手势 change 全量标为 consumed——而 Compose 滚动手势依赖 change 处于 **unconsumed** 才能建立 slop 与拖曳增量，于是「有 `verticalScroll` 却滚不动」；鼠标滚轮（`PointerEventType.Scroll`）同样被吞。叠加竖屏 `heightIn(max=0.55*maxH)` 偏小、横屏 `widthIn≤480dp` 使面板内 `maxWidth>=600` 两列恒 false 单列堆叠、`min=280dp` 在 220dp 多窗口溢出裁切（违反技能 `adaptive-screens.md` 220dp 最小宽 / 鼠标平滑滚动）。**修法**：吞触摸改 `awaitPointerEvent(PointerEventPass.Final)`（`Final` 子先父后）且只消费 `!isConsumed` 残留，`awaitFirstDown` 不再主动 consume——内层已消费的滚动 change 不被抢、空白处未消费事件才兜底吞掉不透传 WebView，「能滚」与「不透传」同时成立；Compose Foundation 1.6.1 `verticalScroll` 内含 `MouseWheelScrollNode` 原生处理滚轮且仅未消费时滚动，Final 修复后滚轮随之恢复（**不要**再加滚轮桥接，会双重滚动）。尺寸：竖屏去 `min=280dp`、上限 0.75/0.70 可用高 + `coerceAtMost(maxHeight)`；横屏放宽宽度 + 两列阈值 480dp。
+2. **行高/段距看不到 `+/−`**：~~非独立 bug，修①后自愈~~ —— **该结论已被 v4 真机证据推翻，见下节**（真实根因是 M3 默认 `contentPadding` 把 48dp 按钮的内容宽吃成 0，与滚动无关）。
+3. **字号滑块反直觉**：v2 的 `Slider(steps=3)` 只有当前档文本、鼠标难精确落档、E-Ink 上像进度条。**修法**：字号改 `+ / 档位文本 / −` 索引步进器（复用 `FONT_SCALES` 与 `emit()`，数据链路零改）、行宽改四档按钮（窄面板 2×2 兜底）。详见上方控件小节。
+
+**验证边界**：以上为静态代码审查 + 源码层分析（技能 `android-native-dev` 的 220dp / 鼠标滚动 / 48dp / 8dp 条款 × AGENTS 坑 12/13/15/17/18/20 逐条对照，见 I 岗诊断 `.workbuddy/reports/issue19-v3-diagnosis.md`）；鼠标实际手感与 Final-pass 真机滚动仍需设备复测。技能 `SKILL.md` 的 `Bottom Nav 80dp` / `versionNameSuffix` / Jetifier 三项冲突按 §0 判给 AGENTS（E-Ink 48dp 底栏、版本号唯一来源、仅 `useAndroidX`），不采纳。
+
+### v4 真机证据：纠正 v3 的「②自愈」误判（2026-11-19）
+
+v3 合入后仍被用户判「没改好」。本轮**真正上设备**（`Medium_Phone_API_36.0` 411×914dp @420dpi、`Medium_Tablet` 800×500dp @320dpi），用 `assembleStandardDebug` → `adb install` → `uiautomator dump`（取真实 bounds）→ `screencap` 像素采样 → `input mouse scroll` 复测，得到两条结论：
+
+**（A）`+`/`−` 字形根本没渲染（v3 的「②自愈」判断错误）**
+- 证据：面板打开时语义树里**不存在** `text="+"` / `text="−"` 节点，只有 `contentDescription='增大行距'` 等；`bounds` 为 `[886,721][1012,847]`（=48dp，尺寸正确）。截图 6× 放大后按钮内部**完全空白**；像素采样按钮主色 `(218,226,255)` = `primaryContainer`、描边 `(117,119,128)` = `outline`，**无任何字形像素**（对照：`A` 符号的字形色 `(73,93,146)` 在别处能采到，证明采样方法有效）。点击仍然生效（实测把行距从「跟随默认」点成 `1.4`）——所以用户「看得到框、点得动、不知点是加还是减」。
+- 根因：`Modifier.size(48.dp)` 同时锁定宽高，而 M3 1.2.1 `ButtonDefaults.ContentPadding = PaddingValues(horizontal = 24.dp, vertical = 8.dp)` → 内容可用宽 = `48 - 24 - 24 = 0` → `Text` 以 0dp 测量，字形不绘制。
+- 修法：`TypographyStepper` / `TypographyIndexStepper` 六处 `OutlinedButton` 全部显式 `contentPadding = PaddingValues(0.dp)`；48dp 命中区由 `size` 保证（§4 触控红线不变）。
+- **教训（写进排查流程）**：控件「看不见」时先 `uiautomator dump` 确认**字形节点是否存在**，再看布局/裁切/滚动。v3 只读代码得出「代码完整、随滚动自愈」，漏掉了「代码完整但渲染为 0 宽」这一类。
+
+**（B）滚动已被 v3 修好，但「显示不全」另有独立成因**
+- 证据：`input swipe` 与 `input mouse scroll 540 600 --axis VSCROLL,-3` 都能滚动面板，且画面 diff 的 bbox 只落在面板区域、**正文 WebView 像素不变** → Final-pass 方案同时满足「能滚」「不透传」「滚轮可用」，**确认保留、不得回退**。
+- 但六段是「符号标题一行 + 控件一行」的两行结构（每段约 78–100dp，六段 ≈600dp），竖屏正文 Box 内一屏只见 3.5 段 —— 与滚动能力无关。
+- 修法：`TypographySection` 改**单行**（符号固定 `28dp` 宽居左 + `Spacer(8.dp)` + 控件 `weight(1f)` 居右，`Row.heightIn(min = 48.dp)`），六段降到 ≈336dp 一屏可全见；浮层内边距 `16/12 → 12/8`，标题行两个 `TextButton` 加 `contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)`，避免横屏 ~400dp 浮层放不下标题与两个动作。
+- 高度上限比例 0.75/0.70 经实测**有效**（面板可见区确实接近该比例），无需改高度链——问题只在每段占位。
+
+**复测脚本（可复用）**：安装后 `adb shell input tap <Aa 坐标>` → `adb shell uiautomator dump /sdcard/ui.xml` → `adb pull` → 在 XML 里断言 `text="+"` 与 `text="−"` 节点存在且 bounds 在屏内；`adb shell input mouse scroll <x> <y> --axis VSCROLL,-3` 前后 `screencap` 求 diff，断言 bbox 不落在 WebView 区域。
+
+### 浮层的四形态尺寸与位置（v2 定形、v3 尺寸微调，替代原「宽屏两列 + 固定高度上限」）
+
+原占空间横条的 `BoxWithConstraints` 高度上限 `(maxHeight * 0.65f).coerceIn(160.dp, 360.dp)` 是为「正文按权重给的可用高」设计的（修长手机横屏可用高只剩约 200dp 会被裁），浮层改按**停靠边**给宽/高上限，`BoxWithConstraints` 改取**正文 Box 的可用宽高**（非全屏），任何比例都不溢出、内层 `verticalScroll` 保证内容可滚到底。
+
+形态判据（关键修正）：
+
+- 横/竖用 `LocalConfiguration.current.screenWidthDp > screenHeightDp`（复用 `AdaptiveLayoutHelper.isLandscape()` 口径，屏幕级、随 `configChanges` 重组实时更新）。
+- 手机/平板用 `LocalConfiguration.current.smallestScreenWidthDp >= 600`。⚠️ **不能复用 `AdaptiveLayoutHelper.isTablet()`**（它用 `screenWidthDp >= 600`，手机横屏宽约 780dp 会被误判成平板）；`smallestScreenWidthDp` 才是设备类别，与坑 15 `tablet_styles.css` 用 `(min-width:600px) and (min-height:480px)` 排除手机横屏的思路一致。
+
+| 形态 | docking | 尺寸（相对正文 Box 可用区） | 列数 / 与导航关系 |
+| --- | --- | --- | --- |
+| 手机竖屏 | 顶部下拉 | `fillMaxWidth()`；高上限按可用高 0.75 且 `coerceAtMost(maxHeight)`（**v3 去掉 `min=280dp` 硬下限**，220dp 多窗口会溢出裁切） | 单列；底栏仍在（不占底栏，坑 8） |
+| 手机横屏 | 尾侧（end）滑出 | `fillMaxHeight()`；宽按可用宽 0.62 夹取（v3 放宽） | **v3 两列可达**（阈值 480dp）；无 NavigationRail |
+| 平板竖屏 | 顶部下拉 | `fillMaxWidth()`（可受 800dp 内容宽约束居中）；高按可用高 0.70 夹取 | 两列（`maxWidth >= 480.dp`） |
+| 平板横屏 | 尾侧（end）滑出 | `fillMaxHeight()`；宽按可用宽 0.55 夹取 | 宽 ≥ 480dp 两列；**首侧是 NavigationRail，浮层放尾侧避开**（坑 7/14） |
+
+两列以 `maxWidth >= 480.dp` 判定（**v3 从 600dp 下调**：覆盖浮层壳宽上限 ≤600dp，600dp 阈值在横屏恒不可达、六段单列堆叠；480dp 使横屏可达两列）、六个 section 共用一份定义（延续防漂移要求）；docking 边画静态把手，浮层根不透明白底 + 2dp 黑框（E-Ink）/ M3 surface（standard）。展开态与六草稿 `rememberSaveable`，旋转后顶↔侧形态切换但展开态/草稿保留。
+
+> 注：上表尺寸沿用调研建议值，具体数值可在实现时按真机复核调整；`configChanges` 保证旋转不重建，`windowSizeClass` 与形态判定都必须在组合体内实时算，勿在 `onCreate` 算一次。
 
 ### 存储与字体资产
 

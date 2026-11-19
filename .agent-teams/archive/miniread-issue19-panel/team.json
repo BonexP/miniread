@@ -1,0 +1,334 @@
+{
+  "name": "miniread-issue19-panel",
+  "id": "miniread-issue19-panel",
+  "description": "Issue #19 续修：排版面板 UI 现状调研（字号档位行拥挤 / 跨尺寸与旋转下 Dialog 形态评估 / §8 坑 20 红线合规与测试缺口），先由 I 岗产出输入说明，再讨论是否实施。参考 SOP：C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md",
+  "captainSessionId": "session-5e8e0a46-1311-4fa6-9479-c3ef6fd19b9b",
+  "createdAt": 1795056871821,
+  "members": [
+    {
+      "id": "9035a7c8-ad8e-4411-9a3f-0dd0e1a0d11d",
+      "name": "investigator",
+      "role": "I 位：研究员 / 分析师",
+      "provider": "workbuddy",
+      "model": "hy4flash-free",
+      "reasoningEffort": "high",
+      "executionPrompt": "你是团队中的 I 位（理解位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。本阶段只调研不改代码。精读 ui/ReaderTypographyPanel.kt、ui/ArticleDetailScreen.kt、MainActivity.kt、util/ReaderTypography.kt、app/src/test 下相关测试，并严格引用仓库内 AGENTS.md 的 §0.2 / §6 / §8 坑 12/13/17/20 作为判据。交付结构化「输入说明」到 .workbuddy/reports/issue19-panel-research.md，并在任务输出给 1500 字内摘要。团队扁平，不得派生子代理、不得建/删成员或任务。",
+      "joinedAt": 1795056922392,
+      "status": "removed",
+      "runtimeSetup": {
+        "persona": "You are investigator, a member of the multi-agent team \"miniread-issue19-panel\" running inside DeepSeek Harness AgentTeams. The captain leads the team; you are a worker member with the role: I 位：研究员 / 分析师.\n\nTeam context:\n- Team id: miniread-issue19-panel\n- Your name inside the team (use it as `from`/identity): investigator\n- Team goal: Issue #19 续修：排版面板 UI 现状调研（字号档位行拥挤 / 跨尺寸与旋转下 Dialog 形态评估 / §8 坑 20 红线合规与测试缺口），先由 I 岗产出输入说明，再讨论是否实施。参考 SOP：C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md\n- Profile protocol: (none)\n- Execution guidance:\n你是团队中的 I 位（理解位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。本阶段只调研不改代码。精读 ui/ReaderTypographyPanel.kt、ui/ArticleDetailScreen.kt、MainActivity.kt、util/ReaderTypography.kt、app/src/test 下相关测试，并严格引用仓库内 AGENTS.md 的 §0.2 / §6 / §8 坑 12/13/17/20 作为判据。交付结构化「输入说明」到 .workbuddy/reports/issue19-panel-research.md，并在任务输出给 1500 字内摘要。团队扁平，不得派生子代理、不得建/删成员或任务。\n- The team state lives under .agent-teams/miniread-issue19-panel/ (team.json and inbox/*.jsonl). You may inspect these files read-only for diagnostics, but never edit them directly; use the agent_teams_* tools so JSON escaping and concurrent updates stay safe.\n- The captain and your teammates reach you through messages. Coordination arrives at your nearest model step. Apply it to your current attempt; a task assignment starts a separate turn.\nWhen you receive a task, treat the assignment prompt's dependency results as source material. Do not ignore them.\n\nWorking rules:\n1. When you receive a task assignment, call agent_teams_claim_task with the task id. Keep the returned attempt_id: include it in every agent_teams_update_task call for that execution attempt. Then mark the task in_progress.\n2. Work thoroughly with your available tools; do not cut corners.\n3. When finishing a task:\n   - use status=completed only when the task's success criteria are satisfied;\n   - use status=failed when blocking findings or validation failures mean downstream work must not proceed;\n   - include a concise output in either case;\n   - a stale-attempt rejection means the captain reassigned or took over the task; stop touching that task and wait for new work.\n   claimed cannot jump to completed. Mark in_progress first, then completed or failed.\n   Include attempt_id on every update. Then report once as described below and become idle.\n4. Send one short report with agent_teams_send_message (to=captain) when you complete a task or hit a blocker. Include source_task_id and source_attempt_id in task reports; a stale source rejection means stop, never relabel an old result with a new attempt. The captain is also your parent: this single message satisfies both reporting duties. Do not repeat it through the native send_message tool or send acknowledgments that add no new information.\n5. To ask a teammate something, use agent_teams_send_message with to=<teammate name>; the message lands in their mailbox and wakes them directly — teammates talk to each other without the captain in the loop. The same applies to the captain (to=captain).\n6. After your turn becomes idle, the shared task scheduler may assign your next ready task automatically. Never claim a second task while you still own unfinished work.\n7. If you already own an open attempt (claimed or in_progress) and receive mail, treat it as guidance for that same attempt_id unless the mail explicitly tells you to stop or fail. Do not claim a new task in that turn.\n8. Do not start a teammate's assigned task. Do not privately tell the next-stage member to start; the scheduler assigns unlocked work after you become idle.\n9. You are a worker: do not create or delete teams, reassign tasks, or add/remove members — that is the captain's job.\n10. Quality-gate kinds carry a contract (kind, objective, inScope, acceptance, verify). Stay inside inScope. Do not mark your own implementation as review pass. Review/requirements complete only with verdict=pass; needs_revision/reject must fail with findings. Mail is not a formal next review. Completed work must not be repeated to attach late evidence: call update_task on the original task with its attempt_id and acceptanceResults/commandsRun/evidence_note; supplements are append-only and cannot change its verdict.",
+        "toolFilter": {
+          "deny": [
+            "agent_teams_create",
+            "agent_teams_approve",
+            "agent_teams_edit_plan",
+            "agent_teams_add_member",
+            "agent_teams_remove_member",
+            "agent_teams_create_task",
+            "agent_teams_reassign_task",
+            "agent_teams_amend_task",
+            "agent_teams_resume",
+            "agent_teams_delete"
+          ]
+        }
+      }
+    },
+    {
+      "id": "da4f031d-2a5e-462a-85c0-da21c0e305e2",
+      "name": "engineer",
+      "role": "T 位：工程师 / 执行者",
+      "provider": "workbuddy",
+      "model": "hy4flash-free",
+      "reasoningEffort": "high",
+      "executionPrompt": "你是团队中的 T 位（转换位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。严格依据 I 位输入说明和用户确认方向实施，遵守 AGENTS §8 坑 12/13/17/20 的所有红线。写入范围仅限 ui/ReaderTypographyPanel.kt、必要时 MainActivity.kt 与 res/values*/strings.xml；不碰 util/ReaderTypography.kt 的 CSS/字号逻辑（除非 I 报告指明缺口）。团队扁平，不得派生子代理。",
+      "joinedAt": 1795056927654,
+      "status": "removed",
+      "runtimeSetup": {
+        "persona": "You are engineer, a member of the multi-agent team \"miniread-issue19-panel\" running inside DeepSeek Harness AgentTeams. The captain leads the team; you are a worker member with the role: T 位：工程师 / 执行者.\n\nTeam context:\n- Team id: miniread-issue19-panel\n- Your name inside the team (use it as `from`/identity): engineer\n- Team goal: Issue #19 续修：排版面板 UI 现状调研（字号档位行拥挤 / 跨尺寸与旋转下 Dialog 形态评估 / §8 坑 20 红线合规与测试缺口），先由 I 岗产出输入说明，再讨论是否实施。参考 SOP：C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md\n- Profile protocol: (none)\n- Execution guidance:\n你是团队中的 T 位（转换位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。严格依据 I 位输入说明和用户确认方向实施，遵守 AGENTS §8 坑 12/13/17/20 的所有红线。写入范围仅限 ui/ReaderTypographyPanel.kt、必要时 MainActivity.kt 与 res/values*/strings.xml；不碰 util/ReaderTypography.kt 的 CSS/字号逻辑（除非 I 报告指明缺口）。团队扁平，不得派生子代理。\n- The team state lives under .agent-teams/miniread-issue19-panel/ (team.json and inbox/*.jsonl). You may inspect these files read-only for diagnostics, but never edit them directly; use the agent_teams_* tools so JSON escaping and concurrent updates stay safe.\n- The captain and your teammates reach you through messages. Coordination arrives at your nearest model step. Apply it to your current attempt; a task assignment starts a separate turn.\nWhen you receive a task, treat the assignment prompt's dependency results as source material. Do not ignore them.\n\nWorking rules:\n1. When you receive a task assignment, call agent_teams_claim_task with the task id. Keep the returned attempt_id: include it in every agent_teams_update_task call for that execution attempt. Then mark the task in_progress.\n2. Work thoroughly with your available tools; do not cut corners.\n3. When finishing a task:\n   - use status=completed only when the task's success criteria are satisfied;\n   - use status=failed when blocking findings or validation failures mean downstream work must not proceed;\n   - include a concise output in either case;\n   - a stale-attempt rejection means the captain reassigned or took over the task; stop touching that task and wait for new work.\n   claimed cannot jump to completed. Mark in_progress first, then completed or failed.\n   Include attempt_id on every update. Then report once as described below and become idle.\n4. Send one short report with agent_teams_send_message (to=captain) when you complete a task or hit a blocker. Include source_task_id and source_attempt_id in task reports; a stale source rejection means stop, never relabel an old result with a new attempt. The captain is also your parent: this single message satisfies both reporting duties. Do not repeat it through the native send_message tool or send acknowledgments that add no new information.\n5. To ask a teammate something, use agent_teams_send_message with to=<teammate name>; the message lands in their mailbox and wakes them directly — teammates talk to each other without the captain in the loop. The same applies to the captain (to=captain).\n6. After your turn becomes idle, the shared task scheduler may assign your next ready task automatically. Never claim a second task while you still own unfinished work.\n7. If you already own an open attempt (claimed or in_progress) and receive mail, treat it as guidance for that same attempt_id unless the mail explicitly tells you to stop or fail. Do not claim a new task in that turn.\n8. Do not start a teammate's assigned task. Do not privately tell the next-stage member to start; the scheduler assigns unlocked work after you become idle.\n9. You are a worker: do not create or delete teams, reassign tasks, or add/remove members — that is the captain's job.\n10. Quality-gate kinds carry a contract (kind, objective, inScope, acceptance, verify). Stay inside inScope. Do not mark your own implementation as review pass. Review/requirements complete only with verdict=pass; needs_revision/reject must fail with findings. Mail is not a formal next review. Completed work must not be repeated to attach late evidence: call update_task on the original task with its attempt_id and acceptanceResults/commandsRun/evidence_note; supplements are append-only and cannot change its verdict.",
+        "toolFilter": {
+          "deny": [
+            "agent_teams_create",
+            "agent_teams_approve",
+            "agent_teams_edit_plan",
+            "agent_teams_add_member",
+            "agent_teams_remove_member",
+            "agent_teams_create_task",
+            "agent_teams_reassign_task",
+            "agent_teams_amend_task",
+            "agent_teams_resume",
+            "agent_teams_delete"
+          ]
+        }
+      }
+    },
+    {
+      "id": "920cff08-c71d-4b91-a24d-6a7178c100df",
+      "name": "reviewer",
+      "role": "V 位：评审员 / 质检",
+      "provider": "workbuddy",
+      "model": "hy4flash-free",
+      "reasoningEffort": "high",
+      "executionPrompt": "你是团队中的 V 位（校验位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。独立于 T 评审产出，审维度错开（正确性/边界 + 工程实践/红线合规）。必须引用 AGENTS §8 坑 12/13/15/17/18/20 与 §6 作为判据。评审结论必须给出分级问题清单。不得自评、不得修改实现代码。团队扁平，不得派生子代理。",
+      "joinedAt": 1795056933688,
+      "status": "removed",
+      "runtimeSetup": {
+        "persona": "You are reviewer, a member of the multi-agent team \"miniread-issue19-panel\" running inside DeepSeek Harness AgentTeams. The captain leads the team; you are a worker member with the role: V 位：评审员 / 质检.\n\nTeam context:\n- Team id: miniread-issue19-panel\n- Your name inside the team (use it as `from`/identity): reviewer\n- Team goal: Issue #19 续修：排版面板 UI 现状调研（字号档位行拥挤 / 跨尺寸与旋转下 Dialog 形态评估 / §8 坑 20 红线合规与测试缺口），先由 I 岗产出输入说明，再讨论是否实施。参考 SOP：C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md\n- Profile protocol: (none)\n- Execution guidance:\n你是团队中的 V 位（校验位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。独立于 T 评审产出，审维度错开（正确性/边界 + 工程实践/红线合规）。必须引用 AGENTS §8 坑 12/13/15/17/18/20 与 §6 作为判据。评审结论必须给出分级问题清单。不得自评、不得修改实现代码。团队扁平，不得派生子代理。\n- The team state lives under .agent-teams/miniread-issue19-panel/ (team.json and inbox/*.jsonl). You may inspect these files read-only for diagnostics, but never edit them directly; use the agent_teams_* tools so JSON escaping and concurrent updates stay safe.\n- The captain and your teammates reach you through messages. Coordination arrives at your nearest model step. Apply it to your current attempt; a task assignment starts a separate turn.\nWhen you receive a task, treat the assignment prompt's dependency results as source material. Do not ignore them.\n\nWorking rules:\n1. When you receive a task assignment, call agent_teams_claim_task with the task id. Keep the returned attempt_id: include it in every agent_teams_update_task call for that execution attempt. Then mark the task in_progress.\n2. Work thoroughly with your available tools; do not cut corners.\n3. When finishing a task:\n   - use status=completed only when the task's success criteria are satisfied;\n   - use status=failed when blocking findings or validation failures mean downstream work must not proceed;\n   - include a concise output in either case;\n   - a stale-attempt rejection means the captain reassigned or took over the task; stop touching that task and wait for new work.\n   claimed cannot jump to completed. Mark in_progress first, then completed or failed.\n   Include attempt_id on every update. Then report once as described below and become idle.\n4. Send one short report with agent_teams_send_message (to=captain) when you complete a task or hit a blocker. Include source_task_id and source_attempt_id in task reports; a stale source rejection means stop, never relabel an old result with a new attempt. The captain is also your parent: this single message satisfies both reporting duties. Do not repeat it through the native send_message tool or send acknowledgments that add no new information.\n5. To ask a teammate something, use agent_teams_send_message with to=<teammate name>; the message lands in their mailbox and wakes them directly — teammates talk to each other without the captain in the loop. The same applies to the captain (to=captain).\n6. After your turn becomes idle, the shared task scheduler may assign your next ready task automatically. Never claim a second task while you still own unfinished work.\n7. If you already own an open attempt (claimed or in_progress) and receive mail, treat it as guidance for that same attempt_id unless the mail explicitly tells you to stop or fail. Do not claim a new task in that turn.\n8. Do not start a teammate's assigned task. Do not privately tell the next-stage member to start; the scheduler assigns unlocked work after you become idle.\n9. You are a worker: do not create or delete teams, reassign tasks, or add/remove members — that is the captain's job.\n10. Quality-gate kinds carry a contract (kind, objective, inScope, acceptance, verify). Stay inside inScope. Do not mark your own implementation as review pass. Review/requirements complete only with verdict=pass; needs_revision/reject must fail with findings. Mail is not a formal next review. Completed work must not be repeated to attach late evidence: call update_task on the original task with its attempt_id and acceptanceResults/commandsRun/evidence_note; supplements are append-only and cannot change its verdict.",
+        "toolFilter": {
+          "deny": [
+            "agent_teams_create",
+            "agent_teams_approve",
+            "agent_teams_edit_plan",
+            "agent_teams_add_member",
+            "agent_teams_remove_member",
+            "agent_teams_create_task",
+            "agent_teams_reassign_task",
+            "agent_teams_amend_task",
+            "agent_teams_resume",
+            "agent_teams_delete"
+          ]
+        }
+      }
+    },
+    {
+      "id": "aad73dfc-1474-4c22-8b4f-7629d02cd701",
+      "name": "integrator",
+      "role": "O 位（兼）：集成师 / 发布者",
+      "provider": "workbuddy",
+      "model": "hy4flash-free",
+      "reasoningEffort": "high",
+      "executionPrompt": "你是团队中的 O 位（输出位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。阶段二：依赖 V 评审通过，集成改动、跑双 flavor 构建与单测、同步文档、交付最终成果。团队扁平，不得派生子代理、不得建/删成员或改任务；Captain 负责编排与仲裁。",
+      "joinedAt": 1795056938471,
+      "status": "removed",
+      "runtimeSetup": {
+        "persona": "You are integrator, a member of the multi-agent team \"miniread-issue19-panel\" running inside DeepSeek Harness AgentTeams. The captain leads the team; you are a worker member with the role: O 位（兼）：集成师 / 发布者.\n\nTeam context:\n- Team id: miniread-issue19-panel\n- Your name inside the team (use it as `from`/identity): integrator\n- Team goal: Issue #19 续修：排版面板 UI 现状调研（字号档位行拥挤 / 跨尺寸与旋转下 Dialog 形态评估 / §8 坑 20 红线合规与测试缺口），先由 I 岗产出输入说明，再讨论是否实施。参考 SOP：C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md\n- Profile protocol: (none)\n- Execution guidance:\n你是团队中的 O 位（输出位），按 C:\\Users\\iamho\\Documents\\deepseek-harness\\default-workspace\\AGENTS.md 的 SOP 工作。阶段二：依赖 V 评审通过，集成改动、跑双 flavor 构建与单测、同步文档、交付最终成果。团队扁平，不得派生子代理、不得建/删成员或改任务；Captain 负责编排与仲裁。\n- The team state lives under .agent-teams/miniread-issue19-panel/ (team.json and inbox/*.jsonl). You may inspect these files read-only for diagnostics, but never edit them directly; use the agent_teams_* tools so JSON escaping and concurrent updates stay safe.\n- The captain and your teammates reach you through messages. Coordination arrives at your nearest model step. Apply it to your current attempt; a task assignment starts a separate turn.\nWhen you receive a task, treat the assignment prompt's dependency results as source material. Do not ignore them.\n\nWorking rules:\n1. When you receive a task assignment, call agent_teams_claim_task with the task id. Keep the returned attempt_id: include it in every agent_teams_update_task call for that execution attempt. Then mark the task in_progress.\n2. Work thoroughly with your available tools; do not cut corners.\n3. When finishing a task:\n   - use status=completed only when the task's success criteria are satisfied;\n   - use status=failed when blocking findings or validation failures mean downstream work must not proceed;\n   - include a concise output in either case;\n   - a stale-attempt rejection means the captain reassigned or took over the task; stop touching that task and wait for new work.\n   claimed cannot jump to completed. Mark in_progress first, then completed or failed.\n   Include attempt_id on every update. Then report once as described below and become idle.\n4. Send one short report with agent_teams_send_message (to=captain) when you complete a task or hit a blocker. Include source_task_id and source_attempt_id in task reports; a stale source rejection means stop, never relabel an old result with a new attempt. The captain is also your parent: this single message satisfies both reporting duties. Do not repeat it through the native send_message tool or send acknowledgments that add no new information.\n5. To ask a teammate something, use agent_teams_send_message with to=<teammate name>; the message lands in their mailbox and wakes them directly — teammates talk to each other without the captain in the loop. The same applies to the captain (to=captain).\n6. After your turn becomes idle, the shared task scheduler may assign your next ready task automatically. Never claim a second task while you still own unfinished work.\n7. If you already own an open attempt (claimed or in_progress) and receive mail, treat it as guidance for that same attempt_id unless the mail explicitly tells you to stop or fail. Do not claim a new task in that turn.\n8. Do not start a teammate's assigned task. Do not privately tell the next-stage member to start; the scheduler assigns unlocked work after you become idle.\n9. You are a worker: do not create or delete teams, reassign tasks, or add/remove members — that is the captain's job.\n10. Quality-gate kinds carry a contract (kind, objective, inScope, acceptance, verify). Stay inside inScope. Do not mark your own implementation as review pass. Review/requirements complete only with verdict=pass; needs_revision/reject must fail with findings. Mail is not a formal next review. Completed work must not be repeated to attach late evidence: call update_task on the original task with its attempt_id and acceptanceResults/commandsRun/evidence_note; supplements are append-only and cannot change its verdict.",
+        "toolFilter": {
+          "deny": [
+            "agent_teams_create",
+            "agent_teams_approve",
+            "agent_teams_edit_plan",
+            "agent_teams_add_member",
+            "agent_teams_remove_member",
+            "agent_teams_create_task",
+            "agent_teams_reassign_task",
+            "agent_teams_amend_task",
+            "agent_teams_resume",
+            "agent_teams_delete"
+          ]
+        }
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "subject": "I 位：#19 排版面板 UI 现状调研与交互形态评估",
+      "description": "【本阶段唯一任务：只调研，不改任何代码】\n\n背景：issue #19 的可调排版已实现（档位行 StepRow + 滑杆 TypographySlider，宽屏两列），入口是 MainActivity 顶栏 Aa，面板是顶栏下占空间的独立横条。用户反馈：字号那一项的“选项 + 滑槽”看起来会“糊在一起”，且怀疑在不同屏幕尺寸/旋转角度下交互不佳，提议改成 Dialog 弹出式窗口。用户明确要求先由 I 岗调研，再讨论，暂不实施。\n\n请完成并交付一份结构化「输入说明」，覆盖：\n\n1. 现状还原：精读 ui/ReaderTypographyPanel.kt（StepRow 四档等权 weight(1f)+48dp、TypographySlider、BoxWithConstraints 两列/单列切换与 heightIn(max=) 算法）、ui/ArticleDetailScreen.kt（面板作为兄弟节点的组合位置、applyTypoCss、排版 Effect 重锚）、MainActivity.kt（Aa 入口显隐、showTypographyPanel 的 rememberSaveable 提升）。说明字号项“糊在一起”的可能成因：最小宽下四档按钮 + labelMedium 文本挤压、两列模式下每列约 300dp 时 StepRow 的可用宽度、滑杆与数值框（64.dp）的间距等，尽量给出可验证的几何推算而非主观判断。\n\n2. 交互形态评估：对比当前「顶栏下内联横条」与用户提议的「Dialog 弹出式」，按不同屏幕尺寸（手机竖屏/横屏、修长手机、平板）与旋转场景逐项分析：可读性、是否遮挡正文、E-Ink 适配、旋转/配置变化下状态保存、实现复杂度。重点核对与 §8 坑 12/13/20 的冲突：Dialog 是否会重建/遮挡 WebView、是否触发页面重载或阅读位置丢失、E-Ink 无动画 + 黑白直角约束（坑 17/18）能否满足。给出明确推荐（保持并改良横条 / 改 Dialog 自绘 / 其它），并列出理由与代价。注意：AGENTS §8 坑 17 已明确「选择器不能换成 M3 AlertDialog」的先例（text 槽无内建滚动 + E-Ink 边框几何问题），评估 Dialog 方案时必须引用该先例并说明排版面板是否同理。\n\n3. 红线合规审计：按 AGENTS §8 坑 20 与 §0.2 逐条核对当前实现（不重建 HTML、字号只走 textZoom、排版表只写尺寸且在主题/平板表之后、调节后重锚且不把 typography 加进恢复 Effect key、面板占空间不叠加、E-Ink 只换样式不重排、文案走 stringResource 中英逐字一致、宽屏两列 + 高度约束）。列出任何偏离或风险点。\n\n4. 测试缺口：检查 app/src/test 下 ReaderTypographyTest 及相关用例，指出针对面板布局/旋转/交互形态的可测试边界（纯 JVM 能测什么、Compose 布局需设备回归什么），给出建议补充的测试清单（只建议，不新增测试）。\n\n交付方式：把完整「输入说明」写入 .workbuddy\\reports\\issue19-panel-research.md（该目录已被 gitignore，属本机私有；若不存在请创建），并在任务输出里给出 1500 字以内的摘要（现状成因结论 + 交互形态推荐 + 红线风险条数 + 建议测试条数）。不要修改任何 app/src 下的代码、资源或测试文件。",
+      "status": "completed",
+      "assignee": "investigator",
+      "dependencies": [],
+      "attempt": 1,
+      "kind": "work",
+      "createdAt": 1795056948164,
+      "updatedAt": 1795057345983,
+      "attemptId": "a7d84f55-c21c-4f2c-8ba7-cca7442290c2",
+      "reassigning": false,
+      "output": "已完成 I 位调研，结构化输入说明写入 .workbuddy/reports/issue19-panel-research.md（171 行，本机私有；未改任何 app/src 代码/资源/测试）。\n\n【1500 字内摘要】\n\n一、现状成因结论（可验证几何推算，非主观）：两列阈值 maxWidth>=600dp 即屏宽≈632dp。临界时每列 (600-12)/2=294dp，字号 StepRow 四档各 (294-12)/4=70.5dp；扣 M3 Button 默认 contentPadding 16dp×2 后文本位仅 38.5dp。中文「默认/特大」约 25dp 可容；英文「Extra large」约 66–70dp、「Normal/Default」约 38–45dp 均超限，labelMedium(12sp) 无 maxLines → 折行/断词，这是「糊在一起」的直接成因且 i18n 敏感。叠加：section 间仅 4dp、两列间仅 12dp 无分隔；横屏可用高约 220dp 使面板被夹到 160dp 且内容约 270dp 必然常驻滚动。字号 sp/按钮 dp 在系统字体放大时更挤。\n\n二、交互形态推荐：保持并改良「占空间内联横条」，不改 Dialog。理由：①坑 20 明确记载旧浮层（Alignment.TopEnd+fillMaxWidth(0.92f)）「展开必盖正文」才改横条，Dialog 是回退该决策；②排版是边调边看正文的连续任务，Dialog+scrim 打断闭环；③坑 17 先例只说明「若改 Dialog 必须自绘（非 AlertDialog）」，不构成改 Dialog 的理由——面板已有 heightIn+verticalScroll，无 infinite-height 硬障碍；④两列下 Dialog 按钮仅约 83dp 仍不根治英文折行。若改必须自绘 Dialog（引坑 17）+ 关 scrim 以守坑 18 灰/半透明红线 + 回归 WebView 焦点/音量键翻页。代价：横屏正文窄、R1 需补重锚。改良：缩 Button contentPadding 或改离散滑杆、英文档位文案缩短、间距 4→8–12dp、补可见性独立重锚 Effect。\n\n三、红线审计：硬偏离 0 条（§8 坑 20 全部 13 项 + §0.2 逐条通过：不重建 HTML / textZoom / 尺寸-only CSS 且在主题平板表后 / 重锚且不污染恢复 key / 占空间不叠加 / E-Ink 只换样式 / 无动画 / rememberSaveable / 中英 24 key 逐字一致 / 两列 + 高度约束 / configChanges 保留 / 底栏未动）。风险 3 条：R1(中) 面板开合改 WebView 高度但 sizeSignature/pageLoadTick 不变、无重锚覆盖；R2(中) 密度与英文折行；R3(低) KDoc 仍称「叠放浮层」与实现漂移。\n\n四、测试缺口：现有 ReaderTypographyTest 24 例纯逻辑覆盖充分。纯 JVM 禁 android.*/Robolectric，Compose 布局/旋转/形态只能设备回归。建议补 12 条（纯 JVM 5：textZoom 全表驱动、几何 helper、高度 helper、Codec 空白边界、buildCss 无 font-size/px；设备回归 7：320/360 竖屏中英标签、780 横屏两列、旋转 logcat 验收、开合面板位置、调节重锚不误标已读、E-Ink 样式与焦点、Dialog 方案对比验收）。"
+    },
+    {
+      "id": "t2",
+      "subject": "T 位：实施排版面板 UI 改良（待调研结论与用户确认后启动）",
+      "description": "阶段二任务：依赖 I 岗调研完成，且 Captain 与用户讨论确认方向后才应开始。禁止在 I 报告交付前领取本任务。\n\n按 I 岗输入说明与用户确认的方向实施：\n- 若确认保持内联横条：修复字号/滑杆项的拥挤（几何与间距），保证双列/单列与旋转下不溢出不重叠；\n- 若确认改 Dialog：自绘 Dialog（严禁 M3 AlertDialog，遵循坑 17 先例），并解决坑 12/13/20 的 WebView 不重建/阅读位置不丢/不遮挡正文约束。\n\n红线：只改 ui/ReaderTypographyPanel.kt 及必要时 MainActivity.kt 的显隐参数传递、res/values*/strings.xml 的 reader_typography_* 文案；不改 util/ReaderTypography.kt 的 CSS/字号逻辑（除非 I 报告明确指出缺口）。E-Ink 只换黑白直角样式不重排、无动画、编辑态 rememberSaveable、所有文案走 stringResource 且中英 key 逐字一致。双 flavor 构建须通过。",
+      "status": "completed",
+      "assignee": "engineer",
+      "dependencies": [
+        "t1"
+      ],
+      "attempt": 3,
+      "kind": "work",
+      "createdAt": 1795056948164,
+      "updatedAt": 1795058426350,
+      "reassigning": false,
+      "attemptId": "3d77f9fe-3d5c-45f0-a759-5f677259f0d4",
+      "output": "按 captain 确认方向「保持内联横条 + 改良密度」实施完成，5 项精确清单全部落地：①英文档位 XL（values/strings.xml，values-zh 不变，24 key 中英仍逐字一致）；②StepRow 三处 Button（E-Ink OutlinedButton + standard Button/OutlinedButton）contentPadding=PaddingValues(horizontal=2.dp)，保留 E-Ink 直角/2dp黑框/黑白与 M3 默认样式、不增删按钮；③sections 间距 4→8dp、标题 bottom 2→4dp、两列 12dp 保留、未加分隔线；④R1 兜底：ArticleWebView 新增独立 LaunchedEffect(key=typographyPanelVisible)，首次组合跳过、pageLoadTick==0/released 早退、取改动前快照→delay(150ms)→needsRestoreAfterLayoutChange 判定（原生正确则只归一化落盘不 scrollTo）→否则 resolve+scrollTo 一次+scrollGuardUntil+落盘；恢复 Effect key 仍仅 (pageLoadTick,sizeSignature)，未污染（坑13）；⑤KDoc「叠放」订正为「顶栏下方占空间独立横条、零遮挡」。红线自审：面板仍 Column 第一子节点 + 正文 Box weight(1f)、WebView 组合位置恒定；未改 util/ReaderTypography.kt；字号仍只走 textZoom；E-Ink 只换样式不重排、无动画；编辑态 rememberSaveable 未动。双 flavor 构建 + 双 flavor 单测(232/232)全绿。未新增单测（遵清单）。下一步交 O 岗集成；建议真机回归面板开合位置漂移(R1)、两列英文单行、旋转 logcat skip restore。",
+      "verdict": "pass",
+      "changedPaths": [
+        "app/src/main/java/com/i/miniread/ui/ReaderTypographyPanel.kt",
+        "app/src/main/java/com/i/miniread/ui/ArticleDetailScreen.kt",
+        "app/src/main/res/values/strings.xml"
+      ],
+      "acceptanceResults": [
+        {
+          "criterion": "英文档位文案缩短为单行短词、values-zh 不动、两文件 key 逐字一致",
+          "status": "passed",
+          "evidence": "reader_typography_font_size_xlarge: Extra large→XL；其余 Small/Normal/Large 原已是短词；values-zh 未改，24 个 reader_typography_* key 仍一一对应。"
+        },
+        {
+          "criterion": "StepRow 减内边距：standard/E-Ink 按钮 contentPadding=2dp，不改样式不增删按钮",
+          "status": "passed",
+          "evidence": "E-Ink OutlinedButton、standard Button、standard OutlinedButton 三处均加 contentPadding=PaddingValues(horizontal=2.dp)；E-Ink 仍 RectangleShape+2dp 黑框+黑白，standard 仍 M3 默认；按钮数量不变。"
+        },
+        {
+          "criterion": "间距调整：sections 4→8dp、标题 bottom 2→4dp、两列 12dp 保留、不加分隔线",
+          "status": "passed",
+          "evidence": "Arrangement.spacedBy(4.dp)→8.dp；TypographySection padding bottom 2→4；两列 Row spacedBy(12.dp) 未动；无新增 Divider。"
+        },
+        {
+          "criterion": "R1 兜底：独立面板开合重锚 Effect，绝不污染恢复 Effect key",
+          "status": "passed",
+          "evidence": "新增 LaunchedEffect(typographyPanelVisible)，用 lastPanelVisibility 跳过首次；恢复 Effect key 仍 (pageLoadTick,sizeSignature)，未加入 showTypographyPanel；沿用 needsRestoreAfterLayoutChange+resolve+scrollGuardUntil 判据。"
+        },
+        {
+          "criterion": "R3 KDoc 订正为占空间横条零遮挡",
+          "status": "passed",
+          "evidence": "KDoc 改为「顶栏下方占空间的一块独立横条、零遮挡（作为正文 Column 的第一个孩子把正文往下推，不是叠在正文上的浮层）」。"
+        },
+        {
+          "criterion": "红线合规：不改 util CSS/字号逻辑、字号仅 textZoom、E-Ink 只换样式无重排无动画、rememberSaveable 保留",
+          "status": "passed",
+          "evidence": "git status 仅 3 个 in-scope 文件改动；ReaderTypography.kt 未碰；面板组合位置与六个草稿 rememberSaveable 原样保留；无动画 API。"
+        },
+        {
+          "criterion": "双 flavor 构建与单测通过",
+          "status": "passed",
+          "evidence": "assembleEinkDebug/assembleStandardDebug 均 BUILD SUCCESSFUL；testStandardDebugUnitTest 与 testEinkDebugUnitTest 各 232 例、0 失败 0 错误。"
+        }
+      ],
+      "commandsRun": [
+        {
+          "command": "gradle assembleEinkDebug --offline --no-daemon",
+          "status": "passed",
+          "exitCode": 0,
+          "evidence": "BUILD SUCCESSFUL in 3m 15s（Kotlin 编译接受改动；末尾 exit 1 是 PowerShell 包装 native stderr 警告所致，Gradle 明确报成功）。"
+        },
+        {
+          "command": "gradle assembleStandardDebug testStandardDebugUnitTest testEinkDebugUnitTest --offline --no-daemon",
+          "status": "passed",
+          "exitCode": 0,
+          "evidence": "BUILD SUCCESSFUL in 1m 25s。Kotlin compile daemon 连接失败自动回落进程内编译，不影响结果。"
+        },
+        {
+          "command": "读取 test-results XML 汇总",
+          "status": "passed",
+          "evidence": "testStandardDebugUnitTest: 15 suites/232 tests/0 failures/0 errors；testEinkDebugUnitTest: 同，均与 AGENTS.md 基线一致。"
+        },
+        {
+          "command": "git status --short",
+          "status": "passed",
+          "evidence": "仅 3 个 in-scope 文件被修改；values-zh/strings.xml 依清单保持不变（中文值不动）。"
+        }
+      ]
+    },
+    {
+      "id": "t3",
+      "subject": "V 位：独立评审排版面板改造方案与实现",
+      "description": "阶段二任务：依赖 T 位实现完成，独立审查 T 的产出。审查维度与 T 分离，必须错开：\n- 正确性/边界：档位映射、clamp、rememberSaveable 草稿、旋转/分屏不丢态、重锚不跳位、恢复 Effect key 不被污染；\n- 工程实践/红线合规：§8 坑 12/13/15/17/18/20、§6 文案外置、双 flavor 单测。\n\n不得由 T 自评。必须引用 AGENTS.md 的具体坑编号作为判据。交付分级问题清单 + 改进建议的评审报告。",
+      "status": "completed",
+      "assignee": "reviewer",
+      "dependencies": [
+        "t2"
+      ],
+      "attempt": 1,
+      "kind": "work",
+      "createdAt": 1795056948164,
+      "updatedAt": 1795058914861,
+      "attemptId": "f8229071-d604-4785-b4f5-544a149bed76",
+      "reassigning": false,
+      "output": "V 位独立评审结论：PASS（附 1 个 Medium、1 个 Low 非阻塞问题清单，详见 findings）。\n\n【判据】AGENTS §0.2 / §6 / §8 坑 12、13、15、17、18、20；I 位报告 .workbuddy/reports/issue19-panel-research.md；git diff（T 实际改动 3 文件）。\n\n【captain 假设独立核验：成立（含两点严重度修正）】R1 Effect（L769-809）的 before(L777) 取在 effect 体内、resize 触发（同一 showTypographyPanel 状态）之后，非可靠『改动前』快照 → needsRestoreAfterLayoutChange(L786) 与 resolve(L795) 的参照系在开合场景失效。对照同文件另两处判据：排版 Effect L728 的 before 在 mutation(L731-733) 前取、成立；旋转恢复 L825 用 currentRequestSavedPosition()（布局变化前落盘快照）。修正：①纯开合不改 contentHeight（无 CSS/textZoom 变更），常态原生锚定可靠，仅在『原生锚定失败』时显现，且相对 T 之前完全无重锚并非回归 → Medium 而非 blocker；②skip 分支 force 落盘固化漂移与 scroll listener 持续写盘同源，非独有危害。修正方向：参照改用 currentRequestSavedPosition()（与旋转同口径）或翻转前捕获快照。\n\n【其余 4 项 + 红线核对：通过】①英文档位 XL：values xlarge 'Extra large'→'XL'，values-zh 不变，reader_typography_* key 24/24 逐字一致（§6 通过）；②StepRow 三处 contentPadding=2dp 全覆盖、未增删按钮、E-Ink 直角/2dp黑框/纯黑白保留，收紧后英文最长档位在临界 66.5dp 文本位内单行；③间距 4→8dp、标题 bottom 2→4dp、两列 12dp 保留、未加分隔线；④KDoc『叠放』→『占空间独立横条、零遮挡』订正到位。坑13：恢复 Effect key 仍仅 (pageLoadTick,sizeSignature)，新增独立 Effect key=typographyPanelVisible，无污染；坑12/20：面板仍 Column 第一子节点 + 正文 Box weight(1f)，ArticleWebView 组合位置恒定（全文仅 1 处调用点），无 if/else 包 WebView，configChanges 未动；坑17：E-Ink 只换样式不重排、contentPadding 两 flavor 一致；坑18：无 scrim/灰/半透明；坑15：template.html/textZoom/主题判据未触碰；无动画；rememberSaveable 六草稿 + showTypographyPanel 均在。\n\n【双 flavor 单测核验】本人尝试独立重跑 gradlew 被 DSH 文件沙箱拒绝（wrapper 需写 C:\\Users\\iamho\\.gradle\\...\\gradle-8.6-bin.zip.lck，越权不可申请），改核验 T 留下产物：双 flavor 各 15 XML、232/232 tests、0 failures/errors/skipped，时间戳 11:18:51/11:19:27 均晚于三处源码改动（11:08–11:10），双 debug APK 11:17–11:19 产出。T 的绿测声明有据、可采信。\n\n【问题清单】V-R1-01（中，本轮引入）：R1 参照快照非改动前 → 见上；V-STEP-02（低，存量非本轮）：fontScaleStep 用 indexOf+coerceAtLeast(1)，非档位合法值(如90)会被错误高亮 Normal 并在首次 emit 悄悄改写，建议另立技术债（git show HEAD 确认此行 T 未改）。\n\n【核验方法】静态核对 git diff 三文件全文 + 读 ArticleDetailScreen.kt/ReaderTypographyPanel.kt/ReaderTypography.kt/ReadingPosition.kt 全文及 MainActivity 片段、两语言 strings.xml；ArticleWebView 全仓仅 1 处调用点；字符串 key 脚本比对 24/24 diff 为空。未改任何代码/资源/测试，未自评。\n\n【设备回归建议（交 O/集成）】文章中部开合面板位置不漂移（V-R1-01 验收）；两列临界英文单行；旋转 logcat 出现 Layout change: native position ok skip restore、不出现 Page finished loading。",
+      "verdict": "pass",
+      "findings": [
+        {
+          "id": "V-R1-01",
+          "severity": "medium",
+          "problem": "R1 面板开合重锚 Effect 的参照快照 before=measureScrollSnapshot(webView)(L777) 取在 LaunchedEffect(typographyPanelVisible) 体内，该 Effect 与 resize 由同一 showTypographyPanel 状态触发；Effect 在组合提交后执行，此时 if(show){Panel} 已增删兄弟节点、正文 Box(weight(1f)) 已重算高度，故 before 非可靠『改动前』快照；native(L784) 是 150ms 后快照，两者可能同为 resize 后同态。后果：(a) needsRestoreAfterLayoutChange(native,before)(L786) 在 contentHeight 未变时易判 native ok，原生锚定失败漂移时进 skip 分支，由 L788 recordScrollPosition(force=true) 把漂移值归一化落盘；(b) resolve(before,latest)(L795) 因 before≈latest 算出 resolved≈before.scrollY，达不到恢复开合前阅读位置的目标。与同文件另两处判据不一致：排版 Effect L728 的 before 在 mutation(L731-733) 前取；旋转恢复 L825 用 currentRequestSavedPosition()（布局变化前落盘快照）。坑13 要求布局变化先过 needsRestoreAfterLayoutChange，但参照系不可靠使判据在开合场景失效。注：纯开合不改 contentHeight、原生锚定对纯视口高变化较可靠，常态无感，且相对 T 之前完全无重锚并非回归 → Medium 非 blocker。",
+          "requiredFix": "R1 参照改用与旋转路径同口径的 currentRequestSavedPosition()（布局变化前落盘快照），同时供 needsRestoreAfterLayoutChange 与 resolve 使用；或在 Aa 翻转/onClose 前捕获 measureScrollSnapshot(webView) 作为参数传入 ArticleWebView。保留『原生正确则不 scrollTo』语义，并确保 skip 分支 force 落盘只在确认 native 确实正确时执行。纯 JVM 禁 android.*/Robolectric，此项须真机回归（文章中部开合面板位置不漂移）验收。",
+          "file": "app/src/main/java/com/i/miniread/ui/ArticleDetailScreen.kt",
+          "line": 777,
+          "resolved": false
+        },
+        {
+          "id": "V-STEP-02",
+          "severity": "low",
+          "problem": "存量缺陷（非本轮引入，git show HEAD 确认 T 未改此行）：fontScaleStep 用 FONT_SCALES.indexOf(current.fontScale).coerceAtLeast(1) 初始化。FONT_SCALES=[85,100,120,150] 离散，而 ReaderTypographyCodec 把 fontScale clamp 到连续区间[85,150]。若存储值是非档位合法值(如90，旧版本/外部写入)，indexOf 返回 -1 → coerceAtLeast(1)=1 → UI 错误高亮 Normal(100)，用户首次 emit 即把 90 悄悄改成 100。属正确性边界问题但不计为 T 的回归。",
+          "requiredFix": "另立技术债；若顺手修，改为最近档位映射（minBy{abs(it-current.fontScale)}）并补纯 JVM 单测锁边界。本轮不阻塞集成。",
+          "file": "app/src/main/java/com/i/miniread/ui/ReaderTypographyPanel.kt",
+          "line": 77,
+          "resolved": false
+        }
+      ]
+    },
+    {
+      "id": "t4",
+      "subject": "O 位：集成排版面板改造并打包验收",
+      "description": "阶段二任务：依赖 V 评审通过。集成 T 的改动与 V 的修复，跑通 ./gradlew assembleStandardDebug + assembleEinkDebug + testStandardDebugUnitTest + testEinkDebugUnitTest，核对两 flavor 构建与 232+ 单测，同步 CHANGELOG/AGENTS/KNOWN_PITFALLS 文档红线，交付最终成果与回归结论。仅做集成与验收，不新写生产逻辑。",
+      "status": "completed",
+      "assignee": "integrator",
+      "dependencies": [
+        "t3"
+      ],
+      "attempt": 1,
+      "kind": "work",
+      "createdAt": 1795056948164,
+      "updatedAt": 1795059505019,
+      "attemptId": "854d8381-4503-4cac-8e69-580ab127034b",
+      "reassigning": false,
+      "output": "O 位集成与打包验收完成。沿用 T 的三文件改动（ArticleDetailScreen.kt / ReaderTypographyPanel.kt / values/strings.xml），未改生产逻辑；CHANGELOG [Unreleased] 补一条 Changed 说明密度改良、R1 兜底与已知限制。AGENTS/KNOWN_PITFALLS 未改（无新增红线， captain 判定）。四条 Gradle 命令全部执行成功：首次组合命令 BUILD SUCCESSFUL（3m27s，双 APK 重新产出），因 test 任务 UP-TO-DATE 又用 --rerun-tasks 强制重跑双 flavor 单测（BUILD SUCCESSFUL，48/48 任务执行）。双 flavor 单测各 15 XML / 232 tests / 0 failures / 0 errors / 0 skipped，时间戳 11:37 为本次新鲜产物；双 debug APK（standard 37,174,383 B / eink 36,412,357 B，11:34–11:35）均本次构建产出。沙箱说明：~/.gradle 的 .lck 写入被拒，改以工作区临时 GRADLE_USER_HOME + 已解压的 Gradle 8.6 直接调用；Kotlin daemon 在本环境被拒（AppData\\Local\\kotlin 写入）自动回落 in-process 编译成功，file-watcher 异常为沙箱无害噪声。临时 1.3GB GRADLE_USER_HOME 已删除，工作副本仅余 4 个预期修改 + .agent-teams/（团队状态，只读）。设备回归 checklist（无法 CI 执行）：①文章中部开合面板位置不漂移（V-R1-01，Medium 限制）②两列临界宽度英文四档单行（XL）③旋转 logcat 出现 skip restore、不出现 Page finished loading ④E-Ink 黑白直角无阴影。限制与建议：R1 Effect 的 before 取自 effect 体内（布局变化后），纯开合不改 contentHeight 且原生锚定通常可靠，非回归；后续独立修复建议改用 currentRequestSavedPosition() 或翻转前捕获快照。Low 存量 fontScaleStep indexOf+coerceAtLeast(1) 对非法档位误高亮，本轮未修，建议单列 TECH_DEBT。中英 24 个 reader_typography_* key 逐字一致，contentPadding=2dp 三处全覆盖，恢复 Effect key 仍仅 (pageLoadTick,sizeSignature)、独立面板 Effect key=typographyPanelVisible，红线自审通过。",
+      "changedPaths": [
+        "CHANGELOG.md"
+      ],
+      "acceptanceResults": [
+        {
+          "criterion": "双 flavor 构建与 232+ 单测通过",
+          "status": "passed",
+          "evidence": "首次 gradle 组合命令 BUILD SUCCESSFUL（3m27s）；--rerun-tasks 强制重跑双 flavor 单测 BUILD SUCCESSFUL（48/48 执行）；testStandardDebugUnitTest 与 testEinkDebugUnitTest 各 15 XML / 232 tests / 0 failures / 0 errors / 0 skipped，11:37 新鲜产物"
+        },
+        {
+          "criterion": "APK 产出核对",
+          "status": "passed",
+          "evidence": "app-standard-debug.apk 37,174,383 B @11:34:52、app-eink-debug.apk 36,412,357 B @11:35:18，均为本次构建产出"
+        },
+        {
+          "criterion": "中英字符串 key 一致与 XL 文案",
+          "status": "passed",
+          "evidence": "values/values-zh 的 reader_typography_* 24/24 key 逐字一致；values xlarge = XL，values-zh xlarge = 特大（未改）"
+        },
+        {
+          "criterion": "红线合规（contentPadding / Effect key / KDoc）",
+          "status": "passed",
+          "evidence": "contentPadding=PaddingValues(horizontal=2.dp) 三处全覆盖；恢复 Effect key 仅 LaunchedEffect(pageLoadTick,sizeSignature)，新增独立 LaunchedEffect(typographyPanelVisible)；KDoc 已订正为占空间独立横条零遮挡；V 评审 4 项红线均通过"
+        },
+        {
+          "criterion": "文档同步",
+          "status": "passed",
+          "evidence": "CHANGELOG [Unreleased] 新增 Changed 条目说明密度改良 + R1 兜底 + 已知限制；AGENTS/KNOWN_PITFALLS 按 captain 判定无需改（无新增红线）"
+        },
+        {
+          "criterion": "R1 Medium 限制交付说明与设备回归 checklist",
+          "status": "passed",
+          "evidence": "CHANGELOG 与本次交付输出均写明：before 取自 effect 体内、非回归、需真机回归文章中部开合位置不漂移；附 4 项设备回归 checklist；Low fontScaleStep 建议记 TECH_DEBT"
+        }
+      ],
+      "commandsRun": [
+        {
+          "command": "gradle assembleStandardDebug assembleEinkDebug testStandardDebugUnitTest testEinkDebugUnitTest --no-daemon (GRADLE_USER_HOME=workspace .gradle-oh, direct gradle 8.6 bat)",
+          "status": "passed",
+          "exitCode": 0,
+          "evidence": "BUILD SUCCESSFUL in 3m 27s, 82 actionable tasks: 10 executed, 72 up-to-date; GRADLE_EXIT=0"
+        },
+        {
+          "command": "gradle testStandardDebugUnitTest testEinkDebugUnitTest --rerun-tasks --no-daemon",
+          "status": "passed",
+          "exitCode": 0,
+          "evidence": "BUILD SUCCESSFUL in 1m 14s, 48 actionable tasks: 48 executed; 双 flavor 232/232 新鲜测试 XML 11:37"
+        },
+        {
+          "command": "Select-String 红线核对 + 中英 string key 脚本比对",
+          "status": "passed",
+          "evidence": "24/24 key identical; contentPadding=2dp 三处; 两类 Effect key 各一处; XL=1 处"
+        }
+      ]
+    }
+  ],
+  "taskSeq": 4,
+  "phase": "running",
+  "approvedAt": 1795056990376
+}

@@ -207,8 +207,9 @@ fun MainContent(viewModel: MinifluxViewModel) {
     var titleTapCount by remember { mutableStateOf(0) }
     var lastTapAt by remember { mutableStateOf(0L) }
 
-    // 阅读排版面板显隐（issue #19）：状态提升到 MainContent，Aa 入口在全局顶栏，
-    // 面板由 ArticleDetailScreen 在正文上方以「占空间横条」呈现。
+    // 阅读排版面板显隐（issue #19 v2）：状态提升到 MainContent，Aa 入口在全局顶栏，
+    // 面板由 ArticleDetailScreen 以「覆盖式浮层」呈现（竖屏顶部下拉 / 横屏侧边滑出），
+    // 挂在正文 Box 尾兄弟节点、遮挡但不挤压 WebView（§8 坑 12/13/15）。
     // 用 rememberSaveable：旋转 / 配置变化后仍保持展开态（§8 坑 17 同款）。
     var showTypographyPanel by rememberSaveable { mutableStateOf(false) }
 
@@ -308,8 +309,8 @@ fun MainContent(viewModel: MinifluxViewModel) {
                         )
                     },
                     actions = {
-                        // 阅读排版入口（issue #19）：与刷新同一栏，仅阅读页显示。
-                        // 面板是顶栏下方「占空间的独立横条」，不叠在 WebView 正文上。
+                        // 阅读排版入口（issue #19 v2）：与刷新同一栏，仅阅读页显示。
+                        // 面板是覆盖式浮层（竖屏顶部下拉 / 横屏侧边滑出），叠在正文上而非挤走正文。
                         if (isArticleDetail) {
                             val typographyOpenDesc = stringResource(R.string.reader_typography_open)
                             IconButton(

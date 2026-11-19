@@ -190,4 +190,17 @@
     <string name="reader_typography_font_serif">Serif</string>
     <string name="reader_typography_align_left">Left</string>
     <string name="reader_typography_align_justify">Justified</string>
+    <!-- v2: symbol field titles + accessibility (keys are identical in values / values-zh) -->
+    <string name="reader_typography_symbol_font_size">A</string>
+    <string name="reader_typography_symbol_line_height">↕</string>
+    <string name="reader_typography_symbol_width">↔</string>
+    <string name="reader_typography_symbol_paragraph_spacing">¶</string>
+    <string name="reader_typography_symbol_font_family">Aa</string>
+    <string name="reader_typography_symbol_align">≡</string>
+    <string name="reader_typography_symbol_increase">+</string>
+    <string name="reader_typography_symbol_decrease">−</string>
+    <string name="reader_typography_increase">Increase %1$s</string>
+    <string name="reader_typography_decrease">Decrease %1$s</string>
+    <string name="reader_typography_unit_em">em</string>
+    <string name="reader_typography_width_option">%1$s: %2$s</string>
 </resources>

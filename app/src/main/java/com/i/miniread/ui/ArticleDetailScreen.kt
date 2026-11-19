@@ -12,7 +12,12 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +25,10 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -64,6 +72,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -110,9 +120,10 @@ fun ArticleDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     val markedReadMsg = stringResource(R.string.article_snackbar_marked_read)
 
-    // ===== 阅读排版面板（issue #19）=====
-    // 显隐状态已提升到 MainContent（Aa 入口在全局顶栏），本屏只负责渲染「占空间的独立横条」。
-    // ⚠️ 面板不再是 Box 叠层：它作为 Column 的第一个孩子把正文往下推，零遮挡。
+    // ===== 阅读排版面板（issue #19 v2）=====
+    // 显隐状态已提升到 MainContent（Aa 入口在全局顶栏），本屏只负责渲染覆盖式浮层。
+    // v2 推翻此前「占空间横条」决策：面板改为挂在正文 Box 尾部的覆盖浮层，
+    // 竖屏顶部下拉 / 横屏侧边滑出，遮挡正文但绝不压缩 WebView 高度（坑 15 平板守卫）。
     val typography by DataStoreManager.getReaderTypographyFlow()
         .collectAsState(initial = ReaderTypography.DEFAULT)
 
@@ -131,33 +142,16 @@ fun ArticleDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ===== 排版面板：顶栏下方的「占空间独立横条」=====
-            // 作为 Column 的第一个孩子，展开时把正文往下推，零遮挡（issue #19 后续改动）。
-            // ⚠️ 只增删面板这个兄弟节点，ArticleWebView 的组合位置始终不变 —— 若把正文包进
-            //    if/else 分支，展开/收起会重建 WebView、重载页面、丢阅读位置（§8 坑 12/13）。
-            if (showTypographyPanel) {
-                ReaderTypographyPanel(
-                    modifier = Modifier.fillMaxWidth(),
-                    current = typography,
-                    onChange = { updated ->
-                        coroutineScope.launch {
-                            DataStoreManager.saveReaderTypography(updated)
-                        }
-                    },
-                    onReset = {
-                        coroutineScope.launch {
-                            DataStoreManager.saveReaderTypography(ReaderTypography.DEFAULT)
-                        }
-                    },
-                    onClose = onCloseTypographyPanel
-                )
-            }
+            // 正文容器占满 Column（面板改为正文 Box 内的覆盖浮层，不再占据一个兄弟槽位）。
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(10.dp)
             ) {
+            // WebView 始终在 slot 0，组合位置恒定。
+            // ⚠️ 覆盖浮层只能作为 WebView 之后的尾兄弟节点增删 —— 若把 WebView 包进
+            //    if/else 分支或放到浮层之前，展开/收起会重建 WebView、重载页面、丢阅读位置（§8 坑 12/13）。
             if (selectedEntry == null || selectedEntry?.id != entryId) {
                 Text(
                     text = stringResource(R.string.article_loading),
@@ -208,8 +202,154 @@ fun ArticleDetailScreen(
                     )
                 }
             }
+
+            // ===== 排版覆盖浮层（尾兄弟节点，绝不包住 WebView）=====
+            // 只增删这个兄弟节点，ArticleWebView 始终在 slot 0，组合位置恒定（坑 12/13）。
+            // 浮层开合不改变 WebView 测量尺寸 → 不触发 sizeSignature / 不重锚（坑 15 / 上轮 R1 消失）。
+            if (showTypographyPanel) {
+                TypographyOverlay(
+                    current = typography,
+                    onChange = { updated ->
+                        coroutineScope.launch {
+                            DataStoreManager.saveReaderTypography(updated)
+                        }
+                    },
+                    onReset = {
+                        coroutineScope.launch {
+                            DataStoreManager.saveReaderTypography(ReaderTypography.DEFAULT)
+                        }
+                    },
+                    onClose = onCloseTypographyPanel
+                )
+            }
             }
         }
+    }
+}
+
+/**
+ * 覆盖式排版浮层外壳（issue #19 v2）。
+ *
+ * 这是 [ArticleDetailScreen] 正文 Box 内的**尾兄弟节点**：ArticleWebView 始终在 slot 0，
+ * 开合只增删本节点，不重建 WebView、不改其测量尺寸 → 不触发重锚（§8 坑 12/13/15）。
+ *
+ * 四形态（判据在组合体内实时算，configChanges 不重建 Activity）：
+ * - 横竖：`screenWidthDp > screenHeightDp`（等同 AdaptiveLayoutHelper.isLandscape 口径）；
+ * - 设备类别：`smallestScreenWidthDp >= 600`（**不复用** isTablet 的 screenWidthDp>=600，
+ *   否则手机横屏 ~780dp 会被误判为平板）——但面板内部列数仍交给 Panel 的 BoxWithConstraints
+ *   按可用宽度自适应，本壳只决定 docking 方向与宽/高上限。
+ * 竖屏顶部下拉（满宽、高上限按可用高度夹取）；横屏尾侧滑出（满高、宽上限夹取），
+ * 平板横屏放尾侧避开首侧 NavigationRail（坑 7/14）。
+ *
+ * E-Ink / standard 共用同一套瞬切结构（无 slideIn / offset / AnimatedVisibility）：
+ * 单帧出现、方向性 docking + 静态「来源边」把手承载「下拉/滑出」语义（坑 18/20）。
+ * 自绘不透明白底 + 2dp 黑框（E-Ink），**无 scrim / 半透明 / 阴影**（坑 18）。
+ *
+ * 吞透传的实现（issue #19 v3 修复）：pointerInput 在 `PointerEventPass.Final` 阶段
+ * **只消费子树未消费的残留事件**。Final 晚于子节点 `verticalScroll`（Main pass）派发：
+ * 面板内滚动 / 鼠标滚轮已消费的 change 不会被本层抢走 → 内层滚动恢复；面板空白处的事件
+ * 无人消费 → 本层兜底消费，不透传给下层 WebView。`awaitFirstDown` 不主动 consume（交给
+ * Final 统一处理残留），以免破坏子节点滚动建立 slop 所需的 unconsumed down。
+ * Compose 1.6.1 `verticalScroll` 自带 `MouseWheelScrollNode`（检测 `PointerEventType.Scroll`），
+ * 故鼠标滚轮由内层原生处理，**不再额外写滚轮桥接**（否则会双重滚动）。
+ */
+@Composable
+private fun TypographyOverlay(
+    current: ReaderTypography,
+    onChange: (ReaderTypography) -> Unit,
+    onReset: () -> Unit,
+    onClose: () -> Unit
+) {
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val isTablet = configuration.smallestScreenWidthDp >= 600
+    val eink = com.i.miniread.BuildConfig.IS_EINK
+
+    // Final-pass 残留消费：既不抢内层滚动，又吞掉面板空白的透传（见 KDoc）。
+    // 两段 docking 共用同一份 modifier（Unit key，组合期间稳定）。
+    val swallowLeakedPointer = Modifier.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false)
+            do {
+                // Final 晚于子节点 verticalScroll 的 Main pass：只消费「子树未消费」的残留，
+                // 面板内滚动 / 滚轮已消费的 change 不会被抢，空白处的事件则兜底吞掉不透传 WebView。
+                val event = awaitPointerEvent(PointerEventPass.Final)
+                event.changes.forEach { if (!it.isConsumed) it.consume() }
+            } while (event.changes.any { it.pressed })
+        }
+    }
+
+    // 尺寸上限交给内层 BoxWithConstraints 按「正文 Box 可用区」夹取；这里只决定 docking 方向
+    // 与一个方向无关的粗上限，避免横屏整条侧栏 / 竖屏满宽时内容溢出。
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val overlayModifier = if (isLandscape) {
+            // 横屏尾侧滑出：宽上限按可用宽夹取；尾侧避开首侧 NavigationRail。
+            // v4：不再 `fillMaxHeight()` —— 浮层**按内容包裹**（面板自身高度），避免面板只占上部
+            // 却让整条侧栏高度的吞触摸层盖住下方正文（点正文没反应）。高度仍受 `heightIn(max)` 封顶，
+            // 超出时由面板内滚动容器接管。
+            Modifier
+                .align(Alignment.CenterEnd)
+                .widthIn(
+                    min = 240.dp.coerceAtMost(maxWidth),
+                    max = (maxWidth * (if (isTablet) 0.55f else 0.62f))
+                        .coerceIn(240.dp.coerceAtMost(maxWidth), maxWidth)
+                )
+                .heightIn(max = maxHeight)
+                .then(swallowLeakedPointer)
+        } else {
+            // 竖屏顶部下拉：满宽、高上限按可用高夹取。
+            // v3：去掉 min=280dp 硬下限（220dp 多窗口会溢出裁切）；上限放宽到 0.75 可用高，
+            // 六段内容尽量一屏可见、少滚动；用 coerceAtMost(maxHeight) 保证绝不溢出正文 Box。
+            Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .heightIn(
+                    max = (maxHeight * (if (isTablet) 0.70f else 0.75f))
+                        .coerceAtMost(maxHeight)
+                )
+                .then(swallowLeakedPointer)
+        }
+
+        Box(modifier = overlayModifier) {
+            ReaderTypographyPanel(
+                // v4：不再传 fillMaxSize()——让面板**包裹内容**，内容矮时浮层就矮（竖屏六段单行
+                // 正好一屏、下方不留大片空白），内容超高时由壳的 heightIn/widthIn 上限封顶，
+                // 面板内的滚动容器负责滚到底。填充 min 约束交给壳的 align + 尺寸上限。
+                modifier = Modifier.fillMaxWidth(),
+                current = current,
+                onChange = onChange,
+                onReset = onReset,
+                onClose = onClose
+            )
+            // 「来源边」把手：静态绘制（非动画），表达从这边拉出/滑出的心智。
+            TypographyDockHandle(isLandscape = isLandscape, eink = eink)
+        }
+    }
+}
+
+/**
+ * 浮层停靠边的静态把手：竖屏在下沿居中画短横条，横屏在内侧左沿画竖条。
+ * 单位是固定 dp、黑色，E-Ink 与 standard 一致（无灰、无半透明）。
+ */
+@Composable
+private fun BoxScope.TypographyDockHandle(isLandscape: Boolean, eink: Boolean) {
+    val handleColor = if (eink) Color.Black else MaterialTheme.colorScheme.outline
+    if (isLandscape) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .width(8.dp)
+                .height(32.dp)
+                .background(handleColor)
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .width(32.dp)
+                .height(8.dp)
+                .background(handleColor)
+        )
     }
 }
 
