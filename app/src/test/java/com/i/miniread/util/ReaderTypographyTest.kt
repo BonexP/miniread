@@ -88,7 +88,7 @@ class ReaderTypographyTest {
     @Test
     fun `width step emits max-width and centering but never fixed width`() {
         val css = ReaderTypography(widthStep = 2).buildCss()
-        assertTrue(css.contains("max-width:21em"))
+        assertTrue(css.contains("max-width:70%"))
         assertTrue(css.contains("margin:0 auto"))
         // 用正则确认没有「独立」的 width: 声明（max-width 里含子串 width: 属正常）
         assertFalse(Regex("""(?<!max-)width:\d""").containsMatchIn(css))
@@ -130,7 +130,7 @@ class ReaderTypographyTest {
             textAlign = 1
         ).buildCss()
         assertTrue(css.contains("line-height:2"))
-        assertTrue(css.contains("max-width:18em"))
+        assertTrue(css.contains("max-width:55%"))
         assertTrue(css.contains("margin-bottom:0.8em"))
         assertTrue(css.contains("font-family:Georgia"))
         assertTrue(css.contains("text-align:justify"))
@@ -225,32 +225,33 @@ class ReaderTypographyTest {
     }
 
     @Test
-    fun `width em table index zero is default no override`() {
-        assertEquals(0, ReaderTypography.WIDTH_EM[0])
-        assertTrue(ReaderTypography.WIDTH_EM.drop(1).all { it > 0 })
+    fun `width percent table index zero is default no override`() {
+        assertEquals(0, ReaderTypography.WIDTH_PERCENT[0])
+        assertTrue(ReaderTypography.WIDTH_PERCENT.drop(1).all { it > 0 })
     }
 
     // ===== v5：行宽展示序单调 + 旧持久化值兼容 =====
 
     @Test
-    fun `width display order is strictly ascending in em and ends with unlimited`() {
-        val emsInDisplayOrder = ReaderTypography.WIDTH_STEP_ORDER.map { ReaderTypography.WIDTH_EM[it] }
+    fun `width display order is strictly ascending in percent and ends with unlimited`() {
+        val percentsInDisplayOrder =
+            ReaderTypography.WIDTH_STEP_ORDER.map { ReaderTypography.WIDTH_PERCENT[it] }
         assertTrue(
-            "窄 < 中 < 宽 必须严格递增：$emsInDisplayOrder",
-            emsInDisplayOrder.dropLast(1).zipWithNext().all { (a, b) -> b > a }
+            "窄 < 中 < 宽 必须严格递增：$percentsInDisplayOrder",
+            percentsInDisplayOrder.dropLast(1).zipWithNext().all { (a, b) -> b > a }
         )
         // 最右端是「不限」（不输出 max-width = 铺满可用宽）
-        assertEquals(0, emsInDisplayOrder.last())
+        assertEquals(0, percentsInDisplayOrder.last())
         // 展示序必须覆盖全部四档（不缺、不重）
         assertEquals(
-            ReaderTypography.WIDTH_EM.indices.toList(),
+            ReaderTypography.WIDTH_PERCENT.indices.toList(),
             ReaderTypography.WIDTH_STEP_ORDER.sorted()
         )
     }
 
     @Test
     fun `width display index round trips through storage step`() {
-        for (step in ReaderTypography.WIDTH_EM.indices) {
+        for (step in ReaderTypography.WIDTH_PERCENT.indices) {
             assertEquals(
                 step,
                 ReaderTypography.widthStepForDisplayIndex(
@@ -282,7 +283,7 @@ class ReaderTypographyTest {
         // 旧版本写过 0..3（语义 0=不限 / 24 / 32 / 40em），升级后必须仍能解码且落在合法档位
         for (legacy in 0..ReaderTypography.WIDTH_STEP_MAX) {
             val decoded = ReaderTypographyCodec.decode(ReaderTypographyRaw(widthStep = legacy.toString()))
-            assertTrue(decoded.widthStep in ReaderTypography.WIDTH_EM.indices)
+            assertTrue(decoded.widthStep in ReaderTypography.WIDTH_PERCENT.indices)
             assertTrue(
                 "旧值 $legacy 必须能映射到展示序",
                 ReaderTypography.displayIndexForWidthStep(decoded.widthStep) in
@@ -297,37 +298,30 @@ class ReaderTypographyTest {
     }
 
     /**
-     * 通用单调性判据（D2 §2.2 / §4.4c）：最宽**显式**档在「最坏 emPx」下也不得超过
-     * `tablet_styles.css` 的 `max-width` 上限，否则「宽」会比「全宽」还宽（反序）。
+     * v6：行宽改用 `max-width:百分比` 后，**单调性与设备/字号彻底解耦**。
      *
-     * zone800 = 视口 881–919dp（cap 800px，基准 18px，最高 textZoom 1.88）
-     * zone900 = 视口 ≥980dp（cap 900px，基准 19px，最高 textZoom 1.88）
+     * v5 那套「最宽显式档 × 最坏 emPx ≤ tablet cap」的反序判据（zone800/zone900）
+     * 已随 em 模型一并废弃——百分比相对包含块宽，不经过字体渲染链路，
+     * 因此「宽」永远不可能比「全宽」更宽，无需再按 cap 反解安全界。
+     *
+     * 这里改为断言**本质性质**：显式档的百分比必须严格递增且都 < 100，
+     * 即任意档都严格窄于「全宽」。
      */
     @Test
-    fun `widest explicit width stays under tablet css cap at every font scale`() {
-        val widestEm = ReaderTypography.WIDTH_EM.filter { it > 0 }.max()
-        val worstZoom = ReaderTypography.textZoomFor(ReaderTypography.FONT_SCALE_MAX) / 100f
-
-        val zone800EmPx = 18f * worstZoom
-        val zone900EmPx = 19f * worstZoom
-
-        assertTrue(
-            "zone800: ${widestEm}em × ${zone800EmPx}px = ${widestEm * zone800EmPx}px 必须 ≤ 800px",
-            widestEm * zone800EmPx <= 800f
-        )
-        assertTrue(
-            "zone900: ${widestEm}em × ${zone900EmPx}px = ${widestEm * zone900EmPx}px 必须 ≤ 900px",
-            widestEm * zone900EmPx <= 900f
-        )
+    fun `explicit width percents are strictly below full width`() {
+        val explicit = ReaderTypography.WIDTH_PERCENT.filter { it > 0 }
+        assertEquals("四档应有三档显式宽度", 3, explicit.size)
+        assertTrue("显式档必须严格递增：$explicit", explicit.zipWithNext().all { (a, b) -> b > a })
+        assertTrue("显式档必须全部 < 100%（否则等于全宽）：$explicit", explicit.all { it < 100 })
     }
 
     @Test
     fun `css max width strictly increases across display order`() {
-        // 把「UI 顺序」与「CSS 实际效果」焊在一起：防止将来改了展示序却忘了改 WIDTH_EM。
+        // 把「UI 顺序」与「CSS 实际效果」焊在一起：防止将来改了展示序却忘了改 WIDTH_PERCENT。
         // 展示序是「窄 → 中 → 宽 → 全宽」，因此 max-width 必须严格递增（全宽 = 不输出 = ∞）。
         val widths = ReaderTypography.WIDTH_STEP_ORDER.map { step ->
             val css = ReaderTypography(widthStep = step).buildCss()
-            val match = Regex("""max-width:(\d+)em""").find(css)
+            val match = Regex("""max-width:(\d+)%""").find(css)
             match?.groupValues?.get(1)?.toFloat() ?: Float.POSITIVE_INFINITY
         }
         assertTrue(
@@ -335,6 +329,15 @@ class ReaderTypographyTest {
             widths.zipWithNext().all { (a, b) -> b > a }
         )
         assertEquals(Float.POSITIVE_INFINITY, widths.last())
+    }
+
+    @Test
+    fun `width css uses percent not em`() {
+        // v6 回归防线：一旦有人把百分比改回 em/px，平板上的「宽」会再次塌陷（实测只有 40%）。
+        val css = ReaderTypography(widthStep = 3).buildCss()
+        assertTrue("必须是百分比：$css", css.contains("max-width:85%"))
+        assertFalse("不得回退到 em：$css", css.contains("em;") || Regex("max-width:\\d+em").containsMatchIn(css))
+        assertFalse("不得用固定 px：$css", Regex("max-width:\\d+px").containsMatchIn(css))
     }
 
     // ===== v5：字号数值化（百分比）与 textZoom 自洽 =====

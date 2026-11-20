@@ -31,9 +31,16 @@ data class ReaderTypography(
     val lineHeight: Float = UNSET,
     /**
      * 行宽档位 0..3（**存储语义**）：0 = 不限宽（全宽，不输出 `max-width`），
-     * 1/2/3 = 18em / 21em / 23em（窄 / 中 / 宽）。
+     * 1/2/3 = 55% / 70% / 85%（窄 / 中 / 宽，相对**可用宽**）。
      *
-     * v5：索引 0 仍是「不限」以保持默认值观感逐像素不变、旧持久化值零迁移；
+     * v6（2026-11-20，推翻 v5 的 em 模型）：em 是**相对字号**的单位，在平板上被
+     * `tablet_styles.css` 的 `body{font-size:18px/19px}` 与 WebView 的 text autosizing
+     * 双重扰动——实测「宽」档（23em）在 800×1280dp 平板上只渲染出 **280dp / 占 WebView 40%**，
+     * 而「全宽」是 667dp / 95%，一档之差 2.4 倍，用户观感「选宽反而不宽」。
+     * 改为**百分比**后 `max-width` 只参与布局计算、不被字号模型影响，四档在任何设备上
+     * 都稳定落在 55%/70%/85%/100% 的等比位置。
+     *
+     * 索引 0 仍是「不限」以保持默认值观感逐像素不变、旧持久化值零迁移；
      * UI 的展示顺序由 [WIDTH_STEP_ORDER] 决定（窄 → 中 → 宽 → 全宽），存储顺序不变。
      */
     val widthStep: Int = 0,
@@ -59,9 +66,9 @@ data class ReaderTypography(
 
         val bodyRules = mutableListOf<String>()
         if (lineHeight != UNSET) bodyRules += "line-height:${num(lineHeight)}"
-        val widthEm = WIDTH_EM.getOrElse(widthStep) { 0 }
-        if (widthEm > 0) {
-            bodyRules += "max-width:${widthEm}em"
+        val widthPercent = WIDTH_PERCENT.getOrElse(widthStep) { 0 }
+        if (widthPercent > 0) {
+            bodyRules += "max-width:${widthPercent}%"
             bodyRules += "margin:0 auto"
         }
         if (fontFamily == FONT_FAMILY_SERIF) {
@@ -114,18 +121,30 @@ data class ReaderTypography(
         val FONT_SCALES = listOf(85, 100, 120, 150)
 
         /**
-         * 行宽四档对应的 `max-width`（em）；索引 0 = 不限（不输出 `max-width`）。
+         * 行宽四档对应的 `max-width`（**百分比**，相对 `body` 的包含块 = WebView 视口宽）；
+         * 索引 0 = 不限（不输出 `max-width`，交给 `tablet_styles.css` 的 800/900px 上限）。
          *
-         * v5（原 `[0, 24, 32, 40]`）：
-         * - 旧表 40em 在平板横屏 = 950px > `tablet_styles.css` 的 `max-width:900px` →
-         *   「宽」比「全宽」还宽（第二处反序，用户尚未报告但同根同源）；
-         * - 新表按**通用单调性判据** `最宽显式档 × 最坏 emPx ≤ 样式表 cap` 反解：
-         *   zone800 = `800 / (18 × 1.88) = 23.64em`、zone900 = `900 / (19 × 1.88) = 25.20em`
-         *   → 全局安全整数 **23em**（`23 × 33.84 = 778 < 800`、`23 × 35.72 = 822 < 900`）。
-         *   档距 16.7% / 9.5%，四档在宽视口两两可辨。
-         * - 旧持久化值 1/2/3 (= 24/32/40em) 升级后变成 18/21/23em，**只会更窄**，方向一致。
+         * v6（2026-11-20，推翻 v5 的 `em` 表 `[0, 18, 21, 23]`）：
+         *
+         * **为什么 em 不行**（真机实测，800×1280dp 平板、WebView 宽 700dp）：
+         * - 「全宽」文字 = 667dp（占 95%）
+         * - 「宽」23em 文字 = **280dp（占 40%）** ← 一档之差 2.4 倍，用户报「选宽反而不宽」
+         * 反解实测得每 em ≈ 24.3px，而按 `body{font-size:18px} × textZoom 1.25` 只有 22.5px。
+         * 偏差来自三处叠加：`body` 自身有 32px(平板)/48px(≥840px) 的 `padding` 且
+         * `box-sizing:border-box` 会让 `max-width` 含 padding、WebView 的 text autosizing、
+         * 以及 `em` 天然随字号缩放。**只要用字号相关单位，就永远测不准也调不稳**。
+         *
+         * **为什么百分比对**：`max-width:%` 相对包含块宽（WebView 视口），只参与布局计算，
+         * 完全不经过字体渲染链路 → 四档在任何设备/任何字号下都稳定落在等比位置。
+         * `box-sizing:border-box` 会让 `max-width` 含 `body` 的 padding，所以「100%」时
+         * 文字区 = 视口宽 − 2×padding，与现状（不限宽）观感一致。
+         *
+         * **档位取值**：55 / 70 / 85，间距 15%，四档两两可辨；
+         * 85% 到 100% 之间留 15% 的余量，让「宽」与「全宽」有明确区别又不至于过窄。
+         * ⚠️ 单调性天然成立（百分比与字号、设备无关），旧 v5 那套「按 cap 反解」的
+         * 安全界计算**不再需要**——这正是换单位最大的收益。
          */
-        val WIDTH_EM = listOf(0, 18, 21, 23)
+        val WIDTH_PERCENT = listOf(0, 55, 70, 85)
 
         /**
          * 行宽档位的**展示序**（UI 从左到右 = 从窄到全宽）→ 存储索引。
