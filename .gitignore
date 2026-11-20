@@ -27,3 +27,9 @@ app/release/
 
 # workbuddy
 .workbuddy/
+
+# 本地构建用隔离 Gradle home（沙箱无法写 ~/.gradle 时使用）
+.gradle-local/
+
+# AgentTeams 运行期状态（每轮自动重写，不入库）
+.agent-teams/

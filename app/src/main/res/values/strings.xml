@@ -178,14 +178,13 @@
     <string name="reader_typography_font_family">Body font</string>
     <string name="reader_typography_align">Alignment</string>
     <string name="reader_typography_follow_default">Default</string>
-    <string name="reader_typography_font_size_small">Small</string>
-    <string name="reader_typography_font_size_normal">Normal</string>
-    <string name="reader_typography_font_size_large">Large</string>
-    <string name="reader_typography_font_size_xlarge">Extra large</string>
-    <string name="reader_typography_width_default">Default</string>
+    <!-- v5: 字号档位显示为数值（百分比），不再用「小/默认/大/特大」定性词 -->
+    <string name="reader_typography_font_size_percent">%1$d%%</string>
+    <!-- v5: 行宽四档按「窄→中→宽→全宽」单调排列（全宽 = 不限宽，显示在最右端） -->
     <string name="reader_typography_width_narrow">Narrow</string>
     <string name="reader_typography_width_medium">Medium</string>
     <string name="reader_typography_width_wide">Wide</string>
+    <string name="reader_typography_width_full">Full</string>
     <string name="reader_typography_font_sans">Sans-serif</string>
     <string name="reader_typography_font_serif">Serif</string>
     <string name="reader_typography_align_left">Left</string>
@@ -202,5 +201,4 @@
     <string name="reader_typography_increase">Increase %1$s</string>
     <string name="reader_typography_decrease">Decrease %1$s</string>
     <string name="reader_typography_unit_em">em</string>
-    <string name="reader_typography_width_option">%1$s: %2$s</string>
 </resources>

@@ -52,18 +52,21 @@ import kotlin.math.roundToInt
 private const val STEP_VALUE = 0.1f
 
 /**
- * 阅读页排版调节面板（issue #19 v3）。
+ * 阅读页排版调节面板（issue #19，v5）。
  *
- * 由调用方挂在正文 `Box` 的**尾兄弟节点**、作为覆盖式浮层呈现（竖屏顶部下拉 / 横屏侧边滑出，
+ * 由调用方挂在正文 `Box` 的**尾兄弟节点**、作为覆盖式浮层呈现（v5 起统一锚定右上角，
  * 见 AGENTS.md §8 坑 20）；本文件只负责浮层内部：六个符号字段标题 + 按档位数统一的控件。
  *
  * 红线：
  * - **无动画**：外层调用方直接 `if (visible) { ... }` 组合，本文件内不出现
  *   `AnimatedVisibility` / `animate*AsState`（坑 18/20，E-Ink 残影）。
  * - **编辑态 `rememberSaveable`**：六个草稿全部用 `rememberSaveable` 持有（坑 17）。
- * - **控件按档位数统一**：数值增减（行距 / 段距）与四档字号用 `+/−` 步进器（行距 / 段距保留
- *   `UNSET`「跟随默认」）；四档行宽用四档按钮（窄面板 2×2）；两档（字体族 / 对齐）用 `Switch`。
- *   v3：字号滑块反直觉 → 索引步进、行宽回按钮，数据链路（`FONT_SCALES` / `emit` / textZoom）零改动。
+ * - **控件按档位数统一**：数值增减（行距 / 段距）与四档（字号 / 行宽）统一用 `+/−` 索引步进器
+ *   （行距 / 段距保留 `UNSET`「跟随默认」）；两档（字体族 / 对齐）用 `Switch`。
+ *   v5：字号档位文本改为**数值百分比**（不再用「小/默认/大/特大」定性词）；行宽从四档按钮
+ *   改为索引步进器——四等分按钮在窄面板的文本预算只有 ~42.6dp，英文 `Narrow`/`Medium`
+ *   在系统字号 1.15× 时必然裁切，且窄面板会降级成 2×2（用户反馈④/③）；步进器**结构上不可能换行**。
+ *   代价（已知取舍）：一次只显示一档，看不到四档全貌，与字号/行距/段距同构。
  * - **字段名符号化**：`A / ↔ / ↕ / ¶ / Aa / ≡` 以文本字形呈现，每个用
  *   `Modifier.clearAndSetSemantics { contentDescription = stringResource(...) }` 挂可访问名（坑 11）。
  * - **E-Ink 只换样式、不重排**：差异全走 `val eink = BuildConfig.IS_EINK` 条件参数，
@@ -198,12 +201,11 @@ fun ReaderTypographyPanel(
                     ) {
                         TypographyIndexStepper(
                             index = fontScaleStep,
-                            labels = listOf(
-                                stringResource(R.string.reader_typography_font_size_small),
-                                stringResource(R.string.reader_typography_font_size_normal),
-                                stringResource(R.string.reader_typography_font_size_large),
-                                stringResource(R.string.reader_typography_font_size_xlarge)
-                            ),
+                            // v5：档位文本改为数值（百分比）。百分比是 textZoom 的输入比例，
+                            // 手机 / 平板同一比例都精确成立；px 或定性词会在一类设备上说谎。
+                            labels = ReaderTypography.FONT_SCALES.map {
+                                stringResource(R.string.reader_typography_font_size_percent, it)
+                            },
                             fieldLabel = fontSizeLabel,
                             eink = eink,
                             onIndexChange = { fontScaleStep = it; emit() }
@@ -228,24 +230,29 @@ fun ReaderTypographyPanel(
                         )
                     }
                 },
-                // ---- 行宽：四档（默认/窄/中/宽）→ 四档按钮（v3：窄面板 2×2 兜底）----
+                // ---- 行宽：四档 → +/− 索引步进器（v5：替代四档按钮，见文件头 KDoc）----
                 {
                     TypographySection(
                         symbol = stringResource(R.string.reader_typography_symbol_width),
                         label = widthLabel,
                         titleColor = sectionColor
                     ) {
-                        TypographySegmentedButtons(
-                            step = widthStep,
+                        TypographyIndexStepper(
+                            // 展示序（窄/中/宽/全宽）与存储序（0=不限,1/2/3=18/21/23em）分离：
+                            // 存储语义保持不变（默认 0 不输出 max-width），只把「不限」显示在最右端。
+                            index = ReaderTypography.displayIndexForWidthStep(widthStep),
                             labels = listOf(
-                                stringResource(R.string.reader_typography_width_default),
                                 stringResource(R.string.reader_typography_width_narrow),
                                 stringResource(R.string.reader_typography_width_medium),
-                                stringResource(R.string.reader_typography_width_wide)
+                                stringResource(R.string.reader_typography_width_wide),
+                                stringResource(R.string.reader_typography_width_full)
                             ),
                             fieldLabel = widthLabel,
                             eink = eink,
-                            onStepChange = { widthStep = it; emit() }
+                            onIndexChange = {
+                                widthStep = ReaderTypography.widthStepForDisplayIndex(it)
+                                emit()
+                            }
                         )
                     }
                 },
@@ -309,11 +316,12 @@ fun ReaderTypographyPanel(
                 }
             )
 
-            // 浮层壳（调用方）按 docking 边给宽/高上限；外层 Column 已改为滚动容器并包裹内容，
-            // 这里只按可用宽度决定列数（用 `BoxWithConstraints` 读宽度，不再需要高度分配）。
+            // 浮层壳（调用方）已按「正文 Box 可用区」给出宽/高上限；外层 Column 是滚动容器并
+            // 包裹内容，这里只按可用宽度决定列数（用 `BoxWithConstraints` 读宽度，不做高度分配）。
             BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                // v3：两列阈值降到 480dp —— 浮层壳上限 600dp，600dp 阈值在覆盖面板里恒不可达，
-                // 横屏六段只能单列堆叠（诊断①的结构性放大器）。窄列每段控件仍能自适应换行 / 2×2 兜底。
+                // 两列阈值 480dp（v3 从 600dp 下调：壳宽上限 560dp 时 600dp 阈值恒不可达）。
+                // ⚠️ v5 的横幅手机横屏下壳宽被夹到 560dp、面板内宽 536dp，只比阈值高 56dp ——
+                // 不要微调浮层内边距 / 宽度上限，否则会静默翻单列（AGENTS §8 坑 20）。
                 val useTwoColumns = maxWidth >= 480.dp
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -639,95 +647,6 @@ private fun TypographyIndexStepper(
             colors = buttonColors,
             contentPadding = PaddingValues(0.dp)
         ) { Text(plusSymbol, style = MaterialTheme.typography.titleMedium) }
-    }
-}
-
-/**
- * 四档分段按钮（v3 行宽控件）：四档等宽、48dp 高，选中态 standard `primaryContainer` /
- * E-Ink 黑底白字。窄面板（每档宽 < 64dp）降为 2×2 网格，避免英文标签折行；
- * 每档 `maxLines = 1` 兜底。文案与 contentDescription 全走资源（坑 11）。
- */
-@Composable
-private fun TypographySegmentedButtons(
-    step: Int,
-    labels: List<String>,
-    fieldLabel: String,
-    eink: Boolean,
-    onStepChange: (Int) -> Unit
-) {
-    val safeStep = step.coerceIn(labels.indices)
-    val buttonShape = if (eink) RectangleShape else RoundedCornerShape(8.dp)
-    val buttonBorder = if (eink) {
-        BorderStroke(2.dp, Color.Black)
-    } else {
-        // standard 也描边：无边框 + 透明底会让按钮在浅色主题下「融进白底」看不见（真机反馈）。
-        BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    }
-
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        // 四档按钮每档最小 64dp（技能 component min-width）+ spacedBy(4dp)×3 → 268dp；
-        // 低于此宽度用 2×2，避免英文 Default/Narrow/Medium/Wide 在单档里折行。
-        val twoRows = maxWidth < 268.dp
-        val chunks: List<List<Int>> = if (twoRows) {
-            listOf(listOf(0, 1), listOf(2, 3))
-        } else {
-            listOf(labels.indices.toList())
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            chunks.forEach { rowIndices ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    rowIndices.forEach { thisStep ->
-                        val text = labels[thisStep]
-                        val selected = thisStep == safeStep
-                        val colors = if (eink) {
-                            ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (selected) Color.Black else Color.White,
-                                contentColor = if (selected) Color.White else Color.Black
-                            )
-                        } else {
-                            ButtonDefaults.outlinedButtonColors(
-                                containerColor = if (selected) {
-                                    MaterialTheme.colorScheme.primaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.surface
-                                },
-                                contentColor = if (selected) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-                        }
-                        // stringResource 只能在 @Composable 作用域调用：先提取，再用于 semantics lambda。
-                        val optionDesc = stringResource(
-                            R.string.reader_typography_width_option,
-                            fieldLabel,
-                            text
-                        )
-                        OutlinedButton(
-                            onClick = { onStepChange(thisStep) },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp)
-                                .semantics { contentDescription = optionDesc },
-                            shape = buttonShape,
-                            border = buttonBorder,
-                            colors = colors,
-                            contentPadding = PaddingValues(horizontal = 4.dp)
-                        ) {
-                            Text(
-                                text = text,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

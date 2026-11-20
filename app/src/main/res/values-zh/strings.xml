@@ -178,14 +178,13 @@
     <string name="reader_typography_font_family">正文字体</string>
     <string name="reader_typography_align">对齐方式</string>
     <string name="reader_typography_follow_default">跟随默认</string>
-    <string name="reader_typography_font_size_small">小</string>
-    <string name="reader_typography_font_size_normal">默认</string>
-    <string name="reader_typography_font_size_large">大</string>
-    <string name="reader_typography_font_size_xlarge">特大</string>
-    <string name="reader_typography_width_default">默认</string>
+    <!-- v5：字号档位显示为数值（百分比），不再用「小/默认/大/特大」定性词 -->
+    <string name="reader_typography_font_size_percent">%1$d%%</string>
+    <!-- v5：行宽四档按「窄→中→宽→全宽」单调排列（全宽 = 不限宽，显示在最右端） -->
     <string name="reader_typography_width_narrow">窄</string>
     <string name="reader_typography_width_medium">中</string>
     <string name="reader_typography_width_wide">宽</string>
+    <string name="reader_typography_width_full">全宽</string>
     <string name="reader_typography_font_sans">无衬线</string>
     <string name="reader_typography_font_serif">衬线</string>
     <string name="reader_typography_align_left">左对齐</string>
@@ -202,5 +201,4 @@
     <string name="reader_typography_increase">增大%1$s</string>
     <string name="reader_typography_decrease">减小%1$s</string>
     <string name="reader_typography_unit_em">em</string>
-    <string name="reader_typography_width_option">%1$s：%2$s</string>
 </resources>

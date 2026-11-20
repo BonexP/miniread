@@ -165,7 +165,9 @@ M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSur
 
 **E-Ink 无动画如何表达「下拉/滑出」**：`EInkConfig.DISABLE_ANIMATIONS = true`、`getAnimationSpec() = snap()` 是硬红线，真 `slideIn` / `animateDpAsState(Modifier.offset)` 会多次局刷产生残影。方案是**单帧瞬切 + 方向性 docking + 静态把手**：浮层一次出现，「下拉/滑出」由停靠边（顶/尾侧）与一条静态黑线 + 小矩形把手在单帧内表达，不靠运动。两 flavor 共用瞬切结构，标准版如需 `slideIn` 抛光则终态几何必须与瞬切一致（延续「E-Ink 只换样式、不重排」，坑 17/18/20）。浮层开合不改 WebView 尺寸 → 不触发重锚，恢复 Effect 的 key **绝不加** `showTypographyPanel` / `typography`（坑 13）。其余不变：编辑态 `rememberSaveable`（同坑 17）、E-Ink 只换黑白直角样式不重排、文案走 `reader_typography_*`（中英两文件 key 逐字一致）。
 
-### 控件 + 字段名符号化（v2 定形、v3 微调，2026-11-19）
+> ⚠️ **v5（2026-11-20）已推翻本节两处**：① 「竖屏顶部下拉 / 横屏侧边滑出」的方向性 docking 被**统一 `align(Alignment.TopEnd)`** 取代；② 那条「静态把手」正是用户问的直角灰色方块，**已整个删除**（见下方 v5 小节①）。保留本节是为了记住「覆盖式浮层 + 瞬切 + 尾兄弟节点」这三条被验证过、v5 未改的结论；方向性 docking 与把手**不要**恢复。
+
+### 控件 + 字段名符号化（v2 定形、v3 微调；**行宽一行已被 v5 取代**，见下一节 v5）
 
 六项按**档位数**选控件，解决上一轮「字号糊在一起」的根因（两列临界列宽 294dp、四档按钮仅 70.5dp/个，扣 M3 16dp×2 内边距后英文 `Extra large` 必然折行）：
 
@@ -173,8 +175,8 @@ M3 1.2.1 源码 `SnackbarTokens.ContainerColor = ColorSchemeKeyTokens.InverseSur
 | --- | --- | --- | --- |
 | 数值增减 | 行距、段距 | `+ / 值 / −` 步进器 | 1.4–2.0 / 0.8–2.0，step 0.1；保留 `UNSET = -1f`「跟随默认」哨兵（手机 1.6 / 平板 1.8 由 CSS 媒体查询决定） |
 | 两档 | 字体族、对齐 | `Switch` + 左右双标签 | 0/1；E-Ink 复用坑 17 黑白轨钮配方（选中白钮黑轨 / 未选中黑钮白轨 + 黑边），选中标签反色表达、不用灰 |
-| 多档（4） | 字号 | **v3：`+ / 档位文本 / −` 索引步进器**（v2 曾用 `Slider(steps=3)`，真机反直觉已弃用） | `FONT_SCALES = [85,100,120,150]`；`emit()` 仍写 `FONT_SCALES[step]`、仍只走 `textZoom` |
-| 多档（4） | 行宽 | **v3：四档按钮**（v2 曾用 `Slider(steps=3)`；窄面板 `maxWidth < 268.dp` 降 2×2 防英文折行，每档 48dp + `maxLines=1`） | `WIDTH_EM = [0,24,32,40]`；仍走 `max-width`+`margin:0 auto` |
+| 多档（4） | 字号 | **v3：`+ / 档位文本 / −` 索引步进器**（v2 曾用 `Slider(steps=3)`，真机反直觉已弃用）；**v5 起档位文本是数值百分比** | `FONT_SCALES = [85,100,120,150]`；`emit()` 仍写 `FONT_SCALES[step]`、仍只走 `textZoom` |
+| 多档（4） | 行宽 | ~~v3：四档按钮（窄面板 `maxWidth < 268.dp` 降 2×2）~~ → **v5：改为 `+ / 档位文本 / −` 索引步进器**（见 v5 小节③：四等分文本预算仅 ~42.6dp，`Narrow`/`Medium` 在系统字号 1.15× 必裁） | ~~`WIDTH_EM = [0,24,32,40]`~~ → **v5：`WIDTH_EM = [0, 18, 21, 23]` + 展示序 `WIDTH_STEP_ORDER = [1,2,3,0]`**；仍走 `max-width`+`margin:0 auto` |
 
 步进器到边界时按钮**不置灰**（灰在 E-Ink 上是脏块），保持黑框黑字、仅忽略点击；重置仍由标题行「恢复默认」统一处理。E-Ink 一律纯黑白 + 直角 + 2dp 黑框 + 零阴影/灰底/半透明，standard 走 M3 默认。所有 `+`/`−`/`Switch`/`Slider` 的 `contentDescription` 走 `stringResource`，且在 `@Composable` 作用域先提取成 `val` 再进 lambda（§6；尤其 `onClick` 内不可调 `stringResource`）；六个草稿与档位索引仍 `rememberSaveable`。
 
@@ -186,7 +188,7 @@ v2 静态评审与双 flavor 构建/单测全绿，但用户真机（模拟器�
 
 1. **浮层难滚 / 显示不全（主因，代码可证）**：v2 浮层壳在「承载可滚面板的同一个祖先 Box」上挂 `pointerInput(Unit){ awaitEachGesture { awaitFirstDown(requireUnconsumed=false).consume(); do { awaitPointerEvent().changes.forEach{consume()} } while(pressed) } }`。`awaitPointerEvent()` 缺省走 `PointerEventPass.Main`（**父先子后**），祖先在子 `verticalScroll` 之前把整段手势 change 全量标为 consumed——而 Compose 滚动手势依赖 change 处于 **unconsumed** 才能建立 slop 与拖曳增量，于是「有 `verticalScroll` 却滚不动」；鼠标滚轮（`PointerEventType.Scroll`）同样被吞。叠加竖屏 `heightIn(max=0.55*maxH)` 偏小、横屏 `widthIn≤480dp` 使面板内 `maxWidth>=600` 两列恒 false 单列堆叠、`min=280dp` 在 220dp 多窗口溢出裁切（违反技能 `adaptive-screens.md` 220dp 最小宽 / 鼠标平滑滚动）。**修法**：吞触摸改 `awaitPointerEvent(PointerEventPass.Final)`（`Final` 子先父后）且只消费 `!isConsumed` 残留，`awaitFirstDown` 不再主动 consume——内层已消费的滚动 change 不被抢、空白处未消费事件才兜底吞掉不透传 WebView，「能滚」与「不透传」同时成立；Compose Foundation 1.6.1 `verticalScroll` 内含 `MouseWheelScrollNode` 原生处理滚轮且仅未消费时滚动，Final 修复后滚轮随之恢复（**不要**再加滚轮桥接，会双重滚动）。尺寸：竖屏去 `min=280dp`、上限 0.75/0.70 可用高 + `coerceAtMost(maxHeight)`；横屏放宽宽度 + 两列阈值 480dp。
 2. **行高/段距看不到 `+/−`**：~~非独立 bug，修①后自愈~~ —— **该结论已被 v4 真机证据推翻，见下节**（真实根因是 M3 默认 `contentPadding` 把 48dp 按钮的内容宽吃成 0，与滚动无关）。
-3. **字号滑块反直觉**：v2 的 `Slider(steps=3)` 只有当前档文本、鼠标难精确落档、E-Ink 上像进度条。**修法**：字号改 `+ / 档位文本 / −` 索引步进器（复用 `FONT_SCALES` 与 `emit()`，数据链路零改）、行宽改四档按钮（窄面板 2×2 兜底）。详见上方控件小节。
+3. **字号滑块反直觉**：v2 的 `Slider(steps=3)` 只有当前档文本、鼠标难精确落档、E-Ink 上像进度条。**修法**：字号改 `+ / 档位文本 / −` 索引步进器（复用 `FONT_SCALES` 与 `emit()`，数据链路零改）、行宽改四档按钮（窄面板 2×2 兜底）。详见上方控件小节。⚠️ **行宽四档按钮已被 v5 废弃**（2×2 兜底正是用户「必须单行」投诉的来源，见 v5 小节③）。
 
 **验证边界**：以上为静态代码审查 + 源码层分析（技能 `android-native-dev` 的 220dp / 鼠标滚动 / 48dp / 8dp 条款 × AGENTS 坑 12/13/15/17/18/20 逐条对照，见 I 岗诊断 `.workbuddy/reports/issue19-v3-diagnosis.md`）；鼠标实际手感与 Final-pass 真机滚动仍需设备复测。技能 `SKILL.md` 的 `Bottom Nav 80dp` / `versionNameSuffix` / Jetifier 三项冲突按 §0 判给 AGENTS（E-Ink 48dp 底栏、版本号唯一来源、仅 `useAndroidX`），不采纳。
 
@@ -208,7 +210,44 @@ v3 合入后仍被用户判「没改好」。本轮**真正上设备**（`Medium
 
 **复测脚本（可复用）**：安装后 `adb shell input tap <Aa 坐标>` → `adb shell uiautomator dump /sdcard/ui.xml` → `adb pull` → 在 XML 里断言 `text="+"` 与 `text="−"` 节点存在且 bounds 在屏内；`adb shell input mouse scroll <x> <y> --axis VSCROLL,-3` 前后 `screencap` 求 diff，断言 bbox 不落在 WebView 区域。
 
-### 浮层的四形态尺寸与位置（v2 定形、v3 尺寸微调，替代原「宽屏两列 + 固定高度上限」）
+### v5：按用户真机反馈重做交互范式（2026-11-20）
+
+v4 之后用户在真机上仍报五个问题，逐条确认都是**范式层**而非实现细节问题：一个假的 drag handle、字号用定性词、行宽的四档按钮在窄面板会变两行、行宽的「默认」其实是最宽（与「宽」反序）、平板横屏浮层贴右侧中部与右上角 `Aa` 脱节。v5 的改法是「删掉犯错的可能」而不是打补丁。
+
+**① 删除 `TypographyDockHandle`（直角灰色方块）**。它同时错四次：直角（M3 drag handle 是 `extraLarge` 圆角 pill）、8dp 厚（M3 是 4dp）、**不可拖**（M3 的 handle 只出现在可拖拽 sheet 上）、**位置在停靠边的反面**（竖屏 dock 在顶边却把条画在底边、横屏 dock 在右边却画在内侧左边，等于用图形叫用户往反方向拉）。改成合规 handle 也救不活：位置问题无解，且 `BottomSheetDefaults.DragHandle` 自带 `padding(vertical = 22.dp)`（挂一根 4dp 的条要吃掉 48dp 高度），做成真可拖又撞 E-Ink 无动画红线。改为贴右上角的锚定卡片后，浮层没有「可抓取的自由边」——「从哪来」由锚定位置本身表达。
+
+**② 字号档位文案改数值百分比**：`85% / 100% / 120% / 150%`，即 `FONT_SCALES` 字面值 + `%`（`reader_typography_font_size_percent`，`%1$d%%` 中英同形）。
+- 为什么不是 px：`ReaderTypographyPanel` 是**全局一处**设置，而默认档正文在手机是 17.6px、平板是 22.5px（差 28%），任何「看起来像字号」的整数必然在一类设备上说谎。
+- 为什么不按设备动态算 px（最诱人但必须否决）：判据不同源。`tablet_styles.css` 的生效条件是 **WebView 视口** `(min-width:600px) and (min-height:480px)`，而 Kotlin 只有 `smallestScreenWidthDp`；本仓已有确定性反例——800×500dp 平板横屏正文 Box 高 ≈356px < 480，平板 CSS 不命中、正文回落到 14.08px 手机模型，Kotlin 却仍判平板。这正是坑 16「同一属性两个开关」的同源形态。
+- 百分比是 `textZoom = 125 × fontScale/100` 的**输入比例**，跨设备精确，零新常量、零新真相源。
+
+**③ 行宽四档改「窄 / 中 / 宽 / 全宽」，并把 `+/−` 索引步进器作为控件**（`WIDTH_EM = [0, 18, 21, 23]` + `WIDTH_STEP_ORDER = [1, 2, 3, 0]`）：
+- **语义修正**（用户报的「默认比宽还窄」）：旧 UI 从左到右排「默认 / 窄 / 中 / 宽」，而「默认」= 不输出 `max-width` = **铺满可用宽**（最宽）。现在「全宽」显示在最右端。存储语义不变（索引 0 仍 = 不限，默认 `widthStep = 0` 输出的空 CSS 逐像素不变），只加一个展示序映射，旧持久化值 `0..3` 全部仍能解码（`ReaderTypographyCodec` 的 `clamp(0, WIDTH_STEP_MAX)` 不动）。
+- **数值重算**：旧 `[0,24,32,40]` 在平板横屏 `40em = 950px > tablet_styles.css 的 max-width:900px` → 「宽」比「全宽」还宽（用户还没报的第二处反序）。v5 按通用单调性判据 `最宽显式档 × 最坏 emPx ≤ 样式表 cap` 反解：zone800 = `800/(18×1.88) = 23.64em`、zone900 = `900/(19×1.88) = 25.20em` → 全局安全整数 **23em**（`23 × 33.84 = 778 < 800`、`23 × 35.72 = 822 < 900`）。**24em 不采用**：在 zone800 下 `24 × 33.84 = 812 > 800`，仍反序 12px。
+- **控件形态**（用户③「手机横屏必须单行」）：旧的四档按钮 `TypographySegmentedButtons` 的 `maxWidth < 268.dp` 2×2 降级就是两行的来源；而它不可救——M3 1.2.1 `SegmentedButton` 的宽度公式恒含 `maxOf(IconSize 18dp, iconWidth) + IconSpacing 8dp`（传 `icon = {}` 也收不回），四档中文固有宽 ≈267dp、英文 ≈366dp，两列控制区只有 226dp；退一步用四个 `OutlinedButton` 等分，每档文本预算仅 **42.59dp**（`198.34 − 3×4` 再 `÷4` 再减 `2dp×2`），`Narrow`/`Medium` 自身就要 42.0–42.6dp，**系统字号 1.15× 时必然裁切**（`sp` 随系统字号缩放）。改用现成的 `TypographyIndexStepper` 后文本槽有 ≈90dp（2.1 倍），**结构上不可能换行**，2×2 分支与整段控件代码一起删除。
+- **已知取舍（必须写明）**：索引步进器一次只显示一档，失去「一眼看见四档全貌」，且要从「窄」走到「全宽」需连点 3 次。换来的是：单行不可破、与字号/行距/段距同构、任意系统字号下不裁切。
+- **默认档为什么仍是「不限」**：它等价于当前 CSS 的实际输出（默认观感逐像素不变）；单调递增的末档必须是最大，「不限」就是上确界；`onReset` 写 `DEFAULT` 即回到最宽，符合直觉。若改成 18/21/23 之一，手机横屏默认会从 814 收窄到 ≤528（−35%），而用户这一轮没有一条抱怨「默认太宽」。
+- **旧值语义变化**：旧 `1/2/3`（= 24/32/40em）升级后变成 18/21/23em，**只会更窄、方向一致**；功能从未发布（`v1.2.2` tag 树里没有 `ReaderTypography.kt`），但用户测试机写过 `typo_width_step`，故不做存储重排、只加展示序。
+
+**④ 浮层几何统一为「锚定右上 + 只封顶」**：四形态共用**一段** modifier——`align(Alignment.TopEnd)` + `widthIn(max = 560.dp.coerceAtMost(maxWidth))` + `heightIn(max = maxHeight)` + Final-pass 吞触摸。v2~v4 的「竖屏顶部下拉 / 横屏侧边滑出」两套形态、`isTablet`/`isLandscape` 判据、0.55/0.62 与 0.70/0.75 两个比例**全部删除**：
+- **为什么 TopEnd**：M3 对「由某控件触发的弹层」的硬要求是 anchored to its anchor（同侧同角连续）。横屏旧形态贴 `CenterEnd` 中右侧，与右上角的 `Aa` 隔着正文、视线要跳一次——这就是用户「平板横屏浮层在右边很不符合直觉」的准确来源。`Aa` 并非 `actions` 最右（刷新按钮在其右侧约 48dp），560dp 宽的卡片上这点错位视觉可忽略；若后续用户仍觉得没对齐，再把 `Aa` 移到 `actions` 末尾（3 行改动）。
+- **为什么 560dp**：M3 `BottomSheetDefaults.SheetMaxWidth = 640.dp`（全屏宽 sheet 上限）与 `DropdownMenuItemDefaultMaxWidth = 280.dp`（菜单上限）之间，且恰好让面板内 `maxWidth >= 480.dp` 的两列阈值可达（`560 − 24 = 536`）。窄屏（手机竖屏 391dp）被正文 Box 夹成满宽，等价于「顶部下拉」的观感但不需要单独分支。
+- **为什么高度只封顶**：面板已改为内容包裹高度（单列 ≈376dp / 两列 ≈220dp）。比例上限在多数形态永不触发，只会制造「面板比内容高出一截空白」或「明明放得下却被截断」。手机横屏 standard + 三键导航时正文 Box 可用高仅 ≈175dp（两列 ≈220dp）→ 会滚动：这是「六项 × 48dp 触控 = 288dp」的物理下限，**正确解是保留 48dp 触控 + 内层滚动，不是缩控件**。
+- **不按设备类别分化**：几何全部由「可用空间」连续推导，`isTablet` / `isLandscape` 在浮层里一个都不需要，从源头避开 `isTablet()`（`screenWidthDp >= 600`，手机横屏会被误判）的判据陷阱。判断「真为大屏适配 vs 把手机形态放大」的标准是几何是否由物理条件推导——旧 `0.55 × 1280 = 704dp` 侧栏正是反例（横向拉长 1.7 倍、六段仍单列）。**若将来确实要按设备分支，必须用 `smallestScreenWidthDp >= 600`。**
+- ⚠️ **两列阈值余量很小**：手机横屏 914dp 下浮层宽 `560dp`（被夹取后）→ 面板内宽 536dp，只比 480dp 阈值高约 56dp；v4 的旧几何是 480.68dp（仅高 0.68dp）。**不要顺手微调浮层内边距或宽度上限**，否则两列会静默翻单列。
+
+**⑤ 三条常被引用错的 M3 1.2.1 事实**（官方 sources jar + `javap` 核对，非记忆；避免下一轮再被引错）：
+1. **没有** `BottomSheetDefaults.DragHandleWidth / DragHandleHeight / DragHandleColor`。`BottomSheetDefaults` 只有一个 `@ExperimentalMaterial3Api fun DragHandle(modifier, width, height, shape, color)`，默认值在 **`internal object SheetBottomTokens`**（32dp / 4dp / `onSurfaceVariant @0.4f` / `extraLarge` = 28dp pill），**app 代码不可引用**。
+2. `MenuTokens.ContainerColor` 是 **`ColorSchemeKeyTokens.Surface`**（不是 `surfaceContainer`），`ContainerElevation = Level2 = 3dp` 且**同时**传给 `tonalElevation` 与 `shadowElevation`。E-Ink 下 `surfaceTint` 取 `primary` = 纯黑，`surfaceColorAtElevation(3dp)` 的 alpha ≈ 8.2% → 白底被压成 **≈#EBEBEB 灰**，再加 3dp 阴影；`LocalTonalElevationEnabled = false` 只能关掉灰底，**阴影与入场动画（`updateTransition` + scale/alpha tween）都无法从外部关闭**。⚠️ 注意 `LocalTonalElevationEnabled` 是**全局** composition local，不要为了一个菜单去关它（会影响全应用 elevation）。
+3. **`EInkLightColorScheme` 未覆盖 `outline` / `onSurfaceVariant` / `outlineVariant` / `surfaceVariant`**，它们回落 `ColorLightTokens`：`outline = #79707E`、`onSurfaceVariant = #49454F` —— **即灰**。任何新引入的 M3 组件若不显式传色，在 E-Ink 上必出灰。v5 的做法是**组件数净减**（只删不加），因此这条不需要在浮层里额外处理。
+
+**v5 的红线自检**：WebView 组合位置仍恒定（浮层是尾兄弟节点，WebView 仍在 slot 0）；`loadDataWithBaseURL` 仍在 `LaunchedEffect(htmlContent)`；恢复 Effect 的 key 仍只有 `pageLoadTick` / `sizeSignature`；排版表仍只写尺寸（本次未碰 `template.html` / CSS）；字号仍只走 `textZoom`；E-Ink 仍无动画、无 scrim、无灰底无阴影、底栏 48dp / 7 键；浮层开合仍不改变 WebView 测量尺寸（`widthIn`/`heightIn` 只约束浮层自身）；Final-pass 吞触摸**原样保留**（v3/v4 真机验证的滚动 + 滚轮 + 不透传三者同时成立，不得回退）。
+
+**v5 待真机确认项**：① 手机横屏 standard + 三键导航下两列面板需滚动（E-Ink 303dp 可用高应一屏可见），需确认滚动手势与鼠标滚轮在 `TopEnd` 锚定下仍好用；② `TopEnd` 贴边后与顶栏的视觉衔接（正文 Box 有 10dp padding，浮层右缘因此内缩 10dp；standard 现状是 `surface` 底 + 12dp 圆角 + 零 elevation，是否「像从顶栏长出来」需截图判断）；③ `Aa` 与浮层右缘约 48dp 的错位是否可忽略；④ 系统字号放大到 1.15× 时行宽步进器的档位文本是否完整（索引步进器结构上应无裁切，但需实测确认）。
+
+### 浮层的四形态尺寸与位置（v2 定形、v3 尺寸微调；**已被 v5 统一右上锚定取代，仅存档**）
+
+> ⚠️ **v5 起本节描述的 docking 与比例全部不再生效**（见上一节）。保留它是为了解释「为什么当初那样做」以及回归时不要重复踩坑；**不要**照本节恢复任何比例分支。
 
 原占空间横条的 `BoxWithConstraints` 高度上限 `(maxHeight * 0.65f).coerceIn(160.dp, 360.dp)` 是为「正文按权重给的可用高」设计的（修长手机横屏可用高只剩约 200dp 会被裁），浮层改按**停靠边**给宽/高上限，`BoxWithConstraints` 改取**正文 Box 的可用宽高**（非全屏），任何比例都不溢出、内层 `verticalScroll` 保证内容可滚到底。
 
@@ -237,3 +276,13 @@ v3 合入后仍被用户判「没改好」。本轮**真正上设备**（`Medium
 ### 验收判据（issue 原文）
 
 三档字号 × 手机/平板 × 明/暗共 12 组合都生效（不出现「手机变了平板没变」）；调节后不重载、位置偏差 ≤1 屏、不误标已读；行距 1.4 / 2.0 极端值下引用块 / 代码块 / 表格不重叠；退出重进 / 杀进程保留、`clearAll()` 回默认；E-Ink 无动画、底栏仍 48dp、无残影；中英文案齐全无硬编码；双 flavor 单测 + assemble 通过。
+
+**v5 追加的可脚本化判据（`ReaderTypographyTest` 已覆盖前四条）**：
+
+1. `WIDTH_STEP_ORDER.map { WIDTH_EM[it] }` 严格递增且末位为 0（「全宽」在最右端）；
+2. 展示序 ↔ 存储索引双向映射对 `0..3` 往返一致，越界输入回落「不限」而不是崩；
+3. 旧持久化值 `widthStep = 0..3` 全部仍能解码（宽容 + clamp，不抛）；
+4. 通用单调性判据：`最宽显式档 × 18px × 最高 textZoom ≤ 800`（zone800）且 `× 19px × 最高 textZoom ≤ 900`（zone900）；
+5. `buildCss()` 在展示序上 `max-width` 严格递增（把「UI 顺序」与「CSS 实际效果」焊死，防止改了一边忘另一边）；
+6. 字号 `FONT_SCALES` 严格递增，且显示值（百分比）→ `textZoomFor` 严格单调、默认档仍是 125。
+

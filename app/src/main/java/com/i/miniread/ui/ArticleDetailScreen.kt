@@ -12,11 +12,9 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,7 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -120,10 +117,10 @@ fun ArticleDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     val markedReadMsg = stringResource(R.string.article_snackbar_marked_read)
 
-    // ===== 阅读排版面板（issue #19 v2）=====
+    // ===== 阅读排版面板（issue #19）=====
     // 显隐状态已提升到 MainContent（Aa 入口在全局顶栏），本屏只负责渲染覆盖式浮层。
-    // v2 推翻此前「占空间横条」决策：面板改为挂在正文 Box 尾部的覆盖浮层，
-    // 竖屏顶部下拉 / 横屏侧边滑出，遮挡正文但绝不压缩 WebView 高度（坑 15 平板守卫）。
+    // 覆盖浮层挂在正文 Box 尾部（WebView 之后的尾兄弟节点），v5 起统一锚定右上角、遮挡正文
+    // 但绝不压缩 WebView 高度（坑 15 平板守卫）。
     val typography by DataStoreManager.getReaderTypographyFlow()
         .collectAsState(initial = ReaderTypography.DEFAULT)
 
@@ -228,30 +225,38 @@ fun ArticleDetailScreen(
 }
 
 /**
- * 覆盖式排版浮层外壳（issue #19 v2）。
+ * 覆盖式排版浮层外壳（issue #19，v5 统一顶右锚定）。
  *
  * 这是 [ArticleDetailScreen] 正文 Box 内的**尾兄弟节点**：ArticleWebView 始终在 slot 0，
  * 开合只增删本节点，不重建 WebView、不改其测量尺寸 → 不触发重锚（§8 坑 12/13/15）。
  *
- * 四形态（判据在组合体内实时算，configChanges 不重建 Activity）：
- * - 横竖：`screenWidthDp > screenHeightDp`（等同 AdaptiveLayoutHelper.isLandscape 口径）；
- * - 设备类别：`smallestScreenWidthDp >= 600`（**不复用** isTablet 的 screenWidthDp>=600，
- *   否则手机横屏 ~780dp 会被误判为平板）——但面板内部列数仍交给 Panel 的 BoxWithConstraints
- *   按可用宽度自适应，本壳只决定 docking 方向与宽/高上限。
- * 竖屏顶部下拉（满宽、高上限按可用高度夹取）；横屏尾侧滑出（满高、宽上限夹取），
- * 平板横屏放尾侧避开首侧 NavigationRail（坑 7/14）。
+ * v5 几何（推翻 v2~v4 的「竖屏顶部下拉 / 横屏侧边滑出」双形态）：
+ * - **四形态统一 `align(Alignment.TopEnd)`**，贴正文内容区右上角、正好在顶栏 `Aa` 下方。
+ *   MD3 对「由某个控件触发的弹层」的硬要求是 anchored to its anchor（弹层与触发器同侧同角连续）：
+ *   旧形态横屏贴 `CenterEnd` 中右侧，与右上角的 `Aa` 隔着正文脱节（用户反馈⑤）。
+ * - `widthIn(max = 560.dp)`：内容舒适上限（落在 M3 `SheetMaxWidth = 640dp` 与
+ *   `DropdownMenuItemDefaultMaxWidth = 280dp` 之间），同时让面板内 `maxWidth >= 480.dp`
+ *   的两列阈值可达（560 − 24 内边距 = 536）。窄屏时被正文 Box 可用宽夹取（竖屏即满宽）。
+ * - `heightIn(max = maxHeight)`：**只封顶、不按比例**。面板按内容包裹高度（单列 ≈376dp /
+ *   两列 ≈220dp），比例上限在多数形态永不触发、只制造「多余空白」或「明明放得下却被截断」。
+ *   手机横屏 standard 可用高仅 ≈175dp（两列 ≈220dp）时由面板内 `verticalScroll` 接管——
+ *   这是「六项 × 48dp 触控」的物理下限，正确解是保留触控红线 + 内层滚动，不是缩控件。
+ * - **不按设备类别分化**：无 `isTablet` / `isLandscape` 分支、无 0.55/0.62/0.70/0.75 比例。
+ *   列数交给 `ReaderTypographyPanel` 内 `BoxWithConstraints` 按可用宽连续自适应，
+ *   因此也不再触碰 `AdaptiveLayoutHelper.isTablet()`（其 `screenWidthDp >= 600` 会把手机横屏误判，坑 20）。
+ *
+ * v5 删除 `TypographyDockHandle`：那是四重错位的假 affordance（直角 / 8dp 厚 / 不可拖 /
+ * 画在停靠边的**反面**——竖屏 dock 顶边却画底边、横屏 dock 右边却画内侧左边）。浮层改为贴
+ * `TopEnd` 的贴边卡片后没有「可抓取的自由边」，把手在几何上失去意义；「从哪来」由锚定位置本身表达。
  *
  * E-Ink / standard 共用同一套瞬切结构（无 slideIn / offset / AnimatedVisibility）：
- * 单帧出现、方向性 docking + 静态「来源边」把手承载「下拉/滑出」语义（坑 18/20）。
- * 自绘不透明白底 + 2dp 黑框（E-Ink），**无 scrim / 半透明 / 阴影**（坑 18）。
+ * 单帧出现，无动画（坑 18/20）。自绘不透明白底 + 2dp 黑框（E-Ink），**无 scrim / 半透明 / 阴影**。
+ * 不使用 Dialog / ModalDrawer / Popup / DropdownMenu（带 scrim 或灰底+阴影+入场动画）。
  *
- * 吞透传的实现（issue #19 v3 修复）：pointerInput 在 `PointerEventPass.Final` 阶段
- * **只消费子树未消费的残留事件**。Final 晚于子节点 `verticalScroll`（Main pass）派发：
- * 面板内滚动 / 鼠标滚轮已消费的 change 不会被本层抢走 → 内层滚动恢复；面板空白处的事件
- * 无人消费 → 本层兜底消费，不透传给下层 WebView。`awaitFirstDown` 不主动 consume（交给
- * Final 统一处理残留），以免破坏子节点滚动建立 slop 所需的 unconsumed down。
- * Compose 1.6.1 `verticalScroll` 自带 `MouseWheelScrollNode`（检测 `PointerEventType.Scroll`），
- * 故鼠标滚轮由内层原生处理，**不再额外写滚轮桥接**（否则会双重滚动）。
+ * 吞透传的实现（issue #19 v3 修复，v4 真机复测确认，**不得回退**）：pointerInput 在
+ * `PointerEventPass.Final` 阶段**只消费子树未消费的残留事件**。Final 晚于子节点 `verticalScroll`
+ * （Main pass）派发：面板内滚动 / 鼠标滚轮已消费的 change 不会被本层抢走 → 内层滚动好用；
+ * 面板空白处的事件无人消费 → 本层兜底消费，不透传给下层 WebView。`awaitFirstDown` 不主动 consume。
  */
 @Composable
 private fun TypographyOverlay(
@@ -260,13 +265,7 @@ private fun TypographyOverlay(
     onReset: () -> Unit,
     onClose: () -> Unit
 ) {
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
-    val isTablet = configuration.smallestScreenWidthDp >= 600
-    val eink = com.i.miniread.BuildConfig.IS_EINK
-
     // Final-pass 残留消费：既不抢内层滚动，又吞掉面板空白的透传（见 KDoc）。
-    // 两段 docking 共用同一份 modifier（Unit key，组合期间稳定）。
     val swallowLeakedPointer = Modifier.pointerInput(Unit) {
         awaitEachGesture {
             awaitFirstDown(requireUnconsumed = false)
@@ -279,77 +278,25 @@ private fun TypographyOverlay(
         }
     }
 
-    // 尺寸上限交给内层 BoxWithConstraints 按「正文 Box 可用区」夹取；这里只决定 docking 方向
-    // 与一个方向无关的粗上限，避免横屏整条侧栏 / 竖屏满宽时内容溢出。
+    // 上限按「正文 Box 可用区」夹取（不是全屏），四形态共用同一段 modifier。
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-        val overlayModifier = if (isLandscape) {
-            // 横屏尾侧滑出：宽上限按可用宽夹取；尾侧避开首侧 NavigationRail。
-            // v4：不再 `fillMaxHeight()` —— 浮层**按内容包裹**（面板自身高度），避免面板只占上部
-            // 却让整条侧栏高度的吞触摸层盖住下方正文（点正文没反应）。高度仍受 `heightIn(max)` 封顶，
-            // 超出时由面板内滚动容器接管。
-            Modifier
-                .align(Alignment.CenterEnd)
-                .widthIn(
-                    min = 240.dp.coerceAtMost(maxWidth),
-                    max = (maxWidth * (if (isTablet) 0.55f else 0.62f))
-                        .coerceIn(240.dp.coerceAtMost(maxWidth), maxWidth)
-                )
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .widthIn(max = 560.dp.coerceAtMost(maxWidth))
                 .heightIn(max = maxHeight)
                 .then(swallowLeakedPointer)
-        } else {
-            // 竖屏顶部下拉：满宽、高上限按可用高夹取。
-            // v3：去掉 min=280dp 硬下限（220dp 多窗口会溢出裁切）；上限放宽到 0.75 可用高，
-            // 六段内容尽量一屏可见、少滚动；用 coerceAtMost(maxHeight) 保证绝不溢出正文 Box。
-            Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .heightIn(
-                    max = (maxHeight * (if (isTablet) 0.70f else 0.75f))
-                        .coerceAtMost(maxHeight)
-                )
-                .then(swallowLeakedPointer)
-        }
-
-        Box(modifier = overlayModifier) {
+        ) {
             ReaderTypographyPanel(
-                // v4：不再传 fillMaxSize()——让面板**包裹内容**，内容矮时浮层就矮（竖屏六段单行
-                // 正好一屏、下方不留大片空白），内容超高时由壳的 heightIn/widthIn 上限封顶，
-                // 面板内的滚动容器负责滚到底。填充 min 约束交给壳的 align + 尺寸上限。
+                // 不传 fillMaxSize()：面板**包裹内容**，内容矮时浮层就矮、内容超高时由上面的
+                // heightIn 封顶并由面板内的滚动容器接管。fillMaxWidth 只填满被上限夹取后的宽度。
                 modifier = Modifier.fillMaxWidth(),
                 current = current,
                 onChange = onChange,
                 onReset = onReset,
                 onClose = onClose
             )
-            // 「来源边」把手：静态绘制（非动画），表达从这边拉出/滑出的心智。
-            TypographyDockHandle(isLandscape = isLandscape, eink = eink)
         }
-    }
-}
-
-/**
- * 浮层停靠边的静态把手：竖屏在下沿居中画短横条，横屏在内侧左沿画竖条。
- * 单位是固定 dp、黑色，E-Ink 与 standard 一致（无灰、无半透明）。
- */
-@Composable
-private fun BoxScope.TypographyDockHandle(isLandscape: Boolean, eink: Boolean) {
-    val handleColor = if (eink) Color.Black else MaterialTheme.colorScheme.outline
-    if (isLandscape) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .width(8.dp)
-                .height(32.dp)
-                .background(handleColor)
-        )
-    } else {
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .width(32.dp)
-                .height(8.dp)
-                .background(handleColor)
-        )
     }
 }
 

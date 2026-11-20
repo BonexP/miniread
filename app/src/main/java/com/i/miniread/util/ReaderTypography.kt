@@ -19,11 +19,23 @@ import kotlin.math.roundToInt
  *   避免重演 issue #18「同一属性两个开关」的冲突。
  */
 data class ReaderTypography(
-    /** 字号百分比，85..150；100 = 默认（textZoom 125）。 */
+    /**
+     * 字号百分比，85..150；100 = 默认（textZoom 125）。
+     *
+     * v5：UI 直接显示百分比数值（`85% / 100% / 120% / 150%`），即 [FONT_SCALES] 的字面值——
+     * 因为 `textZoom = 125 × fontScale/100` 是纯比例，跨手机/平板都精确成立；显示成 px 会在
+     * 另一类设备上说谎（手机默认 17.6px / 平板默认 22.5px，差 28%）。
+     */
     val fontScale: Int = DEFAULT_FONT_SCALE,
     /** 行距倍数，1.4..2.0；[UNSET] = 跟随 CSS（手机 1.6 / 平板 1.8）。 */
     val lineHeight: Float = UNSET,
-    /** 行宽档位 0..3：0 = 默认（不限宽），1/2/3 = 窄 / 中 / 宽。 */
+    /**
+     * 行宽档位 0..3（**存储语义**）：0 = 不限宽（全宽，不输出 `max-width`），
+     * 1/2/3 = 18em / 21em / 23em（窄 / 中 / 宽）。
+     *
+     * v5：索引 0 仍是「不限」以保持默认值观感逐像素不变、旧持久化值零迁移；
+     * UI 的展示顺序由 [WIDTH_STEP_ORDER] 决定（窄 → 中 → 宽 → 全宽），存储顺序不变。
+     */
     val widthStep: Int = 0,
     /** 段落间距（em），0.8..2.0；[UNSET] = 跟随 CSS。 */
     val paragraphSpacing: Float = UNSET,
@@ -95,10 +107,42 @@ data class ReaderTypography(
         const val FONT_FAMILY_SERIF = 1
         const val ALIGN_JUSTIFY = 1
 
-        /** 字号四档（百分比）：小 / 默认 / 大 / 特大。 */
+        /**
+         * 字号四档（百分比）。v5 起这四档**同时就是 UI 显示值**（`85% / 100% / 120% / 150%`）：
+         * 它是 `textZoom = 125 × fontScale/100` 的输入比例，跨设备精确，不需要任何新常量。
+         */
         val FONT_SCALES = listOf(85, 100, 120, 150)
-        /** 行宽四档对应的 `max-width`（em）；索引 0 = 默认，不输出。 */
-        val WIDTH_EM = listOf(0, 24, 32, 40)
+
+        /**
+         * 行宽四档对应的 `max-width`（em）；索引 0 = 不限（不输出 `max-width`）。
+         *
+         * v5（原 `[0, 24, 32, 40]`）：
+         * - 旧表 40em 在平板横屏 = 950px > `tablet_styles.css` 的 `max-width:900px` →
+         *   「宽」比「全宽」还宽（第二处反序，用户尚未报告但同根同源）；
+         * - 新表按**通用单调性判据** `最宽显式档 × 最坏 emPx ≤ 样式表 cap` 反解：
+         *   zone800 = `800 / (18 × 1.88) = 23.64em`、zone900 = `900 / (19 × 1.88) = 25.20em`
+         *   → 全局安全整数 **23em**（`23 × 33.84 = 778 < 800`、`23 × 35.72 = 822 < 900`）。
+         *   档距 16.7% / 9.5%，四档在宽视口两两可辨。
+         * - 旧持久化值 1/2/3 (= 24/32/40em) 升级后变成 18/21/23em，**只会更窄**，方向一致。
+         */
+        val WIDTH_EM = listOf(0, 18, 21, 23)
+
+        /**
+         * 行宽档位的**展示序**（UI 从左到右 = 从窄到全宽）→ 存储索引。
+         *
+         * 用户反馈④的根因是旧 UI 从左到右排「默认 / 窄 / 中 / 宽」，而「默认」其实是
+         * 「不限宽」（最宽）→ 选「宽」反而比选「默认」窄。v5 把「不限」显示在最右端，
+         * 只加展示序映射、**不动存储语义**（默认 `widthStep = 0` 仍输出空 CSS，观感零变化）。
+         */
+        val WIDTH_STEP_ORDER = listOf(1, 2, 3, 0)
+
+        /** 展示序索引 → 存储 `widthStep`；越界一律回落「不限」（与 Codec 的宽容口径一致）。 */
+        fun widthStepForDisplayIndex(displayIndex: Int): Int =
+            WIDTH_STEP_ORDER.getOrElse(displayIndex) { 0 }
+
+        /** 存储 `widthStep` → 展示序索引；未知值一律显示为最后一档「全宽」。 */
+        fun displayIndexForWidthStep(step: Int): Int =
+            WIDTH_STEP_ORDER.indexOf(step).let { if (it < 0) WIDTH_STEP_ORDER.lastIndex else it }
 
         /** `fontScale = 100` 时对齐既有硬编码的 `textZoom = 125`。 */
         const val BASE_TEXT_ZOOM = 125
