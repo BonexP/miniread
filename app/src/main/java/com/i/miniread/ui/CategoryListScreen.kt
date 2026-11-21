@@ -2,7 +2,6 @@ package com.i.miniread.ui
 
 import android.util.Log
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.KeyboardArrowRight
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.i.miniread.BuildConfig
 import com.i.miniread.R
 import com.i.miniread.network.Category
 import com.i.miniread.viewmodel.MinifluxViewModel
@@ -123,65 +120,40 @@ fun CategoryItem(
         )
     }
 
-    Card(
-        colors = if (BuildConfig.IS_EINK) {
-            CardDefaults.cardColors(
-                containerColor = Color.White
-            )
-        } else {
-            CardDefaults.cardColors()
-        },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .then(
-                if (BuildConfig.IS_EINK) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = Color.Black,
-                        shape = MaterialTheme.shapes.medium
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable { onClick() },
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+    MiniCard(onClick = onClick) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Ensure Column occupies remaining space
+            Column(
+                modifier = Modifier.weight(1f)
             ) {
-                // Ensure Column occupies remaining space
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = category.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text =  if (unreadCount > 0) stringResource(R.string.category_list_entry_unread_count, unreadCount) else stringResource(R.string.category_list_entry_all_read) ,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
-                    )
-                }
-                // Button to mark as read with icon
-                IconButton(onClick = { showConfirmDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Done,
-                        contentDescription = stringResource(R.string.category_list_mark_as_read)
-                    )
-                }
-                // Button to show subscriptions with icon
-                IconButton(onClick = onShowSubscriptions) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = stringResource(R.string.category_list_show_subscriptions)
-                    )
-                }
+                Text(
+                    text = category.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = miniCardTitleColor()
+                )
+                Text(
+                    text =  if (unreadCount > 0) stringResource(R.string.category_list_entry_unread_count, unreadCount) else stringResource(R.string.category_list_entry_all_read) ,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = miniCardSecondaryColor(),
+                    modifier = Modifier.padding(top = 4.dp) // Adjusted padding for spacing
+                )
+            }
+            // Button to mark as read with icon
+            IconButton(onClick = { showConfirmDialog = true }) {
+                Icon(
+                    imageVector = Icons.Default.Done,
+                    contentDescription = stringResource(R.string.category_list_mark_as_read)
+                )
+            }
+            // Button to show subscriptions with icon
+            IconButton(onClick = onShowSubscriptions) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.category_list_show_subscriptions)
+                )
             }
         }
     }

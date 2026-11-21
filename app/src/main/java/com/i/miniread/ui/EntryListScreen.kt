@@ -6,7 +6,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -106,6 +104,8 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
     val isVisible = remember { mutableStateOf(true) }
     val swipeThreshold = 100f
     var offsetX by remember { mutableFloatStateOf(0f) }
+    // 滑动背景层仍按 flavor 换样式（见下方注释：它不是列表卡片，不复用 MiniCard）
+    val eink = BuildConfig.IS_EINK
 
     AnimatedVisibility(
         visible = isVisible.value,
@@ -114,12 +114,15 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // Background to indicate swipe action
+            // ⚠️ 这层是「滑动露出的背景」，**不是**列表卡片本身：它的 padding 是 16dp
+            //    （卡片是 vertical 8dp），且颜色/边框语义是"操作提示"而非"内容容器"。
+            //    因此保留独立实现，不复用 MiniCard（复用会改变滑动背景的几何）。
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
                     .then(
-                        if (BuildConfig.IS_EINK) {
+                        if (eink) {
                             Modifier.border(
                                 width = 2.dp,
                                 color = Color.Black,
@@ -129,7 +132,7 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                             Modifier
                         }
                     ),
-                color = if (BuildConfig.IS_EINK) Color.White else MaterialTheme.colorScheme.secondaryContainer,
+                color = if (eink) Color.White else MaterialTheme.colorScheme.secondaryContainer,
                 shape = MaterialTheme.shapes.medium
             ) {
                 Box(
@@ -141,36 +144,16 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.Done,
                         contentDescription = stringResource(R.string.entry_list_mark_as_read),
-                        tint = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = if (eink) Color.Black else MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             }
-            Card(
-                shape = MaterialTheme.shapes.medium,
-                colors = if (BuildConfig.IS_EINK) {
-                    CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
-                } else {
-                    CardDefaults.cardColors()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
+            MiniCard(
+                // 滑动位移 + 手势检测走 interactionModifier，插在 padding 之前，
+                // 与改造前的 Modifier 顺序等价（offset → padding → border → clickable）。
+                interactionModifier = Modifier
                     .offset { IntOffset(offsetX.roundToInt(), 0) }
-                    .padding(vertical = 8.dp)
-                    .then(
-                        if (BuildConfig.IS_EINK) {
-                            Modifier.border(
-                                width = 2.dp,
-                                color = Color.Black,
-                                shape = MaterialTheme.shapes.medium
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .clickable { onClick() }
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onHorizontalDrag = { change, dragAmount ->
@@ -190,27 +173,25 @@ fun EntryItem(viewModel: MinifluxViewModel, entry: Entry, onClick: () -> Unit) {
                                 }
                             }
                         )
-                    }
-
+                    },
+                onClick = onClick
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = entry.title ?: stringResource(R.string.entry_list_untitled),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = miniCardTitleColor()
+                )
+                Text(
+                    text = entry.feed.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = miniCardSecondaryColor()
+                )
+                entry.published_at?.let {
                     Text(
-                        text = entry.title ?: stringResource(R.string.entry_list_untitled),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (BuildConfig.IS_EINK) Color.Black else MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = entry.feed.title,
+                        text = localizePublishTime(it),
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.secondary
+                        color = miniCardSecondaryColor()
                     )
-                    entry.published_at?.let {
-                        Text(
-                            text = localizePublishTime(it),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = if (BuildConfig.IS_EINK) Color.DarkGray else MaterialTheme.colorScheme.secondary
-                        )
-                    }
                 }
             }
         }

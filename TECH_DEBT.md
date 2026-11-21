@@ -71,6 +71,29 @@
 - **建议**：✋ 只记录、暂不实施；确需重构平板字号体系时单独立项。
 - **风险**：会触发坑 15 / 20 全套回归（rem 基数、媒体查询高度守卫、排版表后注入者胜出、`textZoom` 四档映射、调节后重锚）；`customdark.css` 的 `2rem` 已与 `custom.css` 的 `2.2rem` 对齐，勿回退。
 
+## 2.5 本轮调研发现（2026-11-21，只记录不实施）
+
+### D1 · 三套互相矛盾的「品牌色」⏸ ☑
+- **位置**：`ui/theme/Color.kt`（`Purple40 = #6650a4` 等 6 个模板色）、`app/src/standard/res/values/colors.xml`（`flavor_primary = #6200EE` / `flavor_secondary = #03DAC6`）、`app/src/main/res/values/ic_launcher_background.xml`（`#029888` 青绿，仅 launcher 用）。
+- **现状**：
+  1. **`Color.kt` 是 Compose 模板原封文件**（11 行，紫/粉），但它是 **Android 7.0–11 的实际配色**——`MinireadTheme` 的 `dynamicColor` 分支要求 `SDK_INT >= S`（API 31），`minSdk = 25`，所以 25–30 全部落到 `LightColorScheme` = 模板紫。
+  2. **`standard/res/values/colors.xml` 的 4 个 `flavor_*` 零引用**——全仓 grep 只在定义处出现，是死资源。
+  3. **应用图标背景 `#029888`** 是唯一"项目自己选的、用户可见"的颜色。
+- **建议**：用户已拍板**用 `#029888`（青绿）作为旧设备 fallback 品牌色**，本轮**未实施**（本轮只做测试 + 列表收敛）。后续单独一轮：`Color.kt` 换成基于 `#029888` 的 M3 色板（`primary` / `primaryContainer` / `onPrimary` 等成对给出，需满足 4.5:1 对比度），并删除死掉的 `flavor_*`。
+- **风险**：改 `Color.kt` 影响 standard **所有页面**（Android 7–11），需截图回归；**E-Ink 不受影响**（走 `EInkLightColorScheme`）。删除 `flavor_*` 前再 grep 一次确认零引用。
+
+### D2 · `EInkConfig.Colors` 里有灰 ⏸ ☑
+- **位置**：`app/src/eink/java/com/i/miniread/eink/EInkConfig.kt` 的 `object Colors`：`Surface = #F5F5F5`、`Secondary = #757575`、`Divider = #BDBDBD`。
+- **现状**：这三个灰与「E-Ink 无灰底」红线（AGENTS §8 坑 18）**直接冲突**。好在**全仓只有 `FlavorUsageExample.kt` 引用**（示例文件，非主流程，且未被导航）——所以当前不影响真实界面。
+- **建议**：要么把 `Colors` 改成纯黑白，要么连 `FlavorUsageExample.kt` 一起删。**两个 flavor 的 `EInkConfig.kt` 是 §7 禁区，必须同名同签名**，改要成对改。
+- **风险**：禁区文件；`FlavorUsageExample` 若被删需确认无 import 引用。
+
+### D3 · `Shapes` 从未传给 `MaterialTheme` ⏸ ☑
+- **位置**：`ui/theme/Theme.kt` 的 `MaterialTheme(colorScheme = ..., typography = ...)` —— **没有 `shapes =`**。
+- **现状**：全仓所有圆角要么用 M3 默认 scale，要么手写 `RoundedCornerShape(8.dp)` / `(12.dp)` / `(16.dp)` / `(0.dp)`；`ui/ReaderTypographyPanel.kt`、`ui/HiddenSettingsScreen.kt`、`ui/SettingsHelpScreen.kt`、`ui/FeedWhitelistPicker.kt` 各有手写值。这导致"直角 vs 圆角"的规则散落各处。
+- **建议**：补 `MiniShapes`（standard 走 M3 scale，E-Ink 全 `RectangleShape`）并传给 `MaterialTheme(shapes = ...)`。这是**第 3 步**，本轮未做。
+- **风险**：改 `Shapes` 影响所有页面视觉，需 UI 测试 + 截图回归；`ReaderTypographyPanel` 的 `RoundedCornerShape(12.dp)` 等要同步复核。
+
 ## 3. 只记录不动
 
 ### 3.1 🔒 AGENTS.md §7 禁区逐项

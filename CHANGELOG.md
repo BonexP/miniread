@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 存储语义与展示序不变（`widthStep=0` 仍= 不限，`WIDTH_STEP_ORDER=[1,2,3,0]`，`ReaderTypographyCodec` clamp 仍 0..3，旧持久化值不崩）。单测双 flavor 各 **241 例全绿**（较 v5 的 240 净增 1 例防回退用例）。
 
 ### Added
+- **UI 冒烟测试（第一张安全网）**：`app/src/androidTest/java/com/i/miniread/ui/ListItemSmokeTest.kt`，5 例——三个列表项（`CategoryItem` / `FeedItem` / `EntryItem`）渲染与点击回调 + 排版面板六段可访问名存在 + **`+/−` 字形存在（防 v4 回归）**。此前全仓 241 例单测**全是纯逻辑**（`util/` + `network/` 零 UI 覆盖），任何视觉改动都是盲改；本次 `connectedStandardDebugAndroidTest` 在 Medium_Tablet 上 **5/5 通过**。
+  - 测试设计要点（跑通过程中踩到并已写进 AGENTS §0.2 / 坑 6）：① 仪器测试跟随**设备语言**，断言文案必须 `context.getString(R.string.xxx)`，写死中文会失败；② 面板超一屏且 `assertIsDisplayed()` 会强制真实绘制，在模拟器上易触发 `ReferenceQueueDaemon ... HardwareRenderer` 超时，改用纯语义查询 `assertExists()`；③ `Switch` 等 `MergeDescendants` 节点在合并树里会重复，须查 `useUnmergedTree = true`。
+- **`ui/MiniCard.kt`：列表卡片双形态唯一实现**（standard / E-Ink 差异集中到一处）。此前 `CategoryItem` / `FeedItem` / `EntryItem` 各自手写同样的 `if (IS_EINK) CardDefaults.cardColors(White) + border(2.dp, Black)` 模式；收敛后三个屏只管内容，**`BuildConfig.IS_EINK` 分支全仓 56 → 47 处**。附带 `miniCardTitleColor()` / `miniCardSecondaryColor()` 收掉三处重复的标题/次要文字配色分支。
+  - `EntryItem` 的**滑动露出背景层保留独立实现**：它不是列表卡片（padding 16dp vs 卡片 vertical 8dp、语义是"操作提示"而非"内容容器"），复用会改变滑动几何。
+
+### Added（续）
 - **阅读页可调排版**（issue #19）：顶栏「Aa」入口 + 调节面板，支持**字号（四档 85%–150%）/ 行距（1.4–2.0）/ 行宽（v5：窄 / 中 / 宽 / 全宽；初版为「默认 / 窄 / 中 / 宽」，见 §Changed 的 v5 条目）/ 段落间距（0.8–2.0em）/ 字体族（无衬线 / 衬线）/ 对齐（左 / 两端）**六项；全局生效、持久化（6 个独立 `typo_*` DataStore key）、调节即时生效且不打断当前阅读位置。
   - 新增 `util/ReaderTypography.kt`（纯逻辑：档位换算 / clamp / CSS 片段生成 / 宽容解析 Codec）与纯 JVM 单测 `ReaderTypographyTest`（初版 24 例，总用例 208 → 232；v5 增到 32 例 / 240）；新增 `ui/ReaderTypographyPanel.kt`（无动画、编辑态 `rememberSaveable`、E-Ink 黑白直角样式，文案 `reader_typography_*` 中英双份）。
   - `app/src/main/assets/template.html`：新增 `<style id="miniread-typo-css">`，位于主题表 / 平板表之后（后注入者胜出）；`ui/ArticleDetailScreen.kt`：新增 `applyTypoCss()` 就地替换样式、独立排版 Effect 做阅读位置重锚、`DataStoreManager` 新增 6 个 key 与读写函数（既有公开签名不变，`clearAll()` 自动清理）。

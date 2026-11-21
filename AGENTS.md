@@ -50,7 +50,7 @@
 | 提示条 | 不要直接 `SnackbarHost(hostState)`（M3 默认反色 `InverseSurface`）；统一走 `ui/MinireadSnackbarHost.kt`；E-Ink 自绘 `Surface(RectangleShape, White, 0.dp, 0.dp, BorderStroke(2.dp, Black))` |
 | 星标 | `Icons.Outlined.Star` 是实心；用 `Icons.Outlined.StarBorder`（来自 `material-icons-extended`，**版本由 Compose BOM 托管，不要写 version**）；**不要**自造 drawable |
 | 存储 / 架构 | `DataStoreManager` 是唯一门面、**公开签名不可改**；token 走 `SecureTokenStore`；无 DI、无 Repository；flavor 差异用编译期同名文件替换 + `BuildConfig.IS_EINK` |
-| 测试 | 纯逻辑抽 `util/` 并配纯 JVM 单测（禁 `android.*` / Robolectric）；两 workflow 都跑 `testStandardDebugUnitTest` + `testEinkDebugUnitTest`（当前 **240 例**）；测试全在 `app/src/test/` |
+| 测试 | 纯逻辑抽 `util/` 并配纯 JVM 单测（禁 `android.*` / Robolectric）；两 workflow 都跑 `testStandardDebugUnitTest` + `testEinkDebugUnitTest`（当前 **241 例**）；纯 JVM 测试全在 `app/src/test/`。**另有 UI 冒烟测试**在 `app/src/androidTest/`（`ListItemSmokeTest`，5 例：三个列表项渲染/点击 + 排版面板六段存在 + `+/−` 字形存在），跑法是 `connectedStandardDebugAndroidTest`——**它需要 `~/.android/debug.keystore`，沙箱下必须放开文件访问**。⚠️ UI 测试里**不要写死中英文案**（仪器测试跟随设备语言，本机模拟器是英文），一律用 `context.getString(R.string.xxx)`；**不要用 `assertIsDisplayed()`** 断言面板内容（面板超一屏 + 会强制绘制，在模拟器上易触发 `ReferenceQueueDaemon ... HardwareRenderer` 超时） |
 | 发布 / VCS | 🚫 **推送远程 / 打 tag / 建 Release 每次需用户明确授权**；tag 归 git（附注）；提交走 jj；**凡执行 git 写操作先 `git switch main`**；必须保留仓库级 `working-copy.eol-conversion = "input-output"` |
 
 ---
@@ -130,8 +130,8 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 | `main` | 共享代码与资源；39 个 `.kt`（含 `util/ReaderTypography.kt`、`ui/ReaderTypographyPanel.kt`）+ `res/` + `assets/` |
 | `standard` | 2 个 `.kt`（`eink/EInkConfig.kt`、`eink/EInkUtils.kt` 的标准版空实现）+ `res/values*/` |
 | `eink` | 2 个 `.kt`（同名文件的墨水屏实现）+ `res/values*/` |
-| `test` | 纯 JVM 单测（15 个文件 / **240 个用例**） |
-| `androidTest` | **空目录**（仅 `java/` 空壳）；本项目测试全部在 `test/` |
+| `test` | 纯 JVM 单测（15 个文件 / **241 个用例**）；禁用 `android.*` / Robolectric |
+| `androidTest` | **UI 冒烟测试**（`ui/ListItemSmokeTest.kt`，5 例）：三个列表项渲染/点击 + 排版面板六段存在 + `+/−` 字形存在。跑 `connectedStandardDebugAndroidTest` |
 
 ### `app/src/main/java/com/i/miniread/` 包职责
 
@@ -246,7 +246,7 @@ MiniRead 是一个基于 **Jetpack Compose + Material 3 (MD3)** 的 **Miniflux**
 3. `app/proguard-rules.pro` 中 keep 了**不存在的**包 `com.i.miniread.model.**`（数据模型实际都在 `network/` 包）。⚠️ 删任何规则前先核对当前文件：v1.2.1 已删过 3 条**全量** Compose keep，其下四组细分 keep 保留。改动必须回归 **release 包体 + 定向拦截 + 图片加载**（坑 10）。
 4. `network/MinifluxApi.kt` 有**两个 `deleteFeed` 重载**（`Int` 返回 `Void`、`Long` **无返回类型**）。改动时注意区别。
 5. `viewmodel/MinifluxViewModel.kt` 末尾的 `FeedListViewModel` **疑似死代码**：`async` 结果未被使用，且未被任何 UI 引用；删除前先 `grep` 全仓确认 0 引用。
-6. `app/src/androidTest/` 为**空目录**——本项目测试**全部**在 `app/src/test/`（纯 JVM）。
+6. **`app/src/androidTest/` 已有 UI 冒烟测试**（`ui/ListItemSmokeTest.kt`，2026-11-21 起）：纯 JVM 单测仍在 `app/src/test/`（禁 `android.*` / Robolectric），UI 测试单独跑 `connectedStandardDebugAndroidTest`。⚠️ 跑它需要放开对 `~/.android/debug.keystore(.lock)` 的文件访问，沙箱默认会拒。
 7. **NavHost 已合并为一份**（✅ 2026-10-13 修复）：此前 rail / 手机各一份逐字相同的副本，分处 `if/else` 两分支 → 竖横屏切换销毁重建整个内容子树（WebView 重建、页面重载、滚动位置丢失、卡顿）。现为**单一 NavHost**，`if` 只切 `AppNavigationRail`。⚠️ **不要改回 if/else 两份**；加路由只需改一处。
 8. `ui/ArticleDetailScreen.kt` 的 `BottomAppBar` **必须**在 E-Ink 下显式传 `Modifier.height(48.dp)` + `tonalElevation = 0.dp` + `contentPadding`，否则回落 Material3 默认 80dp + 系统栏 inset + Level2 灰底（历史回归点：提交 `3707759`，随 v0.3.4 发布）。
 9. `interceptWebRequest` 走 OkHttp **自行重发请求**（复用 `interceptionHttpClient` 单例），异常时返回 `null` 让 WebView 回退默认加载——改动它**必须回归图片加载**。
