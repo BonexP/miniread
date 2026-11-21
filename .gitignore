@@ -33,3 +33,6 @@ app/release/
 
 # AgentTeams 运行期状态（每轮自动重写，不入库）
 .agent-teams/
+
+# 外部技能本地副本（第三方内容，不入库）
+agent-skills/
