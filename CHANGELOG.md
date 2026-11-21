@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-22
+
 ### Changed
 - **AI 开发规范复核与瘦身**（仅文档，无生产代码改动）：`AGENTS.md` 由 425 行精简至 210 行，§0–§10 编号不变；§8 已知坑完整论证外移到新增的 `doc/KNOWN_PITFALLS.md`、§10 命令/回退/实测外移到 `doc/VC_WORKFLOW.md`（两者均声明「冲突以 AGENTS.md 为准」）。新增 §0.2「硬约束速查」把 14 条硬数值前移，抵御工具自动注入截断；全仓易漂移的「约 Lx」行号改为符号名定位；§0.1 `android-native-dev` 技能冲突表按 2026-11-13 复核更新行号（`:111/:124`、`:742`、`:68`）。
 - **文档编排重排四层**（不删、不移动任何文件）：`doc/README.md` 删除无效链接 `BUILD_CONFIGURATION_SUMMARY.md`，重写为 L1 权威 / L2 参考 / L3 历史存档 / 外部资料四层导航；`AGENTS.md` 文档地图同步分层。16 份文档补状态横幅；`doc/CHECKLIST.md` 的 flavor 级 `versionNameSuffix` 打勾改为「已取消」（现行规则见 §6）；`TECHNICAL_SUMMARY.md` / `BUILD_FLAVORS_GUIDE.md` / `BUILD_GUIDE.md` / `QUICK_BUILD_REFERENCE.md` 的 `1.1.0` 与 `v1.1.0` 示例更新为 1.2.2 或 `vX.Y.Z` 占位；`README.md` 去掉硬编码实例地址/Referer、修正「TodayEntryList 继承 EntryListScreen」等事实错误；`doc/archive/README.md` 补 13 份归档清单并修复 `FLAVOR_IMPLEMENTATION.md` 归档后失效链接。`API Reference.md` 标注为上游快照。
